@@ -1,0 +1,29 @@
+@use "../../../../../styles/tokens";
+
+.login-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100%;
+  padding: tokens.spacing(lg);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: tokens.spacing(sm);
+  width: 100%;
+  max-width: 360px;
+
+  &__error {
+    color: var(--mat-sys-error);
+    font-size: tokens.font-size(sm);
+    margin: 0;
+  }
+
+  &__cold-start {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: tokens.font-size(sm);
+    margin: 0;
+  }
+}

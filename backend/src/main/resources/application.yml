@@ -41,3 +41,6 @@ app:
     refresh:
       max-attempts: 20
       window: PT15M
+    verify:
+      max-attempts: 30
+      window: PT1M

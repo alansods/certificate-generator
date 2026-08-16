@@ -4,6 +4,7 @@ import com.certificategenerator.auth.InvalidCredentialsException;
 import com.certificategenerator.auth.InvalidRefreshTokenException;
 import com.certificategenerator.auth.RateLimitExceededException;
 import com.certificategenerator.certificate.CertificateNotFoundException;
+import com.certificategenerator.verification.CertificateVerificationNotFoundException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -84,6 +85,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(CertificateNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleCertificateNotFound(CertificateNotFoundException ex) {
+        ProblemDetail problemDetail =
+                ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Not found");
+        withTraceId(problemDetail);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ExceptionHandler(CertificateVerificationNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleCertificateVerificationNotFound(
+            CertificateVerificationNotFoundException ex) {
         ProblemDetail problemDetail =
                 ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problemDetail.setTitle("Not found");

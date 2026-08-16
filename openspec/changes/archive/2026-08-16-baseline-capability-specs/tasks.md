@@ -9,5 +9,5 @@
 ## 2. Validation
 
 - [x] 2.1 Run `openspec validate baseline-capability-specs --strict` and resolve every error
-- [ ] 2.2 Owner reviews and approves the proposal
-- [ ] 2.3 Archive the change once the PR merges
+- [x] 2.2 Owner reviews and approves the proposal
+- [x] 2.3 Archive the change once the PR merges

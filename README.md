@@ -24,6 +24,15 @@ cd backend
 ./mvnw verify             # full test suite
 ```
 
+The `dev` profile ships a working `JWT_SECRET` and a bootstrap admin (`admin@example.com` / `changeme123`, seeded on first run) out of the box — nothing to configure locally. In production, set these environment variables (never commit them):
+
+| Variable | Purpose |
+|---|---|
+| `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` | Neon connection (chore/deploy-render-neon) |
+| `JWT_SECRET` | Signs access tokens. At least 32 bytes; the app fails to start otherwise. |
+| `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD` | Seeds the first `ADMIN` user if `users` is empty. Safe to leave set permanently — no-ops once any user exists. |
+| `APP_CORS_ALLOWED_ORIGINS` | Comma-separated frontend origin(s), set by chore/deploy-vercel |
+
 Frontend: not scaffolded yet (`feat/frontend-shell`, backlog item 2.1). `docs/PLAN.md` describes the full build order.
 
 ## How work happens here

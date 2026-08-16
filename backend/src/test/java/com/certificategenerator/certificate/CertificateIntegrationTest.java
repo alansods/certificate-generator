@@ -201,6 +201,47 @@ class CertificateIntegrationTest {
         assertThat(searchResponse.getBody()).contains("\"totalElements\"");
     }
 
+    @Test
+    void everyEndpointRejectsAnonymousRequests() {
+        CertificateResponse created = createCertificate(adminAuth()).getBody();
+
+        assertThat(
+                        restTemplate
+                                .postForEntity(
+                                        "/api/v1/certificates", new HttpEntity<>(sampleRequest(null)), String.class)
+                                .getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        assertThat(restTemplate.getForEntity("/api/v1/certificates", String.class).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        assertThat(
+                        restTemplate
+                                .getForEntity("/api/v1/certificates/" + created.id(), String.class)
+                                .getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        assertThat(
+                        restTemplate
+                                .exchange(
+                                        "/api/v1/certificates/" + created.id(),
+                                        HttpMethod.PUT,
+                                        new HttpEntity<>(sampleRequest(null)),
+                                        String.class)
+                                .getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        assertThat(
+                        restTemplate
+                                .exchange(
+                                        "/api/v1/certificates/" + created.id(),
+                                        HttpMethod.DELETE,
+                                        HttpEntity.EMPTY,
+                                        String.class)
+                                .getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
     private ResponseEntity<CertificateResponse> createCertificate(HttpHeaders auth) {
         return restTemplate.postForEntity(
                 "/api/v1/certificates",

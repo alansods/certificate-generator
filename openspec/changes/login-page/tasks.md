@@ -1,6 +1,6 @@
 ## 1. Auth API service
 
-- [x] 1.1 `features/auth/data/auth.api.ts`: `login(email, password)` and `refresh()`, both `POST`ing via `HttpClient` and storing the result through `TokenStorageService` internally.
+- [x] 1.1 `features/auth/data/auth.api.ts`: `login(email, password)` `POST`ing via `HttpClient` and storing the result through `TokenStorageService`; `refresh()` delegates to `core/auth/token-refresh.service.ts` (`TokenRefreshService`), shared with `authRefreshInterceptor`, so both routes go through the same single-flight `AuthRefreshCoordinatorService` instead of each presenting the refresh token independently.
 
 ## 2. Login page
 

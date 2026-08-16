@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -28,6 +29,7 @@ const COLD_START_THRESHOLD_MS = 5000;
 export class LoginPageComponent {
   private readonly authApi = inject(AuthApi);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly form = new FormGroup({
     email: new FormControl("", { nonNullable: true, validators: [Validators.required, Validators.email] }),
@@ -59,6 +61,7 @@ export class LoginPageComponent {
           this.submitting.set(false);
           this.showColdStart.set(false);
         }),
+        takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
         next: () => void this.router.navigateByUrl("/"),

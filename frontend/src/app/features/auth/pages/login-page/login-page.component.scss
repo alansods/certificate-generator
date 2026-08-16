@@ -13,7 +13,7 @@
   flex-direction: column;
   gap: tokens.spacing(sm);
   width: 100%;
-  max-width: 360px;
+  max-width: tokens.$login-form-max-width;
 
   &__error {
     color: var(--mat-sys-error);

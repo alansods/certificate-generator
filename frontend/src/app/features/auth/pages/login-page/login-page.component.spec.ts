@@ -26,15 +26,24 @@ describe("LoginPageComponent", () => {
 
   afterEach(() => httpMock.verify());
 
+  function requireElement<T extends Element>(root: HTMLElement, selector: string): T {
+    const element = root.querySelector<T>(selector);
+    if (!element) {
+      throw new Error(`Expected to find an element matching "${selector}"`);
+    }
+    return element;
+  }
+
   function setup() {
     const fixture = TestBed.createComponent(LoginPageComponent);
     fixture.detectChanges();
     const nativeElement = fixture.nativeElement as HTMLElement;
-    const emailInput = nativeElement.querySelector<HTMLInputElement>("input[formControlName='email']")!;
-    const passwordInput = nativeElement.querySelector<HTMLInputElement>(
+    const emailInput = requireElement<HTMLInputElement>(nativeElement, "input[formControlName='email']");
+    const passwordInput = requireElement<HTMLInputElement>(
+      nativeElement,
       "input[formControlName='password']",
-    )!;
-    const form = nativeElement.querySelector("form")!;
+    );
+    const form = requireElement<HTMLFormElement>(nativeElement, "form");
     return { fixture, nativeElement, emailInput, passwordInput, form };
   }
 

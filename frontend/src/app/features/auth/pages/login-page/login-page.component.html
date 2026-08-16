@@ -28,7 +28,13 @@
       </p>
     }
 
-    <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+    <button
+      mat-flat-button
+      color="primary"
+      type="submit"
+      [disabled]="submitting()"
+      [attr.aria-label]="submitting() ? 'Signing in' : null"
+    >
       @if (submitting()) {
         <mat-spinner diameter="20" />
       } @else {

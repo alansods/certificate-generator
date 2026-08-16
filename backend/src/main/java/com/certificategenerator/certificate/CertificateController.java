@@ -1,10 +1,14 @@
 package com.certificategenerator.certificate;
 
 import com.certificategenerator.auth.AuthenticatedPrincipal;
+import com.certificategenerator.certificate.batch.BatchImportService;
+import com.certificategenerator.certificate.batch.dto.BatchImportResponse;
 import com.certificategenerator.certificate.dto.CertificateRequest;
 import com.certificategenerator.certificate.dto.CertificateResponse;
 import com.certificategenerator.certificate.pdf.CertificatePdfService;
 import jakarta.validation.Valid;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/certificates")
@@ -31,14 +36,17 @@ public class CertificateController {
     private final CertificateService certificateService;
     private final CertificateMapper certificateMapper;
     private final CertificatePdfService certificatePdfService;
+    private final BatchImportService batchImportService;
 
     public CertificateController(
             CertificateService certificateService,
             CertificateMapper certificateMapper,
-            CertificatePdfService certificatePdfService) {
+            CertificatePdfService certificatePdfService,
+            BatchImportService batchImportService) {
         this.certificateService = certificateService;
         this.certificateMapper = certificateMapper;
         this.certificatePdfService = certificatePdfService;
+        this.batchImportService = batchImportService;
     }
 
     @PostMapping
@@ -85,5 +93,23 @@ public class CertificateController {
                         HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + certificate.getCode() + ".pdf\"")
                 .body(pdf);
+    }
+
+    @PostMapping("/batch")
+    public BatchImportResponse importBatch(
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal AuthenticatedPrincipal principal) {
+        return batchImportService.importCsv(file, principal.userId());
+    }
+
+    @GetMapping("/batch/template.csv")
+    public ResponseEntity<Resource> downloadBatchTemplate() {
+        Resource template = new ClassPathResource("csv/certificate-batch-template.csv");
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"certificate-batch-template.csv\"")
+                .body(template);
     }
 }

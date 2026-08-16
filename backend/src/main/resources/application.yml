@@ -3,6 +3,10 @@ spring:
     name: certificate-generator
   profiles:
     active: dev
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
   jackson:
     default-property-inclusion: non_null
   data:
@@ -44,3 +48,5 @@ app:
     verify:
       max-attempts: 30
       window: PT1M
+  batch-import:
+    max-rows: 500

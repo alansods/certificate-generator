@@ -4,6 +4,8 @@ import com.certificategenerator.auth.InvalidCredentialsException;
 import com.certificategenerator.auth.InvalidRefreshTokenException;
 import com.certificategenerator.auth.RateLimitExceededException;
 import com.certificategenerator.certificate.CertificateNotFoundException;
+import com.certificategenerator.certificate.batch.BatchInvalidHeaderException;
+import com.certificategenerator.certificate.batch.BatchTooManyRowsException;
 import com.certificategenerator.verification.CertificateVerificationNotFoundException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
@@ -100,6 +103,38 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setTitle("Not found");
         withTraceId(problemDetail);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ExceptionHandler(BatchTooManyRowsException.class)
+    public ResponseEntity<ProblemDetail> handleBatchTooManyRows(BatchTooManyRowsException ex) {
+        ProblemDetail problemDetail =
+                ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setTitle("Batch too large");
+        withTraceId(problemDetail);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    @ExceptionHandler(BatchInvalidHeaderException.class)
+    public ResponseEntity<ProblemDetail> handleBatchInvalidHeader(BatchInvalidHeaderException ex) {
+        ProblemDetail problemDetail =
+                ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setTitle("Invalid CSV header");
+        withTraceId(problemDetail);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException ex,
+            HttpHeaders headers,
+            HttpStatusCode status,
+            WebRequest request) {
+        ProblemDetail problemDetail =
+                ProblemDetail.forStatusAndDetail(
+                        HttpStatus.PAYLOAD_TOO_LARGE, "Uploaded file exceeds the maximum allowed size");
+        problemDetail.setTitle("Payload too large");
+        withTraceId(problemDetail);
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(problemDetail);
     }
 
     @ExceptionHandler(Exception.class)

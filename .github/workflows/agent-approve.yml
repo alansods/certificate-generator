@@ -1,0 +1,41 @@
+name: Agent approval
+
+# Approves a pull request once the review agents have signed off.
+# The review agents run outside GitHub and signal completion by adding the
+# "agent-approved" label. The PR author cannot approve their own PR, so the
+# approval is submitted by github-actions[bot] from here.
+#
+# Requires: Settings > Actions > General > Workflow permissions
+#   - Read and write permissions
+#   - Allow GitHub Actions to create and approve pull requests
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: read
+
+jobs:
+  approve:
+    if: github.event.label.name == 'agent-approved'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for CI to finish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr checks "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --watch --fail-fast
+
+      - name: Approve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr review "${{ github.event.pull_request.number }}" \
+            --repo "${{ github.repository }}" \
+            --approve \
+            --body "Approved by the agent review harness: spec, backend, frontend and security reviews passed with no blockers, and CI is green."

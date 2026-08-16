@@ -1,0 +1,24 @@
+# Java
+target/
+*.class
+!.mvn/wrapper/maven-wrapper.jar
+
+# Node
+node_modules/
+dist/
+.angular/
+npm-debug.log*
+
+# Env
+.env
+.env.local
+*.local
+
+# IDE
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Vercel
+.vercel

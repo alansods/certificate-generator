@@ -3,11 +3,15 @@ package com.certificategenerator.certificate;
 import com.certificategenerator.auth.AuthenticatedPrincipal;
 import com.certificategenerator.certificate.dto.CertificateRequest;
 import com.certificategenerator.certificate.dto.CertificateResponse;
+import com.certificategenerator.certificate.pdf.CertificatePdfService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,11 +30,15 @@ public class CertificateController {
 
     private final CertificateService certificateService;
     private final CertificateMapper certificateMapper;
+    private final CertificatePdfService certificatePdfService;
 
     public CertificateController(
-            CertificateService certificateService, CertificateMapper certificateMapper) {
+            CertificateService certificateService,
+            CertificateMapper certificateMapper,
+            CertificatePdfService certificatePdfService) {
         this.certificateService = certificateService;
         this.certificateMapper = certificateMapper;
+        this.certificatePdfService = certificatePdfService;
     }
 
     @PostMapping
@@ -65,5 +73,17 @@ public class CertificateController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable Long id) {
         certificateService.delete(id);
+    }
+
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id) {
+        Certificate certificate = certificateService.get(id);
+        byte[] pdf = certificatePdfService.render(certificate);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + certificate.getCode() + ".pdf\"")
+                .body(pdf);
     }
 }

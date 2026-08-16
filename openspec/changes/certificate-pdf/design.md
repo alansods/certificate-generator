@@ -8,13 +8,13 @@
 
 ## Templates
 
-Three separate files, `templates/certificates/{classic,modern,minimal}.html`, selected by `CertificateTemplate` via a plain `switch`. Separate files rather than one template with a style-variable — `docs/PLAN.md`'s own rationale for Thymeleaf over programmatic drawing is that "templates as versioned HTML and CSS are reviewable in a PR," which holds better for three independently readable documents than one template branching internally. Each is self-contained (inline `<style>`), since OpenHTMLtoPDF resolves stylesheet links relative to a base URI we'd otherwise have to fake.
+Three separate files, `templates/certificates/{classic,modern,minimal}.html`, selected by lower-casing `CertificateTemplate.name()` into the template path. Separate files rather than one template with a style-variable — `docs/PLAN.md`'s own rationale for Thymeleaf over programmatic drawing is that "templates as versioned HTML and CSS are reviewable in a PR," which holds better for three independently readable documents than one template branching internally. Each is self-contained (inline `<style>`), since OpenHTMLtoPDF resolves stylesheet links relative to a base URI we'd otherwise have to fake.
 
 Page size A4 landscape, set via `@page { size: A4 landscape; }`.
 
 ## Fonts
 
-Open Sans (Regular + Bold), OFL-1.1 licensed, vendored under `src/main/resources/fonts/` (`OFL.txt` included for attribution). Chosen over relying on system fonts because the spec requires embedded fonts for viewer-independent rendering, and a free-tier container has no guarantee of any particular font being installed. Registered via `PdfRendererBuilder.useFont(File, String)` for both weights; the templates' CSS references the family by name so OpenHTMLtoPDF embeds the actual glyphs used rather than linking externally.
+Open Sans (Regular + Bold), OFL-1.1 licensed, vendored under `src/main/resources/fonts/` (`OFL.txt` included for attribution). Chosen over relying on system fonts because the spec requires embedded fonts for viewer-independent rendering, and a free-tier container has no guarantee of any particular font being installed. Registered via `PdfRendererBuilder.useFont(FSSupplier<InputStream>, String)` for both weights — not the `File`-based overload — since `ClassPathResource::getInputStream` resolves through the classloader and works whether the app is running from exploded classes (local `mvnw test`) or from inside a packaged JAR (Render deployment); a `File`-based path would break once the fonts are jar entries rather than files on disk. The templates' CSS references the family by name so OpenHTMLtoPDF embeds the actual glyphs used rather than linking externally.
 
 ## QR code
 

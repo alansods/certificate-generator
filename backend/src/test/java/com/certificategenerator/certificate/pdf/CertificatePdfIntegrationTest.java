@@ -3,6 +3,9 @@ package com.certificategenerator.certificate.pdf;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.certificategenerator.TestcontainersConfiguration;
+import com.certificategenerator.auth.Role;
+import com.certificategenerator.auth.User;
+import com.certificategenerator.auth.UserRepository;
 import com.certificategenerator.auth.dto.LoginRequest;
 import com.certificategenerator.auth.dto.TokenPairResponse;
 import com.certificategenerator.certificate.CertificateStatus;
@@ -12,6 +15,7 @@ import com.certificategenerator.certificate.dto.CertificateResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,6 +31,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
@@ -35,8 +40,17 @@ class CertificatePdfIntegrationTest {
 
     private static final String ADMIN_EMAIL = "admin@example.com";
     private static final String ADMIN_PASSWORD = "changeme123";
+    private static final String OTHER_USER_EMAIL = "staff-pdf@example.com";
+    private static final String OTHER_USER_PASSWORD = "staff-password-123";
+
+    // Text unique to one template's rendered copy, used to prove each certificate actually
+    // renders with its own template rather than silently reusing another one.
+    private static final String CLASSIC_MARKER = "This is to certify that";
+    private static final String MODERN_MARKER = "Well done!";
 
     @Autowired private TestRestTemplate restTemplate;
+    @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     @ParameterizedTest
     @EnumSource(CertificateTemplate.class)
@@ -65,7 +79,25 @@ class CertificatePdfIntegrationTest {
             assertThat(document.getNumberOfPages()).isEqualTo(1);
             String text = new PDFTextStripper().getText(document);
             assertThat(text).contains("Jane Doe").contains("Advanced Angular");
+            assertTemplateSpecificContent(text, template);
+            assertThat(hasAtLeastOneEmbeddedFont(document))
+                    .as("PDF should embed its fonts rather than reference them externally")
+                    .isTrue();
         }
+    }
+
+    @Test
+    void userRoleCanDownloadAnotherUsersCertificate() {
+        CertificateResponse created = createCertificate(adminAuth(), CertificateTemplate.CLASSIC).getBody();
+
+        ResponseEntity<byte[]> response =
+                restTemplate.exchange(
+                        "/api/v1/certificates/" + created.id() + "/pdf",
+                        HttpMethod.GET,
+                        new HttpEntity<>(otherUserAuth()),
+                        byte[].class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     @Test
@@ -94,6 +126,33 @@ class CertificatePdfIntegrationTest {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
+    private static void assertTemplateSpecificContent(String text, CertificateTemplate template) {
+        switch (template) {
+            case CLASSIC -> {
+                assertThat(text).contains(CLASSIC_MARKER);
+                assertThat(text).doesNotContain(MODERN_MARKER);
+            }
+            case MODERN -> {
+                assertThat(text).contains(MODERN_MARKER);
+                assertThat(text).doesNotContain(CLASSIC_MARKER);
+            }
+            case MINIMAL ->
+                    // Minimal has no equivalent decorative copy by design; proving it isn't
+                    // silently falling back to one of the other two is exactly the point.
+                    assertThat(text).doesNotContain(CLASSIC_MARKER).doesNotContain(MODERN_MARKER);
+        }
+    }
+
+    private static boolean hasAtLeastOneEmbeddedFont(PDDocument document) throws java.io.IOException {
+        for (var fontName : document.getPage(0).getResources().getFontNames()) {
+            PDFont font = document.getPage(0).getResources().getFont(fontName);
+            if (font.isEmbedded()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private ResponseEntity<CertificateResponse> createCertificate(
             HttpHeaders auth, CertificateTemplate template) {
         CertificateRequest request =
@@ -112,14 +171,34 @@ class CertificatePdfIntegrationTest {
     }
 
     private HttpHeaders adminAuth() {
+        return bearerHeaders(login(ADMIN_EMAIL, ADMIN_PASSWORD).accessToken());
+    }
+
+    private HttpHeaders otherUserAuth() {
+        userRepository
+                .findByEmail(OTHER_USER_EMAIL)
+                .orElseGet(
+                        () ->
+                                userRepository.save(
+                                        new User(
+                                                OTHER_USER_EMAIL,
+                                                passwordEncoder.encode(OTHER_USER_PASSWORD),
+                                                "Staff Member",
+                                                Role.USER)));
+        return bearerHeaders(login(OTHER_USER_EMAIL, OTHER_USER_PASSWORD).accessToken());
+    }
+
+    private TokenPairResponse login(String email, String password) {
         ResponseEntity<TokenPairResponse> response =
                 restTemplate.postForEntity(
-                        "/api/v1/auth/login",
-                        new LoginRequest(ADMIN_EMAIL, ADMIN_PASSWORD),
-                        TokenPairResponse.class);
+                        "/api/v1/auth/login", new LoginRequest(email, password), TokenPairResponse.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        return response.getBody();
+    }
+
+    private static HttpHeaders bearerHeaders(String accessToken) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(response.getBody().accessToken());
+        headers.setBearerAuth(accessToken);
         return headers;
     }
 }

@@ -63,6 +63,15 @@
 			<groupId>com.google.zxing</groupId>
 			<artifactId>javase</artifactId>
 			<version>3.5.3</version>
+			<exclusions>
+				<!-- QrCodeGenerator only uses QRCodeWriter/MatrixToImageWriter/ImageIO, never
+				     org.json; excluded to stop it colliding with android-json (via jsonassert,
+				     test scope) on the classpath. -->
+				<exclusion>
+					<groupId>org.json</groupId>
+					<artifactId>json</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>

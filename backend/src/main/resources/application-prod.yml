@@ -31,3 +31,6 @@ app:
     # Both optional; the bootstrap runner no-ops once any user exists, so it's safe to leave set.
     email: ${ADMIN_BOOTSTRAP_EMAIL:}
     password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+  # Set by chore/deploy-vercel (3.3) to the production Vercel origin. Unset until then, so the
+  # QR code embeds a path-only value rather than pointing at a placeholder host.
+  frontend-base-url: ${APP_FRONTEND_BASE_URL:}

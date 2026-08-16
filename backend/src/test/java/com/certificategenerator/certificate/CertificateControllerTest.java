@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.certificategenerator.auth.AuthenticatedPrincipal;
 import com.certificategenerator.auth.Role;
+import com.certificategenerator.certificate.pdf.CertificatePdfService;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -59,6 +60,7 @@ class CertificateControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @MockitoBean private CertificateService certificateService;
+    @MockitoBean private CertificatePdfService certificatePdfService;
 
     @BeforeEach
     void authenticate() {

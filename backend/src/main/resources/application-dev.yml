@@ -17,3 +17,4 @@ app:
   admin-bootstrap:
     email: "admin@example.com"
     password: "changeme123"
+  frontend-base-url: "http://localhost:4200"

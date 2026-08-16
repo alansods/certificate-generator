@@ -3,6 +3,8 @@ package com.certificategenerator.verification;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.certificategenerator.TestcontainersConfiguration;
+import com.certificategenerator.auth.dto.LoginRequest;
+import com.certificategenerator.auth.dto.TokenPairResponse;
 import com.certificategenerator.certificate.Certificate;
 import com.certificategenerator.certificate.CertificateRepository;
 import com.certificategenerator.certificate.CertificateStatus;
@@ -15,6 +17,9 @@ import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRe
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +36,9 @@ import org.springframework.http.ResponseEntity;
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
 class VerificationIntegrationTest {
+
+    private static final String ADMIN_EMAIL = "admin@example.com";
+    private static final String ADMIN_PASSWORD = "changeme123";
 
     @Autowired private TestRestTemplate restTemplate;
     @Autowired private CertificateRepository certificateRepository;
@@ -66,6 +74,28 @@ class VerificationIntegrationTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(response.getBody().getProperties()).containsKey("traceId");
+    }
+
+    @Test
+    void verifyAlsoSucceedsForAnAuthenticatedCaller() {
+        Certificate certificate = certificateRepository.save(sampleCertificate("CERT-VER4-0004", CertificateStatus.ISSUED));
+        ResponseEntity<TokenPairResponse> login =
+                restTemplate.postForEntity(
+                        "/api/v1/auth/login",
+                        new LoginRequest(ADMIN_EMAIL, ADMIN_PASSWORD),
+                        TokenPairResponse.class);
+        assertThat(login.getStatusCode()).isEqualTo(HttpStatus.OK);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(login.getBody().accessToken());
+
+        ResponseEntity<String> response =
+                restTemplate.exchange(
+                        "/api/v1/public/verify/" + certificate.getCode(),
+                        HttpMethod.GET,
+                        new HttpEntity<>(headers),
+                        String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     private static Certificate sampleCertificate(String code, CertificateStatus status) {

@@ -1,12 +1,9 @@
 package com.certificategenerator.verification;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import com.certificategenerator.auth.RateLimiter;
+import com.certificategenerator.auth.RateLimitExceededException;
 import com.certificategenerator.certificate.CertificateStatus;
 import com.certificategenerator.verification.dto.CertificateVerificationResponse;
 import com.certificategenerator.web.ClientIpResolver;
@@ -19,7 +16,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -28,7 +24,9 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
  * Slice test focused on status codes and mapping, not the real SecurityConfig — see
  * CertificateControllerTest for why security autoconfiguration is excluded here. Anonymous access
  * to this endpoint end to end (against the real filter chain) is covered by
- * VerificationIntegrationTest.
+ * VerificationIntegrationTest. Rate-limit-exceeded is a VerificationService concern (that's where
+ * RateLimiter now lives, matching AuthController/AuthService's layering), so it's covered by
+ * VerificationServiceTest, not here.
  */
 @WebMvcTest(
         controllers = VerificationController.class,
@@ -36,16 +34,15 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
             SecurityFilterAutoConfiguration.class,
             ServletWebSecurityAutoConfiguration.class
         })
-@Import({ClientIpResolver.class, RateLimiter.class})
+@Import(ClientIpResolver.class)
 class VerificationControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @MockitoBean private VerificationService verificationService;
-    @MockitoSpyBean private RateLimiter rateLimiter;
 
     @Test
     void verifyReturns200WithMinimalBody() {
-        when(verificationService.verify("CERT-AAAA-BBBB"))
+        when(verificationService.verify("CERT-AAAA-BBBB", "127.0.0.1"))
                 .thenReturn(
                         new CertificateVerificationResponse(
                                 "Jane Doe",
@@ -65,7 +62,7 @@ class VerificationControllerTest {
 
     @Test
     void verifyReturns404WhenServiceThrowsNotFound() {
-        when(verificationService.verify("CERT-ZZZZ-ZZZZ"))
+        when(verificationService.verify("CERT-ZZZZ-ZZZZ", "127.0.0.1"))
                 .thenThrow(new CertificateVerificationNotFoundException("CERT-ZZZZ-ZZZZ"));
         MockMvcTester mvc = MockMvcTester.create(mockMvc);
 
@@ -75,8 +72,10 @@ class VerificationControllerTest {
     }
 
     @Test
-    void verifyReturns429WhenRateLimited() {
-        when(rateLimiter.isBlocked(anyString(), anyInt(), any())).thenReturn(true);
+    void verifyReturns429WhenServiceThrowsRateLimitExceeded() {
+        when(verificationService.verify("CERT-AAAA-BBBB", "127.0.0.1"))
+                .thenThrow(
+                        new RateLimitExceededException("Too many verification attempts, try again later"));
         MockMvcTester mvc = MockMvcTester.create(mockMvc);
 
         MvcTestResult result = mvc.get().uri("/api/v1/public/verify/CERT-AAAA-BBBB").exchange();

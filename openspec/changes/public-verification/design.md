@@ -12,6 +12,8 @@ New package `com.certificategenerator.verification`, not folded into the existin
 
 `VerificationService` looks up by `code` via a new `CertificateRepository.findByCode(String)` (the repository already exists in `certificate`; adding one read method there is simpler than duplicating certificate lookup logic into the new package). Not-found maps to 404 via a dedicated `CertificateVerificationNotFoundException` — reusing `certificate.CertificateNotFoundException` would be a cross-capability coupling for what's supposed to be an intentionally thin, isolated read path; also its constructor takes a `Long` id, not a `String` code.
 
+Rate limiting is also `VerificationService`'s responsibility, not the controller's — `VerificationController` stays a thin pass-through (resolve client IP, delegate), matching `AuthController`/`AuthService`'s existing split where `AuthController` has no knowledge of `RateLimiter` at all.
+
 ## Rate limiting
 
 Reuses the existing `auth.RateLimiter` (bounded Caffeine cache, already built for login/refresh in `feat/jwt-auth`) rather than introducing a second rate-limiting mechanism. Keyed on client IP alone, per the spec. New `app.rate-limit.verify.max-attempts`/`window` properties, same shape as the existing login/refresh ones.

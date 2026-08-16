@@ -18,6 +18,6 @@ _None._ Every requirement this change implements already exists in `openspec/spe
 
 - Adds `backend/src/main/java/com/certificategenerator/verification/` (controller, service, dto).
 - Extracts the client-IP-resolution logic already in `AuthController` into a shared `web/ClientIpResolver`, reused by both — see `design.md` for why this is a refactor worth doing now rather than duplicating the (security-relevant) decision to ignore `X-Forwarded-For`.
-- `SecurityConfig` gains `/api/v1/public/**` to its `permitAll` list.
+- `SecurityConfig` gains `/api/v1/public/verify/**` to its `permitAll` list.
 - `application*.yml` gains `app.rate-limit.verify.*`.
 - No frontend impact yet (`feat/public-verify-page`, 2.6, consumes this).

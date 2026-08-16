@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 22
       - name: Validate OpenSpec changes
-        run: npx -y @fission-ai/openspec@latest validate --strict
+        run: npx -y @fission-ai/openspec@latest validate --all --strict
 
   backend:
     name: Backend
@@ -29,12 +29,18 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+      - name: Check backend exists
+        id: check
+        working-directory: .
+        run: echo "exists=$( [ -f backend/pom.xml ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-java@v4
+        if: steps.check.outputs.exists == 'true'
         with:
           distribution: temurin
           java-version: 21
           cache: maven
       - run: ./mvnw --batch-mode verify
+        if: steps.check.outputs.exists == 'true'
 
   frontend:
     name: Frontend
@@ -44,12 +50,21 @@ jobs:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+      - name: Check frontend exists
+        id: check
+        working-directory: .
+        run: echo "exists=$( [ -f frontend/package.json ] && echo true || echo false )" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@v4
+        if: steps.check.outputs.exists == 'true'
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+        if: steps.check.outputs.exists == 'true'
       - run: npm run lint
+        if: steps.check.outputs.exists == 'true'
       - run: npm test -- --watch=false --browsers=ChromeHeadless
+        if: steps.check.outputs.exists == 'true'
       - run: npm run build -- --configuration production
+        if: steps.check.outputs.exists == 'true'

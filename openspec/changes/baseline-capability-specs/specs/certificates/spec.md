@@ -3,6 +3,13 @@ Lets an authenticated user manage the certificate records that back every downlo
 
 ## ADDED Requirements
 
+### Requirement: Shared certificate visibility
+The system SHALL treat certificates as a shared back-office pool: any authenticated user, regardless of role, can list, search, retrieve and update any certificate, not only the ones they created. Deletion remains restricted to `ADMIN` as stated below.
+
+#### Scenario: A USER reads and updates a certificate created by another user
+- **WHEN** a USER who did not create a certificate sends GET or PUT for that certificate's id
+- **THEN** the request succeeds exactly as it would for the certificate's creator
+
 ### Requirement: Certificate creation
 The system SHALL let an authenticated user create a certificate and assign it a unique public code.
 
@@ -24,6 +31,10 @@ The system SHALL return a paginated list of certificates, filterable by status a
 #### Scenario: Status filter
 - **WHEN** an authenticated user sends GET /api/v1/certificates?status=REVOKED
 - **THEN** the response is 200 with only certificates whose status is `REVOKED`
+
+#### Scenario: Pagination bounds the result set
+- **WHEN** an authenticated user sends GET /api/v1/certificates?page=0&size=10 against a dataset with more than 10 certificates
+- **THEN** the response is 200 with at most 10 certificates and metadata describing the total element count and total page count
 
 ### Requirement: Certificate retrieval
 The system SHALL return a single certificate by id to an authenticated user.
@@ -55,8 +66,12 @@ The system SHALL allow only an `ADMIN` to delete a certificate.
 - **THEN** the response is 403 and the certificate still exists
 
 ### Requirement: Unique certificate code
-The system SHALL generate a certificate `code` that is unique across all certificates and never reassign it.
+The system SHALL generate a certificate `code` that is unique across all certificates, never reassigned, and generated with enough randomness that it is impractical to guess, since it is looked up through an unauthenticated public endpoint.
 
 #### Scenario: Two certificates never collide
 - **WHEN** two certificates are created, regardless of order or timing
 - **THEN** their `code` values are different
+
+#### Scenario: Codes are not sequential or predictable
+- **WHEN** a series of certificates are created back-to-back
+- **THEN** their `code` values do not follow a predictable sequence (e.g. incrementing digits) that would let a third party enumerate other certificates by guessing nearby codes

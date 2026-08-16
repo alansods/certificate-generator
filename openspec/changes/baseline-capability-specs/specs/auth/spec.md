@@ -15,11 +15,36 @@ The system SHALL authenticate a user by email and password and, on success, issu
 - **THEN** the response is 401 and does not reveal whether the email or the password was wrong
 
 ### Requirement: Login rate limiting
-The system SHALL rate limit repeated failed login attempts for the same account or origin.
+The system SHALL rate limit repeated failed login attempts, keyed on the combination of the target email and the client IP so an attacker cannot lock out a known victim's account merely by knowing their email.
 
 #### Scenario: Threshold exceeded
-- **WHEN** the number of failed login attempts for the same email exceeds the configured threshold within the configured window
-- **THEN** further login attempts return 429 until the window elapses, regardless of whether the credentials are correct
+- **WHEN** the number of failed login attempts for the same email-and-IP combination exceeds the configured threshold within the configured window
+- **THEN** further login attempts from that combination return 429 until the window elapses, regardless of whether the credentials are correct
+
+#### Scenario: Different IP is not penalized by another client's failures
+- **WHEN** an email has exceeded the failed-attempt threshold from one IP
+- **THEN** a login attempt for that same email from a different IP is still evaluated normally, not rejected by the other IP's rate limit
+
+### Requirement: Refresh endpoint rate limiting
+The system SHALL rate limit repeated failed or invalid calls to POST /api/v1/auth/refresh per client IP.
+
+#### Scenario: Threshold exceeded
+- **WHEN** the number of failed refresh attempts from the same IP exceeds the configured threshold within the configured window
+- **THEN** further refresh attempts from that IP return 429 until the window elapses
+
+### Requirement: Password storage
+The system SHALL store user passwords only as a salted BCrypt hash and SHALL NOT log or persist a password in plain text at any point.
+
+#### Scenario: Password is never recoverable in plain text
+- **WHEN** a user's stored credential record is inspected
+- **THEN** it contains only the BCrypt hash, never the original password
+
+### Requirement: Refresh token storage
+The system SHALL store refresh tokens only as a hash at rest and SHALL NOT persist or log the raw refresh token value.
+
+#### Scenario: Refresh token is never recoverable in plain text
+- **WHEN** a stored refresh token record is inspected
+- **THEN** it contains only the token hash, never the raw token value
 
 ### Requirement: Refresh token rotation
 The system SHALL exchange a valid, unrevoked refresh token for a new access/refresh token pair and revoke the presented refresh token.
@@ -31,6 +56,13 @@ The system SHALL exchange a valid, unrevoked refresh token for a new access/refr
 #### Scenario: Reused or revoked refresh token
 - **WHEN** a client sends POST /api/v1/auth/refresh with a token that is already revoked or does not exist
 - **THEN** the response is 401 and no new token pair is issued
+
+### Requirement: Refresh token theft detection
+The system SHALL treat presentation of an already-rotated (revoked) refresh token as a signal of possible token theft and revoke every refresh token belonging to that user, not just reject the single request.
+
+#### Scenario: Rotated token is replayed
+- **WHEN** a refresh token that was already exchanged for a new pair (and is therefore revoked) is presented again
+- **THEN** the response is 401 and every other refresh token issued to that user is also revoked, forcing re-authentication on all sessions
 
 ### Requirement: Logout
 The system SHALL revoke the refresh token presented at logout.

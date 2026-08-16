@@ -27,3 +27,10 @@ The system SHALL never include the recipient's email or any internal identifier 
 #### Scenario: Response body is minimal
 - **WHEN** a client sends GET /api/v1/public/verify/{code} for any existing code
 - **THEN** the response body contains no `recipientEmail` field and no internal database id
+
+### Requirement: Public verification rate limiting
+The system SHALL rate limit repeated verification lookups per client IP, since the endpoint is unauthenticated and could otherwise be scraped or used to enumerate codes.
+
+#### Scenario: Threshold exceeded
+- **WHEN** the number of verification requests from the same IP exceeds the configured threshold within the configured window
+- **THEN** further requests from that IP return 429 until the window elapses

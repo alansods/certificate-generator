@@ -3,6 +3,7 @@ package com.certificategenerator.web;
 import com.certificategenerator.auth.InvalidCredentialsException;
 import com.certificategenerator.auth.InvalidRefreshTokenException;
 import com.certificategenerator.auth.RateLimitExceededException;
+import com.certificategenerator.certificate.CertificateNotFoundException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -79,6 +80,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setTitle("Too many requests");
         withTraceId(problemDetail);
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(problemDetail);
+    }
+
+    @ExceptionHandler(CertificateNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleCertificateNotFound(CertificateNotFoundException ex) {
+        ProblemDetail problemDetail =
+                ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Not found");
+        withTraceId(problemDetail);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
     }
 
     @ExceptionHandler(Exception.class)

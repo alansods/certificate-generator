@@ -1,0 +1,14 @@
+// Component-level Material token overrides live here, never scattered into feature styles
+// (docs/style-guide.md). Empty scaffold beyond the shape override below — later features add
+// their own `mat.<component>-overrides(...)` calls here as they need them.
+@use "@angular/material" as mat;
+@use "tokens";
+
+html {
+  @include mat.theme-overrides(
+    (
+      corner-medium: tokens.radius(md),
+      corner-large: tokens.radius(lg),
+    )
+  );
+}

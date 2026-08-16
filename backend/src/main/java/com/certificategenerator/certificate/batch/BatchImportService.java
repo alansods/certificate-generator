@@ -19,7 +19,10 @@ import java.util.stream.Collectors;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,6 +36,8 @@ import tools.jackson.databind.ObjectMapper;
 @Service
 public class BatchImportService {
 
+    private static final Logger log = LoggerFactory.getLogger(BatchImportService.class);
+
     private static final List<String> EXPECTED_COLUMNS =
             List.of(
                     "recipient_name",
@@ -43,6 +48,8 @@ public class BatchImportService {
                     "issue_date",
                     "instructor_name",
                     "template");
+
+    private static final int MAX_FILENAME_LENGTH = 255;
 
     private final CertificateService certificateService;
     private final BatchImportRepository batchImportRepository;
@@ -83,7 +90,15 @@ public class BatchImportService {
             }
         }
 
-        persistAudit(file, userId, rows.size(), successCount, errors);
+        // The certificates created above are already committed, independently, by the time we
+        // get here — a failure persisting the audit trail is a bookkeeping problem, not a reason
+        // to tell the caller their (already-successful) import failed. Never let it surface as an
+        // uncaught 500 that would look like nothing happened and invite a duplicating retry.
+        try {
+            persistAudit(file, userId, rows.size(), successCount, errors);
+        } catch (Exception e) {
+            log.error("Failed to persist batch import audit record for user {}", userId, e);
+        }
         return new BatchImportResponse(rows.size(), successCount, errors.size(), errors);
     }
 
@@ -116,34 +131,42 @@ public class BatchImportService {
         try {
             certificateService.create(request, userId);
             return null;
-        } catch (Exception e) {
+        } catch (DataIntegrityViolationException e) {
+            // The only failure mode create() can genuinely attribute to this row's data (its own
+            // retry-on-collision already exhausted). Anything else is an infrastructure problem
+            // and must propagate to GlobalExceptionHandler's 500 path, not be swallowed as one of
+            // up to maxRows misleading "row error" strings in an otherwise-200 response.
             return "Could not create certificate: " + e.getMessage();
         }
     }
 
+    /**
+     * Not itself effectively transactional despite the annotation: called via plain
+     * self-invocation from {@link #importCsv}, which Spring's proxy-based AOP never intercepts.
+     * Harmless today because {@code JpaRepository.save()} already wraps its single insert in its
+     * own transaction; kept as a single `save()` call for that reason rather than removing the
+     * (currently inert) annotation and reintroducing the question later.
+     */
     @Transactional
     void persistAudit(
             MultipartFile file, Long userId, int totalRows, int successCount, List<BatchRowError> errors) {
         String errorsJson = objectMapper.writeValueAsString(errors);
+        String filename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown.csv";
+        if (filename.length() > MAX_FILENAME_LENGTH) {
+            filename = filename.substring(0, MAX_FILENAME_LENGTH);
+        }
         batchImportRepository.save(
-                new BatchImport(
-                        userId,
-                        file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown.csv",
-                        totalRows,
-                        successCount,
-                        errors.size(),
-                        errorsJson));
+                new BatchImport(userId, filename, totalRows, successCount, errors.size(), errorsJson));
     }
 
     private static List<CSVRecord> parse(MultipartFile file) {
         try (var reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
                 CSVParser parser =
-                        CSVFormat.DEFAULT
-                                .builder()
-                                .setHeader(EXPECTED_COLUMNS.toArray(new String[0]))
-                                .setSkipHeaderRecord(true)
-                                .build()
-                                .parse(reader)) {
+                        CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).build().parse(reader)) {
+            List<String> actualHeader = parser.getHeaderNames();
+            if (!EXPECTED_COLUMNS.equals(actualHeader)) {
+                throw new BatchInvalidHeaderException(EXPECTED_COLUMNS, actualHeader);
+            }
             return parser.getRecords();
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to read uploaded CSV", e);

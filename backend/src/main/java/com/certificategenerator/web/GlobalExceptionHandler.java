@@ -4,6 +4,7 @@ import com.certificategenerator.auth.InvalidCredentialsException;
 import com.certificategenerator.auth.InvalidRefreshTokenException;
 import com.certificategenerator.auth.RateLimitExceededException;
 import com.certificategenerator.certificate.CertificateNotFoundException;
+import com.certificategenerator.certificate.batch.BatchInvalidHeaderException;
 import com.certificategenerator.certificate.batch.BatchTooManyRowsException;
 import com.certificategenerator.verification.CertificateVerificationNotFoundException;
 import java.util.LinkedHashMap;
@@ -109,6 +110,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         ProblemDetail problemDetail =
                 ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
         problemDetail.setTitle("Batch too large");
+        withTraceId(problemDetail);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    @ExceptionHandler(BatchInvalidHeaderException.class)
+    public ResponseEntity<ProblemDetail> handleBatchInvalidHeader(BatchInvalidHeaderException ex) {
+        ProblemDetail problemDetail =
+                ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setTitle("Invalid CSV header");
         withTraceId(problemDetail);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }

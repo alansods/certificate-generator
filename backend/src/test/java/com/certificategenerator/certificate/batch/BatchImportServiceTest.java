@@ -130,6 +130,18 @@ class BatchImportServiceTest {
     }
 
     @Test
+    void mismatchedHeaderRejectsBeforeCreatingAnything() {
+        String csv =
+                "recipient_name,course_name,recipient_email,workload_hours,completion_date,issue_date,instructor_name,template"
+                        + "\n"
+                        + validRow("Jane Doe", "jane@example.com");
+
+        assertThatThrownBy(() -> service.importCsv(multipartFile(csv), 7L))
+                .isInstanceOf(BatchInvalidHeaderException.class);
+        verify(certificateService, never()).create(any(), any());
+    }
+
+    @Test
     void auditRecordIsPersistedWithMatchingCountsAndErrorsJson() {
         when(certificateService.create(any(), eq(7L))).thenReturn(sampleCertificate());
         String csv =

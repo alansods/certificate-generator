@@ -26,11 +26,13 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -171,18 +173,14 @@ class CertificateControllerTest {
 
     @Test
     void batchUploadReturns200WithResultShape() {
-        when(batchImportService.importCsv(org.mockito.ArgumentMatchers.any(), eq(7L)))
+        when(batchImportService.importCsv(any(), eq(7L)))
                 .thenReturn(new BatchImportResponse(2, 1, 1, List.of()));
-        org.springframework.mock.web.MockMultipartFile file =
-                new org.springframework.mock.web.MockMultipartFile(
-                        "file", "batch.csv", "text/csv", "recipient_name\n".getBytes());
+        MockMultipartFile file =
+                new MockMultipartFile("file", "batch.csv", "text/csv", "recipient_name\n".getBytes());
 
         MvcTestResult result =
                 MockMvcTester.create(mockMvc)
-                        .perform(
-                                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(
-                                        "/api/v1/certificates/batch")
-                                        .file(file));
+                        .perform(MockMvcRequestBuilders.multipart("/api/v1/certificates/batch").file(file));
 
         assertThat(result).hasStatus(HttpStatus.OK);
         assertThat(result).bodyJson().extractingPath("$.totalRows").isEqualTo(2);

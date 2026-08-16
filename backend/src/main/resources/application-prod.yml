@@ -1,0 +1,26 @@
+spring:
+  datasource:
+    # SPRING_DATASOURCE_URL/USERNAME/PASSWORD are set as Render environment variables
+    # (chore/deploy-render-neon, 3.2) from Neon's connection string. Never committed here.
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    hikari:
+      # Neon free tier caps concurrent connections low; a single small Render
+      # instance must not exhaust that ceiling.
+      maximum-pool-size: 3
+      # Neon suspends compute when idle and takes 1-2s to wake. -1 skips the
+      # initial-connection check entirely so app startup never blocks on (or
+      # fails because of) a sleeping Neon; connection-timeout still bounds how
+      # long any individual query-time connection request waits.
+      initialization-fail-timeout: -1
+      connection-timeout: 30000
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+app:
+  cors:
+    # Set by chore/deploy-vercel (3.3) to the production Vercel origin.
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:}

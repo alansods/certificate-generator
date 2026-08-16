@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/certificate_generator
+    username: certificate_generator
+    password: certificate_generator
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+app:
+  cors:
+    allowed-origins: "http://localhost:4200"

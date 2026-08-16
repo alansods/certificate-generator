@@ -2,7 +2,7 @@
 
 Course certificate generator: manage certificates, issue branded PDFs, import in bulk from CSV, and verify any certificate publicly by its code.
 
-Angular 22 frontend, Spring Boot 3 backend on Java 21, PostgreSQL. Built spec-first with [OpenSpec](https://github.com/Fission-AI/OpenSpec) and reviewed by an agent harness.
+Angular 22 frontend, Spring Boot 4 backend on Java 21, PostgreSQL. Built spec-first with [OpenSpec](https://github.com/Fission-AI/OpenSpec) and reviewed by an agent harness.
 
 ## Layout
 
@@ -16,7 +16,15 @@ docs/       plan, style guide, API reference, testing policy
 
 ## Getting started
 
-Not scaffolded yet. `docs/PLAN.md` describes the full build order.
+Backend (needs a local PostgreSQL on `localhost:5432`, database/user/password `certificate_generator`, and Docker for the test suite's Testcontainers):
+
+```bash
+cd backend
+./mvnw spring-boot:run   # dev profile, http://localhost:8080
+./mvnw verify             # full test suite
+```
+
+Frontend: not scaffolded yet (`feat/frontend-shell`, backlog item 2.1). `docs/PLAN.md` describes the full build order.
 
 ## How work happens here
 

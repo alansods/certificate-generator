@@ -7,7 +7,7 @@ A course certificate generator. Authenticated users manage certificates, generat
 ## Tech stack
 
 - Frontend: Angular 22, TypeScript strict, Angular Material, SCSS design tokens
-- Backend: Java 21, Spring Boot 3.x, Maven, Spring Security, Spring Data JPA, Flyway
+- Backend: Java 21, Spring Boot 4.1.x, Maven, Spring Security, Spring Data JPA, Flyway
 - Database: PostgreSQL
 - PDF: Thymeleaf + OpenHTMLtoPDF, QR codes via ZXing
 - CI: GitHub Actions

@@ -22,7 +22,7 @@ Read these before working. Do not inline their content here.
 | Layer | Choice |
 |---|---|
 | Frontend | Angular 22, standalone components, signals, Angular Material + custom SCSS |
-| Backend | Java 21, Spring Boot 3.x, Maven, Spring Security, Spring Data JPA, Flyway |
+| Backend | Java 21, Spring Boot 4.1.x, Maven, Spring Security, Spring Data JPA, Flyway |
 | Database | PostgreSQL (Neon free tier) |
 | PDF | Thymeleaf templates rendered by OpenHTMLtoPDF, QR via ZXing |
 | Hosting | Vercel (frontend), Render (backend), Neon (database) — all free tier |

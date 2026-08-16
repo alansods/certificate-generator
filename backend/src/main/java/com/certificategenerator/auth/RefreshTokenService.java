@@ -10,6 +10,7 @@ import java.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +69,15 @@ public class RefreshTokenService {
         }
 
         existing.revoke();
+        try {
+            // Flushed immediately (rather than left to commit) so a concurrent rotate() of the
+            // same token loses the optimistic-lock race right here, inside this try block,
+            // instead of surfacing later as an uncaught exception at transaction commit.
+            refreshTokenRepository.saveAndFlush(existing);
+        } catch (OptimisticLockingFailureException e) {
+            throw new InvalidRefreshTokenException("Refresh token already used");
+        }
+
         String newRawToken = issue(existing.getUser());
         return new RotationResult(existing.getUser(), newRawToken);
     }

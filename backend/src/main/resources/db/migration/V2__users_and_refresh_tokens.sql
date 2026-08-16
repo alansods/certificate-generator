@@ -14,7 +14,8 @@ CREATE TABLE refresh_tokens (
     token_hash VARCHAR(255) NOT NULL UNIQUE,
     expires_at TIMESTAMPTZ  NOT NULL,
     revoked_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    version    BIGINT       NOT NULL DEFAULT 0
 );
 
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens (user_id);

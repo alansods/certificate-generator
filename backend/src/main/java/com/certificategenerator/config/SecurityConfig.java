@@ -24,6 +24,8 @@ public class SecurityConfig {
             RestAccessDeniedHandler accessDeniedHandler)
             throws Exception {
         http.csrf(csrf -> csrf.disable())
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .formLogin(formLogin -> formLogin.disable())
                 .sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(

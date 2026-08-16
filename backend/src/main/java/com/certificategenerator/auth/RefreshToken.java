@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 
 @Entity
@@ -33,6 +34,15 @@ public class RefreshToken {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
+
+    /**
+     * Optimistic lock: two concurrent {@code rotate()} calls presenting the same still-valid
+     * token could otherwise both pass the revoked/expiry checks before either commits, each
+     * minting a child token from one rotation. The second writer now fails with
+     * {@link org.springframework.orm.ObjectOptimisticLockingFailureException}, which
+     * RefreshTokenService maps to the same "already used" outcome as any other reuse.
+     */
+    @Version private long version;
 
     protected RefreshToken() {}
 

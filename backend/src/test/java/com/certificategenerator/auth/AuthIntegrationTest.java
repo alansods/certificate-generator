@@ -142,6 +142,38 @@ class AuthIntegrationTest {
         assertThat(sixthAttempt.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
     }
 
+    @Test
+    void concurrentRotationOfTheSameTokenSucceedsExactlyOnce() throws Exception {
+        TokenPairResponse tokens = login(ADMIN_EMAIL, ADMIN_PASSWORD);
+        var executor = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            var rotate =
+                    (java.util.concurrent.Callable<org.springframework.http.HttpStatusCode>)
+                            () ->
+                                    restTemplate
+                                            .postForEntity(
+                                                    "/api/v1/auth/refresh",
+                                                    new RefreshRequest(tokens.refreshToken()),
+                                                    String.class)
+                                            .getStatusCode();
+
+            var future1 = executor.submit(rotate);
+            var future2 = executor.submit(rotate);
+            org.springframework.http.HttpStatusCode status1 = future1.get();
+            org.springframework.http.HttpStatusCode status2 = future2.get();
+
+            long successes =
+                    java.util.stream.Stream.of(status1, status2)
+                            .filter(status -> status.equals(HttpStatus.OK))
+                            .count();
+            assertThat(successes)
+                    .as("exactly one concurrent rotation of the same token should win: %s, %s", status1, status2)
+                    .isEqualTo(1);
+        } finally {
+            executor.shutdown();
+        }
+    }
+
     private TokenPairResponse login(String email, String password) {
         ResponseEntity<TokenPairResponse> response =
                 restTemplate.postForEntity(

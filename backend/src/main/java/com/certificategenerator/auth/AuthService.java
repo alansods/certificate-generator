@@ -18,6 +18,7 @@ public class AuthService {
     private final Duration loginWindow;
     private final int refreshMaxAttempts;
     private final Duration refreshWindow;
+    private final String dummyPasswordHash;
 
     public AuthService(
             UserRepository userRepository,
@@ -38,6 +39,11 @@ public class AuthService {
         this.loginWindow = loginWindow;
         this.refreshMaxAttempts = refreshMaxAttempts;
         this.refreshWindow = refreshWindow;
+        // Encoded once so login() below always pays the same BCrypt cost whether or not the
+        // email exists, closing the timing side-channel a short-circuited check would otherwise
+        // create (matches() only running for real users would let response time reveal which
+        // emails are registered, even though the response body/status are identical either way).
+        this.dummyPasswordHash = passwordEncoder.encode("dummy-password-for-timing-normalization");
     }
 
     public TokenPairResponse login(String email, String password, String clientIp) {
@@ -47,7 +53,9 @@ public class AuthService {
         }
 
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null || !user.isEnabled() || !passwordEncoder.matches(password, user.getPasswordHash())) {
+        String hashToCheck = user != null ? user.getPasswordHash() : dummyPasswordHash;
+        boolean passwordMatches = passwordEncoder.matches(password, hashToCheck);
+        if (user == null || !user.isEnabled() || !passwordMatches) {
             rateLimiter.recordFailure(rateLimitKey, loginWindow);
             throw new InvalidCredentialsException("Invalid email or password");
         }

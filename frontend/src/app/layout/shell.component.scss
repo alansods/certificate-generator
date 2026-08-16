@@ -1,0 +1,13 @@
+@use "../../styles/tokens";
+
+.shell-container {
+  height: calc(100% - 64px);
+}
+
+.shell-nav {
+  width: 240px;
+}
+
+.shell-content {
+  padding: tokens.spacing(lg);
+}

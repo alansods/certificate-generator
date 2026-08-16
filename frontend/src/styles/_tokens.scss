@@ -1,0 +1,65 @@
+// Single source of truth for design values. A raw hex/px value outside this file is a review
+// blocker (docs/style-guide.md). The Material theme itself is generated from $brand-primary via
+// `ng generate @angular/material:theme-color` (see _theme-colors.scss) rather than a predefined
+// Material palette, so the brand color lives here too.
+@use "sass:map";
+
+// Brand seed color, fed into _theme-colors.scss's generated M3 palette.
+$brand-primary: #3457d5;
+
+// Spacing scale (multiples of a 4px base unit).
+$spacing-scale: (
+  xs: 0.25rem,
+  sm: 0.5rem,
+  md: 1rem,
+  lg: 1.5rem,
+  xl: 2rem,
+  xxl: 3rem,
+);
+
+// Corner radii.
+$radius-scale: (
+  sm: 4px,
+  md: 8px,
+  lg: 16px,
+  full: 9999px,
+);
+
+// Typography scale, layered on top of Material's own system typography (var(--mat-sys-*)).
+$font-family-base: Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-size-scale: (
+  sm: 0.75rem,
+  base: 1rem,
+  lg: 1.25rem,
+  xl: 1.5rem,
+);
+
+// Elevation (box-shadow), for the rare non-Material surface that still needs one.
+$elevation-scale: (
+  1: 0 1px 2px rgba(0, 0, 0, 0.12),
+  2: 0 2px 4px rgba(0, 0, 0, 0.16),
+  3: 0 4px 8px rgba(0, 0, 0, 0.2),
+);
+
+// Breakpoints, consumed by the `respond-to` mixin in _breakpoints.scss.
+$breakpoints: (
+  sm: 600px,
+  md: 900px,
+  lg: 1200px,
+);
+
+@function spacing($key) {
+  @return map.get($spacing-scale, $key);
+}
+
+@function radius($key) {
+  @return map.get($radius-scale, $key);
+}
+
+@function font-size($key) {
+  @return map.get($font-size-scale, $key);
+}
+
+@function elevation($key) {
+  @return map.get($elevation-scale, $key);
+}

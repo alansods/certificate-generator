@@ -25,3 +25,14 @@ app:
   cors:
     # Comma-separated allowed origins. Empty/unset means no CORS mapping is registered.
     allowed-origins: ""
+  jwt:
+    access-token-ttl: PT15M
+  refresh-token:
+    ttl: P7D
+  rate-limit:
+    login:
+      max-attempts: 5
+      window: PT15M
+    refresh:
+      max-attempts: 20
+      window: PT15M

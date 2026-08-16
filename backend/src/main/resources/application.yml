@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: certificate-generator
+  profiles:
+    active: dev
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+app:
+  cors:
+    # Comma-separated allowed origins. Empty/unset means no CORS mapping is registered.
+    allowed-origins: ""

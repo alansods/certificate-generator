@@ -4,7 +4,7 @@ import { Router } from "@angular/router";
 import { catchError, map, Observable, switchMap, tap, throwError } from "rxjs";
 import { AuthRefreshCoordinatorService } from "../auth/auth-refresh-coordinator.service";
 import { TokenStorageService } from "../auth/token-storage.service";
-import { API_BASE_URL } from "../config/api.config";
+import { API_BASE_URL, matchesApiPath } from "../config/api.config";
 import { TokenPairResponse } from "./token-pair-response";
 
 const REFRESH_PATH = "/api/v1/auth/refresh";
@@ -22,7 +22,7 @@ export const authRefreshInterceptor: HttpInterceptorFn = (req, next) => {
   const apiBaseUrl = inject(API_BASE_URL);
   const coordinator = inject(AuthRefreshCoordinatorService);
 
-  const isRefreshRequest = req.url.includes(REFRESH_PATH);
+  const isRefreshRequest = matchesApiPath(req.url, REFRESH_PATH);
 
   return next(req).pipe(
     catchError((error: unknown) => {

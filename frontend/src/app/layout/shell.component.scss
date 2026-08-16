@@ -1,11 +1,11 @@
 @use "../../styles/tokens";
 
 .shell-container {
-  height: calc(100% - 64px);
+  height: calc(100% - #{tokens.$toolbar-height});
 }
 
 .shell-nav {
-  width: 240px;
+  width: tokens.$nav-width;
 }
 
 .shell-content {

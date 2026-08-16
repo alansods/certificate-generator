@@ -17,14 +17,23 @@ describe("ShellComponent", () => {
     expect(fixture.componentInstance).toBeTruthy();
   });
 
-  it("toggles the nav open state", () => {
+  it("closes the nav when the toggle button is clicked, and reopens it on a second click", () => {
     const fixture = TestBed.createComponent(ShellComponent);
     fixture.detectChanges();
-    const component = fixture.componentInstance as unknown as { navOpen: () => boolean; toggleNav: () => void };
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    const toggleButton = nativeElement.querySelector<HTMLButtonElement>(
+      'button[aria-label="Toggle navigation"]',
+    );
+    const sidenav = () => nativeElement.querySelector("mat-sidenav");
 
-    const initial = component.navOpen();
-    component.toggleNav();
+    expect(sidenav()?.classList.contains("mat-drawer-opened")).toBe(true);
 
-    expect(component.navOpen()).toBe(!initial);
+    toggleButton?.click();
+    fixture.detectChanges();
+    expect(sidenav()?.classList.contains("mat-drawer-opened")).toBe(false);
+
+    toggleButton?.click();
+    fixture.detectChanges();
+    expect(sidenav()?.classList.contains("mat-drawer-opened")).toBe(true);
   });
 });

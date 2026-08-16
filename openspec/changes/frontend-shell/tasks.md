@@ -32,7 +32,8 @@
 - [x] 5.1 `auth-token.interceptor.spec.ts`: attaches header for protected URLs, omits it for the public allowlist.
 - [x] 5.2 `auth-refresh.interceptor.spec.ts` (`HttpTestingController`): single 401 triggers one refresh + retry; concurrent 401s trigger exactly one refresh; failed refresh clears tokens and navigates to `/login`; 403 is left alone.
 - [x] 5.3 `token-storage.service.spec.ts`: access token not persisted across a fresh service instance; refresh token persisted via `localStorage`.
-- [x] 5.4 `shell.component.spec.ts`: renders without error.
+- [x] 5.4 `shell.component.spec.ts`: renders without error; nav toggle verified via DOM interaction (click the toggle button, assert on the rendered `mat-sidenav`'s open/closed state), not by reaching into component internals.
+- [x] 5.5 `problem-detail.spec.ts`: `toProblemDetail()` unwraps a `problem+json` body from an `HttpErrorResponse`, passes through an already-`ProblemDetail`-shaped value, and falls back to a generic network error for a non-conforming one; `isProblemDetail()`'s type guard.
 
 ## 6. Verification
 

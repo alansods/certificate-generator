@@ -1,3 +1,5 @@
+import { HttpErrorResponse } from "@angular/common/http";
+
 /** RFC 7807 error shape returned by every backend endpoint (docs/api-reference.md). */
 export interface ProblemDetail {
   type?: string;
@@ -28,13 +30,14 @@ export function isProblemDetail(value: unknown): value is ProblemDetail {
  * function called from `catchError` at the point of use avoids that ordering trap entirely.
  */
 export function toProblemDetail(error: unknown): ProblemDetail {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "error" in error &&
-    isProblemDetail((error as { error: unknown }).error)
-  ) {
-    return (error as { error: ProblemDetail }).error;
+  // Checked first and separately from the generic isProblemDetail(error) fallback below:
+  // HttpErrorResponse itself carries a numeric `status`, so it would otherwise duck-type as a
+  // ProblemDetail and get returned as-is instead of unwrapping (or falling back from) its body.
+  if (error instanceof HttpErrorResponse) {
+    if (isProblemDetail(error.error)) {
+      return error.error;
+    }
+    return { status: error.status, title: "Network error", detail: "Could not reach the server." };
   }
   if (isProblemDetail(error)) {
     return error;

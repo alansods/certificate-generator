@@ -24,6 +24,8 @@ Two functional interceptors (Angular's `HttpInterceptorFn`, registered via `prov
    - On failed refresh (itself 401): clear both tokens and navigate to `/login`. No further retry.
    - A response entering this interceptor with 403 is left alone — that's an authorization failure, not an expired-token problem, and retrying after a refresh would just get 403 again.
 
+**Known limitation, not fixed here:** the dedup above is single-tab (in-memory singleton state), while the refresh token in `localStorage` is shared across every tab of the same origin. Two tabs whose access tokens expire around the same moment can still independently race each other, and the loser's refresh attempt looks like theft to the backend (a stale, already-rotated token), logging the user out everywhere. A proper fix needs the tab that wins the race to broadcast its new access token to the others (e.g. `BroadcastChannel`) rather than each tab always refreshing for itself — a change to `TokenStorageService`'s and this coordinator's cross-tab story, not a one-line patch, so it's left as a follow-up rather than expanded into this change.
+
 ## Error normalization
 
 A `ProblemDetail` TypeScript interface (`status`, `title`, `detail`, `type`, `instance`, `traceId`, plus an index signature for the occasional extra property like `fieldErrors`) and a small `errorInterceptor`/mapping function that turns any caught `HttpErrorResponse` whose body matches that shape into a typed value, so every feature built on top (2.2–2.6) consumes one consistent error shape instead of each parsing raw HTTP errors itself.

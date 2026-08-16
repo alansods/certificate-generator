@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 
 import com.certificategenerator.auth.AuthenticatedPrincipal;
 import com.certificategenerator.auth.Role;
+import com.certificategenerator.certificate.batch.BatchImportService;
+import com.certificategenerator.certificate.batch.dto.BatchImportResponse;
 import com.certificategenerator.certificate.pdf.CertificatePdfService;
 import java.time.LocalDate;
 import java.util.List;
@@ -61,6 +63,7 @@ class CertificateControllerTest {
     @Autowired private MockMvc mockMvc;
     @MockitoBean private CertificateService certificateService;
     @MockitoBean private CertificatePdfService certificatePdfService;
+    @MockitoBean private BatchImportService batchImportService;
 
     @BeforeEach
     void authenticate() {
@@ -164,6 +167,35 @@ class CertificateControllerTest {
         MvcTestResult result = mvc.delete().uri("/api/v1/certificates/1").exchange();
 
         assertThat(result).hasStatus(HttpStatus.NO_CONTENT);
+    }
+
+    @Test
+    void batchUploadReturns200WithResultShape() {
+        when(batchImportService.importCsv(org.mockito.ArgumentMatchers.any(), eq(7L)))
+                .thenReturn(new BatchImportResponse(2, 1, 1, List.of()));
+        org.springframework.mock.web.MockMultipartFile file =
+                new org.springframework.mock.web.MockMultipartFile(
+                        "file", "batch.csv", "text/csv", "recipient_name\n".getBytes());
+
+        MvcTestResult result =
+                MockMvcTester.create(mockMvc)
+                        .perform(
+                                org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart(
+                                        "/api/v1/certificates/batch")
+                                        .file(file));
+
+        assertThat(result).hasStatus(HttpStatus.OK);
+        assertThat(result).bodyJson().extractingPath("$.totalRows").isEqualTo(2);
+    }
+
+    @Test
+    void batchTemplateDownloadReturnsDocumentedHeader() {
+        MockMvcTester mvc = MockMvcTester.create(mockMvc);
+
+        MvcTestResult result = mvc.get().uri("/api/v1/certificates/batch/template.csv").exchange();
+
+        assertThat(result).hasStatus(HttpStatus.OK);
+        assertThat(result).bodyText().contains("recipient_name,recipient_email,course_name,workload_hours,completion_date,issue_date,instructor_name,template");
     }
 
     private static Certificate sampleCertificate() {

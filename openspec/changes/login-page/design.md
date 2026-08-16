@@ -28,6 +28,8 @@ else → call authApi.refresh(); allow on success, redirect to /login on failure
 
 The middle branch exists because the access token is deliberately memory-only (per `frontend-shell` design.md) — every hard reload of an otherwise-still-logged-in user has no access token yet, and without this branch they'd bounce to `/login` on every refresh of the page despite having a perfectly valid session. The guard returns an `Observable<boolean | UrlTree>` (not a bare boolean) so the refresh branch's async result plugs directly into Angular Router's guard resolution.
 
+The guard calls `AuthApi.refresh()`, which — as of this change — delegates to a new `core/auth/token-refresh.service.ts` (`TokenRefreshService`) rather than making its own HTTP call. `authRefreshInterceptor` (from `frontend-shell`) now calls the same service. Both routes ultimately share one `AuthRefreshCoordinatorService` single-flight, so a guard-triggered refresh and an interceptor-triggered refresh firing around the same moment can never each present the same refresh token independently — the scenario the coordinator exists to prevent in the first place, per `frontend-shell`'s design.md, now actually holds for every caller, not just the interceptor.
+
 ## Package layout
 
 ```

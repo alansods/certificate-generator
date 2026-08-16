@@ -52,6 +52,7 @@ $breakpoints: (
 // project's chosen sidenav width — neither comes from Material itself as a token).
 $toolbar-height: 64px;
 $nav-width: 240px;
+$login-form-max-width: 360px;
 
 @function spacing($key) {
   @return map.get($spacing-scale, $key);

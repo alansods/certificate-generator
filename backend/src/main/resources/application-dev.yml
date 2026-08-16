@@ -11,3 +11,9 @@ spring:
 app:
   cors:
     allowed-origins: "http://localhost:4200"
+  jwt:
+    # Local-only placeholder, 256+ bits. Prod reads JWT_SECRET from the environment instead (application-prod.yml).
+    secret: "dev-only-secret-key-do-not-use-in-production-32bytes-min"
+  admin-bootstrap:
+    email: "admin@example.com"
+    password: "changeme123"

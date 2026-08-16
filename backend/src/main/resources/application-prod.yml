@@ -24,3 +24,10 @@ app:
   cors:
     # Set by chore/deploy-vercel (3.3) to the production Vercel origin.
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:}
+  jwt:
+    # No default — app fails fast at startup if unset (see JwtService), never falls back to a weak key.
+    secret: ${JWT_SECRET}
+  admin-bootstrap:
+    # Both optional; the bootstrap runner no-ops once any user exists, so it's safe to leave set.
+    email: ${ADMIN_BOOTSTRAP_EMAIL:}
+    password: ${ADMIN_BOOTSTRAP_PASSWORD:}

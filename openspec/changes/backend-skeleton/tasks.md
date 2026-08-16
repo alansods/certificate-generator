@@ -9,7 +9,7 @@
 - [x] 2.1 `application.yml` — shared defaults, `dev` active by default
 - [x] 2.2 `application-dev.yml` — local Postgres connection
 - [x] 2.3 `application-prod.yml` — `DATABASE_URL` env var, Hikari `maximum-pool-size: 3`, connection retry for Neon cold start
-- [x] 2.4 CORS config: permissive under `dev`, unset placeholder under `prod` per `design.md`
+- [x] 2.4 CORS config: `http://localhost:4200` under `dev`, unset placeholder under `prod` per `design.md`
 
 ## 3. Flyway
 
@@ -29,9 +29,9 @@
 
 ## 6. Tests
 
-- [x] 6.1 `AbstractIntegrationTest` base class with a shared Testcontainers PostgreSQL instance and `@DynamicPropertySource`
-- [x] 6.2 Context-loads test extending the base class, asserting Flyway migrated successfully
-- [x] 6.3 `@WebMvcTest` (or full context test) asserting `/actuator/health` returns 200 and the error advice returns a correct problem-detail body with `traceId` for a validation failure
+- [x] 6.1 `TestcontainersConfiguration` (`@ServiceConnection`-based, per `design.md`'s Testcontainers section) imported per integration test class
+- [x] 6.2 Context-loads test, asserting Flyway migrated successfully
+- [x] 6.3 `@WebMvcTest` (or full context test) asserting `/actuator/health` returns 200, the error advice returns a correct problem-detail body with `traceId` for a validation failure and for a generic exception, and CORS allows the configured origin while rejecting others
 
 ## 7. Wiring and docs
 

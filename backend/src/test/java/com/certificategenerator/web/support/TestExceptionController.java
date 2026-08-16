@@ -22,5 +22,9 @@ public class TestExceptionController {
         throw new IllegalStateException("boom");
     }
 
+    /** Under /api/**, so {@link com.certificategenerator.config.CorsConfigTest} can exercise CORS. */
+    @PostMapping("/api/test/ping")
+    public void ping() {}
+
     public record Payload(@NotBlank String name) {}
 }

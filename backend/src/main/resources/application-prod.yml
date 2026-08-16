@@ -9,9 +9,11 @@ spring:
       # Neon free tier caps concurrent connections low; a single small Render
       # instance must not exhaust that ceiling.
       maximum-pool-size: 3
-      # Neon suspends compute when idle and takes 1-2s to wake. Give the pool's
-      # first connection attempt room to succeed instead of failing app startup.
-      initialization-fail-timeout: 30000
+      # Neon suspends compute when idle and takes 1-2s to wake. -1 skips the
+      # initial-connection check entirely so app startup never blocks on (or
+      # fails because of) a sleeping Neon; connection-timeout still bounds how
+      # long any individual query-time connection request waits.
+      initialization-fail-timeout: -1
       connection-timeout: 30000
   jpa:
     hibernate:

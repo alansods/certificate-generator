@@ -42,7 +42,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         Map<String, String> fieldErrors = new LinkedHashMap<>();
         for (FieldError fieldError : ex.getBindingResult().getFieldErrors()) {
-            fieldErrors.put(fieldError.getField(), fieldError.getDefaultMessage());
+            String message = fieldError.getDefaultMessage();
+            fieldErrors.put(fieldError.getField(), message != null ? message : "is invalid");
         }
         problemDetail.setProperty("fieldErrors", fieldErrors);
         withTraceId(problemDetail);

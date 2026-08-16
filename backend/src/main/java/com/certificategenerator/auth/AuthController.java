@@ -4,6 +4,7 @@ import com.certificategenerator.auth.dto.LoginRequest;
 import com.certificategenerator.auth.dto.RefreshRequest;
 import com.certificategenerator.auth.dto.TokenPairResponse;
 import com.certificategenerator.auth.dto.UserResponse;
+import com.certificategenerator.web.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -21,21 +22,24 @@ public class AuthController {
 
     private final AuthService authService;
     private final UserMapper userMapper;
+    private final ClientIpResolver clientIpResolver;
 
-    public AuthController(AuthService authService, UserMapper userMapper) {
+    public AuthController(
+            AuthService authService, UserMapper userMapper, ClientIpResolver clientIpResolver) {
         this.authService = authService;
         this.userMapper = userMapper;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @PostMapping("/login")
     public TokenPairResponse login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        return authService.login(request.email(), request.password(), clientIp(httpRequest));
+        return authService.login(request.email(), request.password(), clientIpResolver.resolve(httpRequest));
     }
 
     @PostMapping("/refresh")
     public TokenPairResponse refresh(
             @Valid @RequestBody RefreshRequest request, HttpServletRequest httpRequest) {
-        return authService.refresh(request.refreshToken(), clientIp(httpRequest));
+        return authService.refresh(request.refreshToken(), clientIpResolver.resolve(httpRequest));
     }
 
     @PostMapping("/logout")
@@ -47,18 +51,5 @@ public class AuthController {
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal AuthenticatedPrincipal principal) {
         return userMapper.toResponse(authService.requireById(principal.userId()));
-    }
-
-    /**
-     * Deliberately ignores X-Forwarded-For: any direct API caller (not just browsers) can set it
-     * to an arbitrary value, which would let an attacker mint a fresh rate-limit bucket on every
-     * request and defeat the login/refresh rate limits entirely. {@code getRemoteAddr()} is the
-     * TCP peer address and isn't spoofable by the request itself. Once deployed behind Render's
-     * proxy (chore/deploy-render-neon, 3.2), revisit with a properly configured trusted-proxy
-     * boundary (e.g. Tomcat's RemoteIpValve pinned to Render's internal proxy range) rather than
-     * trusting the header outright.
-     */
-    private static String clientIp(HttpServletRequest request) {
-        return request.getRemoteAddr();
     }
 }

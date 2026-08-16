@@ -6,6 +6,7 @@ import com.certificategenerator.web.RestAccessDeniedHandler;
 import com.certificategenerator.web.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -36,6 +37,8 @@ public class SecurityConfig {
                                                 "/api/v1/auth/login",
                                                 "/api/v1/auth/refresh")
                                         .permitAll()
+                                        .requestMatchers(HttpMethod.DELETE, "/api/v1/certificates/**")
+                                        .hasRole("ADMIN")
                                         .anyRequest()
                                         .authenticated())
                 .exceptionHandling(

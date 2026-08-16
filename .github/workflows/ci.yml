@@ -19,7 +19,7 @@ jobs:
         with:
           node-version: 22
       - name: Validate OpenSpec changes
-        run: npx -y @fission-ai/openspec@latest validate --strict
+        run: npx -y @fission-ai/openspec@latest validate --all --strict
 
   backend:
     name: Backend

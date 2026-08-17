@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: certificate-generator-backend
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: JAVA_TOOL_OPTIONS
+        # Explicit rather than relying on the JVM's container-aware default heap sizing — see
+        # design.md ("Memory: explicit, not left to JVM defaults"). Render's free plan caps the
+        # instance at 512MB; 70% leaves headroom for metaspace, thread stacks and the in-memory
+        # PDF rendering buffers OpenHTMLtoPDF uses.
+        value: "-XX:MaxRAMPercentage=70"
+      # Every value below is left for the owner to fill in on the Render dashboard — see
+      # docs/deployment.md. None of them are supplied by this file.
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: APP_CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: APP_FRONTEND_BASE_URL
+        sync: false
+      - key: ADMIN_BOOTSTRAP_EMAIL
+        sync: false
+      - key: ADMIN_BOOTSTRAP_PASSWORD
+        sync: false

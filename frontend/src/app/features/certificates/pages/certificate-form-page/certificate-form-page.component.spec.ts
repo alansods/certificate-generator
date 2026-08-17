@@ -1,28 +1,11 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { FormControl, FormGroup } from "@angular/forms";
+import { TestBed } from "@angular/core/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from "@angular/router";
+import { of } from "rxjs";
 import { TokenStorageService } from "../../../../core/auth/token-storage.service";
 import { CertificateFormPageComponent } from "./certificate-form-page.component";
-
-interface FormAccess {
-  form: FormGroup<{
-    recipientName: FormControl<string>;
-    recipientEmail: FormControl<string>;
-    courseName: FormControl<string>;
-    workloadHours: FormControl<number | null>;
-    completionDate: FormControl<string>;
-    issueDate: FormControl<string>;
-    instructorName: FormControl<string>;
-    template: FormControl<string>;
-  }>;
-}
-
-function getForm(fixture: ComponentFixture<CertificateFormPageComponent>): FormAccess["form"] {
-  return (fixture.componentInstance as unknown as FormAccess).form;
-}
 
 function fakeJwt(payload: Record<string, unknown>): string {
   const base64url = (value: string) =>
@@ -33,6 +16,15 @@ function fakeJwt(payload: Record<string, unknown>): string {
 /** See certificate-list-page.component.spec.ts for why this is used instead of fixture.whenStable(). */
 function tick(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+function setInputValue(root: HTMLElement, controlName: string, value: string): void {
+  const input = root.querySelector<HTMLInputElement>(`[formcontrolname='${controlName}']`);
+  if (!input) {
+    throw new Error(`Expected to find control ${controlName}`);
+  }
+  input.value = value;
+  input.dispatchEvent(new Event("input"));
 }
 
 const VALID_VALUES = {
@@ -76,21 +68,29 @@ describe("CertificateFormPageComponent", () => {
   });
 
   function fillValidForm(fixture: ReturnType<typeof setup>) {
-    getForm(fixture).setValue({
-      ...VALID_VALUES,
-      template: "CLASSIC",
-    });
+    const el = fixture.nativeElement as HTMLElement;
+    setInputValue(el, "recipientName", VALID_VALUES.recipientName);
+    setInputValue(el, "recipientEmail", VALID_VALUES.recipientEmail);
+    setInputValue(el, "courseName", VALID_VALUES.courseName);
+    setInputValue(el, "workloadHours", String(VALID_VALUES.workloadHours));
+    setInputValue(el, "completionDate", VALID_VALUES.completionDate);
+    setInputValue(el, "issueDate", VALID_VALUES.issueDate);
+    setInputValue(el, "instructorName", VALID_VALUES.instructorName);
+    fixture.detectChanges();
+  }
+
+  function submitForm(fixture: ReturnType<typeof setup>) {
+    (fixture.nativeElement as HTMLElement).querySelector("form")?.dispatchEvent(new Event("submit"));
   }
 
   it("create mode submits and navigates to the list on success", async () => {
     const fixture = setup("USER", null);
     const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, "navigateByUrl");
+    const navigateSpy = vi.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     fixture.detectChanges();
 
     fillValidForm(fixture);
-    fixture.detectChanges();
-    (fixture.nativeElement as HTMLElement).querySelector("form")?.dispatchEvent(new Event("submit"));
+    submitForm(fixture);
 
     const req = httpMock.expectOne(
       (r) => r.url.endsWith("/api/v1/certificates") && r.method === "POST",
@@ -112,39 +112,103 @@ describe("CertificateFormPageComponent", () => {
     await tick();
     fixture.detectChanges();
 
-    expect(getForm(fixture).controls.recipientName.value).toBe("Jane Doe");
-    expect(getForm(fixture).controls.template.value).toBe("MODERN");
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector<HTMLInputElement>("[formcontrolname='recipientName']")?.value).toBe(
+      "Jane Doe",
+    );
+    expect(
+      el.querySelector(".certificate-form-page__preview--modern")?.getAttribute("aria-pressed"),
+    ).toBe("true");
   });
 
-  it("shows server-side field errors on the matching controls", async () => {
+  it("edit mode submits an update and navigates to the list on success", async () => {
+    const fixture = setup("USER", "7");
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    fixture.detectChanges();
+
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates/7") && r.method === "GET")
+      .flush({ ...VALID_VALUES, id: 7, code: "CERT-AAAA-BBBB", template: "CLASSIC", status: "ISSUED" });
+    await tick();
+    fixture.detectChanges();
+
+    setInputValue(fixture.nativeElement as HTMLElement, "courseName", "Updated Course");
+    submitForm(fixture);
+
+    const req = httpMock.expectOne(
+      (r) => r.url.endsWith("/api/v1/certificates/7") && r.method === "PUT",
+    );
+    expect(req.request.body).toEqual({ ...VALID_VALUES, courseName: "Updated Course", template: "CLASSIC" });
+    req.flush({ id: 7, code: "CERT-AAAA-BBBB" });
+    await tick();
+
+    expect(navigateSpy).toHaveBeenCalledWith("/certificates");
+  });
+
+  it("selecting a template preview updates the selected state and the submitted value", async () => {
+    const fixture = setup("USER", null);
+    const router = TestBed.inject(Router);
+    vi.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    fixture.detectChanges();
+    fillValidForm(fixture);
+
+    const el = fixture.nativeElement as HTMLElement;
+    const minimalCard = el.querySelector<HTMLButtonElement>(".certificate-form-page__preview--minimal");
+    minimalCard?.click();
+    fixture.detectChanges();
+
+    expect(minimalCard?.getAttribute("aria-pressed")).toBe("true");
+    expect(
+      el.querySelector(".certificate-form-page__preview--classic")?.getAttribute("aria-pressed"),
+    ).toBe("false");
+
+    submitForm(fixture);
+    const req = httpMock.expectOne(
+      (r) => r.url.endsWith("/api/v1/certificates") && r.method === "POST",
+    );
+    expect(req.request.body).toEqual({ ...VALID_VALUES, template: "MINIMAL" });
+    req.flush({ id: 1, code: "CERT-AAAA-BBBB" });
+    await tick();
+  });
+
+  it("shows server-side field errors on the matching controls, including fields beyond the first two", async () => {
     const fixture = setup("USER", null);
     fixture.detectChanges();
 
     fillValidForm(fixture);
-    fixture.detectChanges();
-    (fixture.nativeElement as HTMLElement).querySelector("form")?.dispatchEvent(new Event("submit"));
+    submitForm(fixture);
 
     httpMock
       .expectOne((r) => r.url.endsWith("/api/v1/certificates") && r.method === "POST")
       .flush(
-        { status: 400, fieldErrors: { recipientEmail: "must be a valid email" } },
+        {
+          status: 400,
+          fieldErrors: {
+            recipientEmail: "must be a valid email",
+            courseName: "must not be blank",
+          },
+        },
         { status: 400, statusText: "Bad Request" },
       );
     await tick();
+    fixture.detectChanges();
 
-    expect(getForm(fixture).controls.recipientEmail.errors?.["server"]).toBe(
-      "must be a valid email",
-    );
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
+    expect(text).toContain("must be a valid email");
+    expect(text).toContain("must not be blank");
   });
 
   it("blocks submission without a request when the form is invalid", () => {
     const fixture = setup("USER", null);
     fixture.detectChanges();
 
-    (fixture.nativeElement as HTMLElement).querySelector("form")?.dispatchEvent(new Event("submit"));
+    submitForm(fixture);
+    fixture.detectChanges();
 
     httpMock.expectNone((r) => r.url.endsWith("/api/v1/certificates"));
-    expect(getForm(fixture).controls.recipientName.touched).toBe(true);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
+    expect(text).toContain("Recipient name is required.");
   });
 
   it("hides the delete action for a non-admin role in edit mode", async () => {
@@ -160,8 +224,21 @@ describe("CertificateFormPageComponent", () => {
     expect(deleteButton).toBeNull();
   });
 
-  it("shows the delete action for ADMIN in edit mode", async () => {
+  it("hides the delete action in create mode even for ADMIN", () => {
+    const fixture = setup("ADMIN", null);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).querySelector("button[color='warn']")).toBeNull();
+  });
+
+  it("ADMIN in edit mode: confirming delete calls MatDialog, deletes, and navigates to the list", async () => {
+    // The dialog itself is stubbed by direct field assignment rather than a TestBed provider
+    // override — see certificate-list-page.component.spec.ts for why (MatDialog's providedIn:'root'
+    // instance resolved by this component doesn't match the one TestBed.inject(MatDialog) returns
+    // in this Vitest/esbuild setup). The click itself is real, exercising the actual button binding.
     const fixture = setup("ADMIN", "7");
+    const router = TestBed.inject(Router);
+    const navigateSpy = vi.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     fixture.detectChanges();
     httpMock
       .expectOne((r) => r.url.endsWith("/api/v1/certificates/7"))
@@ -169,15 +246,25 @@ describe("CertificateFormPageComponent", () => {
     await tick();
     fixture.detectChanges();
 
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector("button[color='warn']"),
-    ).not.toBeNull();
-  });
+    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      "button[color='warn']",
+    );
+    expect(deleteButton).not.toBeNull();
 
-  it("hides the delete action in create mode even for ADMIN", () => {
-    const fixture = setup("ADMIN", null);
+    const openSpy = vi.fn().mockReturnValue({ afterClosed: () => of(true) });
+    (fixture.componentInstance as unknown as { dialog: { open: unknown } }).dialog = {
+      open: openSpy,
+    };
+
+    deleteButton?.click();
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).querySelector("button[color='warn']")).toBeNull();
+    expect(openSpy).toHaveBeenCalled();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates/7") && r.method === "DELETE")
+      .flush(null);
+    await tick();
+
+    expect(navigateSpy).toHaveBeenCalledWith("/certificates");
   });
 });

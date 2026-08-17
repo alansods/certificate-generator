@@ -102,9 +102,14 @@ export class CertificateFormPageComponent {
       return;
     }
 
+    const values = this.form.getRawValue();
+    if (values.workloadHours === null) {
+      return;
+    }
+
     this.submitError.set(null);
     this.submitting.set(true);
-    const request = this.form.getRawValue() as CertificateRequest;
+    const request: CertificateRequest = { ...values, workloadHours: values.workloadHours };
     const save$ =
       this.certificateId !== null
         ? this.certificatesApi.update(this.certificateId, request)
@@ -152,6 +157,7 @@ export class CertificateFormPageComponent {
       for (const [field, message] of Object.entries(problem.fieldErrors)) {
         const control = this.form.get(field);
         control?.setErrors({ ...(control.errors ?? {}), server: message });
+        control?.markAsTouched();
       }
       return;
     }

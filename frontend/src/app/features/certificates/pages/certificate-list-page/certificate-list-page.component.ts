@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from "@angular/core";
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  signal,
+} from "@angular/core";
 import { rxResource, takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -55,6 +63,13 @@ export class CertificateListPageComponent {
   protected readonly pageSize = signal(20);
   protected readonly status = signal<CertificateStatus | null>(null);
 
+  // A search narrowing the result set while on page 2+ can otherwise leave `page` pointing past
+  // the end of the new results, silently rendering an empty/short table instead of jumping back.
+  private readonly resetPageOnSearch = effect(() => {
+    this.query();
+    this.page.set(0);
+  });
+
   protected readonly isAdmin = computed(() => this.tokenStorage.role() === "ADMIN");
 
   private readonly listResource = rxResource({
@@ -95,8 +110,14 @@ export class CertificateListPageComponent {
         const link = document.createElement("a");
         link.href = url;
         link.download = `${certificate.code}.pdf`;
+        // Appended to the DOM (some browsers only reliably fire a download for an attached
+        // anchor) and the object URL is revoked on a deferred tick, not synchronously — click()
+        // triggering a blob download is asynchronous in some browsers, so revoking immediately
+        // can race the download and intermittently produce a broken/empty file.
+        document.body.appendChild(link);
         link.click();
-        URL.revokeObjectURL(url);
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 0);
       });
   }
 

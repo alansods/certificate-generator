@@ -20,7 +20,7 @@
 
 - [x] 4.1 `certificates.api.spec.ts` (`HttpTestingController`): `list` sends the right query params and parses the `{content, page}` shape; `deleteById`/`downloadPdf` hit the right URLs.
 - [x] 4.2 `token-storage.service.spec.ts` addition: `role` decodes the JWT's role claim correctly, and is `null` with no access token.
-- [x] 4.3 `certificate-list-page.component.spec.ts`: renders rows for a successful response; shows the empty state for zero results; shows the error state (with working retry) on a failed request; search input only re-fetches after the debounce; delete action is absent for a non-admin role and present for ADMIN; `confirmDelete()`'s dialog/API/reload wiring exercised directly (not through a full DOM click into Material's dialog stack — see the test's own comment for why).
+- [x] 4.3 `certificate-list-page.component.spec.ts`: renders rows for a successful response; shows the empty state for zero results; shows the error state (with working retry) on a failed request; search input only re-fetches after the debounce (and resets to page 0); delete action is absent for a non-admin role and present for ADMIN; clicking delete calls the (stubbed) `MatDialog`, then deletes and reloads on confirmation — the real button click is exercised, only the dialog itself is stubbed by direct field assignment (see the test's own comment for why a `TestBed` provider override didn't work here).
 
 ## 5. Verification
 

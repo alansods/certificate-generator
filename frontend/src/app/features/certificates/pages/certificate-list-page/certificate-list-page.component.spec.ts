@@ -113,7 +113,10 @@ describe("CertificateListPageComponent", () => {
 
     const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
       "input[placeholder='Recipient, course or code']",
-    )!;
+    );
+    if (!input) {
+      throw new Error("Expected to find the search input");
+    }
     input.value = "jane";
     input.dispatchEvent(new Event("input"));
     fixture.detectChanges();
@@ -158,11 +161,13 @@ describe("CertificateListPageComponent", () => {
     expect(deleteButton).not.toBeNull();
   });
 
-  it("calls confirmDelete's dependencies correctly when confirmed", async () => {
-    // The click → MatDialog → afterClosed → CertificatesApi.deleteById → reload wiring is
-    // straightforward glue code; CertificatesApi.deleteById itself is covered independently in
-    // certificates.api.spec.ts. Exercising confirmDelete() directly (rather than through a real
-    // DOM click into Angular Material's dialog stack) keeps this test fast and deterministic.
+  it("clicking delete calls MatDialog, then deletes and reloads when confirmed", async () => {
+    // The dialog itself is stubbed by direct field assignment rather than a TestBed provider
+    // override — MatDialog's providedIn:'root' instance resolved by this component didn't match
+    // the one TestBed.inject(MatDialog) returned to the test in this Vitest/esbuild setup
+    // (confirmed by instrumenting both sides), so a provider override had no effect here. The
+    // click itself is real, though: this exercises the actual button binding, not just the
+    // method it calls, so a wrong/typo'd handler on the button would still be caught.
     const fixture = setup("ADMIN");
     fixture.detectChanges();
     flushList(samplePage());
@@ -170,12 +175,16 @@ describe("CertificateListPageComponent", () => {
     fixture.detectChanges();
 
     const openSpy = vi.fn().mockReturnValue({ afterClosed: () => of(true) });
-    const component = fixture.componentInstance as unknown as {
-      dialog: { open: unknown };
-      confirmDelete: (certificate: unknown) => void;
+    (fixture.componentInstance as unknown as { dialog: { open: unknown } }).dialog = {
+      open: openSpy,
     };
-    component.dialog = { open: openSpy };
-    component.confirmDelete({ id: 1, code: "CERT-AAAA-BBBB", recipientName: "Jane Doe" });
+
+    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      "button[aria-label='Delete certificate']",
+    );
+    expect(deleteButton).not.toBeNull();
+    deleteButton?.click();
+    fixture.detectChanges();
 
     expect(openSpy).toHaveBeenCalled();
     httpMock

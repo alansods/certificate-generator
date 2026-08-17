@@ -41,7 +41,11 @@
     </div>
   } @else {
     <div class="batch-upload-page__picker">
-      <input type="file" accept=".csv" (change)="onFileSelected($event)" />
+      <label for="batch-upload-file">Choose CSV file</label>
+      <input id="batch-upload-file" type="file" accept=".csv" (change)="onFileSelected($event)" />
+      @if (selectedFile(); as file) {
+        <span class="batch-upload-page__filename">{{ file.name }}</span>
+      }
       <button mat-flat-button color="primary" [disabled]="!selectedFile()" (click)="upload()">Upload</button>
     </div>
   }

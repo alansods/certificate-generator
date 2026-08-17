@@ -31,7 +31,7 @@ describe("BatchUploadPageComponent", () => {
     TestBed.resetTestingModule();
   });
 
-  it("disables the upload button until a file is selected", () => {
+  it("disables the upload button until a file is selected, then shows the filename", () => {
     const fixture = setup();
     fixture.detectChanges();
 
@@ -43,10 +43,14 @@ describe("BatchUploadPageComponent", () => {
     if (!fileInput) {
       throw new Error("Expected to find the file input");
     }
+    const label = el.querySelector<HTMLLabelElement>(`label[for='${fileInput.id}']`);
+    expect(label).not.toBeNull();
+
     selectFile(fileInput, new File(["a,b\n"], "certificates.csv", { type: "text/csv" }));
     fixture.detectChanges();
 
     expect(uploadButton?.disabled).toBe(false);
+    expect(el.textContent).toContain("certificates.csv");
   });
 
   it("shows the summary with no error table when every row succeeds", async () => {

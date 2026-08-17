@@ -7,6 +7,7 @@ import com.certificategenerator.web.RestAuthenticationEntryPoint;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -25,6 +26,12 @@ public class SecurityConfig {
             RestAccessDeniedHandler accessDeniedHandler)
             throws Exception {
         http.csrf(csrf -> csrf.disable())
+                // Delegates to CorsConfig's WebMvcConfigurer registration (via
+                // HandlerMappingIntrospector) rather than a separate CorsConfigurationSource
+                // bean. Without this, Spring Security rejects every CORS preflight (OPTIONS)
+                // request with 401 before Spring MVC's own CORS handling ever runs — CorsConfig
+                // alone is not sufficient once Spring Security is on the classpath.
+                .cors(Customizer.withDefaults())
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(formLogin -> formLogin.disable())
                 .sessionManagement(

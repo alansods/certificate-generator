@@ -112,4 +112,27 @@ describe("CertificatesApi", () => {
     expect(req.request.body).toEqual(request);
     req.flush({ id: 7, code: "CERT-AAAA-BBBB" });
   });
+
+  it("uploadBatch posts the file as multipart form data under the 'file' field", () => {
+    const file = new File(["recipient_name,recipient_email\n"], "certificates.csv", { type: "text/csv" });
+    api.uploadBatch(file).subscribe();
+
+    const req = httpMock.expectOne(
+      (r) => r.url.endsWith("/api/v1/certificates/batch") && r.method === "POST",
+    );
+    expect(req.request.body).toBeInstanceOf(FormData);
+    expect((req.request.body as FormData).get("file")).toBe(file);
+    req.flush({ totalRows: 1, successCount: 1, errorCount: 0, errors: [] });
+  });
+
+  it("downloadTemplate requests a blob from the template URL", () => {
+    let result: Blob | undefined;
+    api.downloadTemplate().subscribe((blob) => (result = blob));
+
+    const req = httpMock.expectOne((r) => r.url.endsWith("/api/v1/certificates/batch/template.csv"));
+    expect(req.request.responseType).toBe("blob");
+    req.flush(new Blob(["recipient_name,recipient_email\n"]));
+
+    expect(result).toBeInstanceOf(Blob);
+  });
 });

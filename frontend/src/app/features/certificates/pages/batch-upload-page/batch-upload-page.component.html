@@ -1,0 +1,52 @@
+<div class="batch-upload-page">
+  <h1>Batch upload</h1>
+
+  <button mat-button (click)="downloadTemplate()">Download sample CSV</button>
+
+  @if (uploading()) {
+    <div class="batch-upload-page__state" role="status">
+      <mat-spinner diameter="32" />
+    </div>
+  } @else if (error()) {
+    <div class="batch-upload-page__state" role="alert">
+      <p>{{ error() }}</p>
+      <button mat-flat-button color="primary" (click)="reset()">Try again</button>
+    </div>
+  } @else if (result(); as importResult) {
+    <div class="batch-upload-page__result">
+      <p>
+        {{ importResult.totalRows }} rows processed, {{ importResult.successCount }} succeeded,
+        {{ importResult.errorCount }} failed.
+      </p>
+
+      @if (importResult.errorCount > 0) {
+        <table mat-table [dataSource]="sortedErrors()" class="batch-upload-page__table">
+          <caption class="batch-upload-page__visually-hidden">Row errors</caption>
+          <ng-container matColumnDef="line">
+            <th mat-header-cell *matHeaderCellDef>Line</th>
+            <td mat-cell *matCellDef="let rowError">{{ rowError.line }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="reason">
+            <th mat-header-cell *matHeaderCellDef>Reason</th>
+            <td mat-cell *matCellDef="let rowError">{{ rowError.reason }}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      }
+
+      <button mat-flat-button color="primary" (click)="reset()">Upload another file</button>
+    </div>
+  } @else {
+    <div class="batch-upload-page__picker">
+      <label for="batch-upload-file">Choose CSV file</label>
+      <input id="batch-upload-file" type="file" accept=".csv" (change)="onFileSelected($event)" />
+      @if (selectedFile(); as file) {
+        <span class="batch-upload-page__filename">{{ file.name }}</span>
+      }
+      <button mat-flat-button color="primary" [disabled]="!selectedFile()" (click)="upload()">Upload</button>
+    </div>
+  }
+</div>

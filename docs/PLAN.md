@@ -89,7 +89,7 @@ One row, one branch, one pull request.
 
 | # | Branch | Delivers |
 |---|---|---|
-| 3.1 | `ci/github-actions` | build and test both stacks, `openspec validate --strict`, lint, approval workflow |
+| 3.1 | `ci/github-actions` | ✅ done — build and test both stacks, `openspec validate --strict`, lint, approval workflow |
 | 3.2 | `chore/deploy-render-neon` | multi-stage Dockerfile, production migrations, environment variables, CORS |
 | 3.3 | `chore/deploy-vercel` | production build, `vercel.json`, API environment variable, project linked to the repo |
 | 3.4 | `docs/final` | README with local setup, architecture and how to run the spec-driven loop |
@@ -122,4 +122,5 @@ Neon and Render are only needed in phase 3, so they do not block the start.
 
 ## 8. Decision log
 
+- **2026-08-17 — 3.1 (`ci/github-actions`) closed without its own PR.** `.github/workflows/ci.yml` and `agent-approve.yml` were already in place and had been gating every PR since early in the project (built as bootstrap infrastructure alongside phase 0, not proposed as a standalone OpenSpec change). By the time the backlog reached 3.1, they had already been exercised successfully across all 14 merged PRs, so a retroactive proposal for already-working, already-proven infrastructure would have been process for its own sake. Marked done in the table above instead.
 - **2026-08-16 — Spring Boot 4.1.x, not 3.x.** The original decision (row above) said 3.x. By the time `feat/backend-skeleton` (1.1) started, every Spring Boot 3.x line had reached OSS end-of-life (the 3.5 branch ended June 30, 2026) — no security patches, not offered by start.spring.io for new projects. Spring Boot 4.0 remains available but loses OSS support in December 2026, making it a poor starting point for a new project. Spring Boot 4.1 is Spring's current recommendation for new projects. Java 21 already satisfies Spring Boot 4's Jakarta EE 11 baseline, so no other stack decision changes.

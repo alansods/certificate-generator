@@ -1,0 +1,20 @@
+<h2 mat-dialog-title>Certificate preview — {{ data.code }}</h2>
+
+<mat-dialog-content class="pdf-preview-dialog__content">
+  @if (loading()) {
+    <div class="pdf-preview-dialog__state" role="status">
+      <mat-spinner diameter="32" />
+    </div>
+  } @else if (error()) {
+    <p class="pdf-preview-dialog__state" role="alert">Could not load this certificate's PDF.</p>
+  } @else if (pdfUrl(); as url) {
+    <iframe [src]="url" class="pdf-preview-dialog__frame" title="Certificate PDF preview"></iframe>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button [mat-dialog-close]="true">Close</button>
+  @if (!loading() && !error()) {
+    <button mat-flat-button color="primary" (click)="download()">Download</button>
+  }
+</mat-dialog-actions>

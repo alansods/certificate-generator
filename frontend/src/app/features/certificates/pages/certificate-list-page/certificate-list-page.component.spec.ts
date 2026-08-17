@@ -203,4 +203,29 @@ describe("CertificateListPageComponent", () => {
     await tick();
     fixture.detectChanges();
   });
+
+  it("clicking preview opens the PDF preview dialog for the right certificate", async () => {
+    // Dialog stubbed by direct field assignment — see the delete test above for why.
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const openSpy = vi.fn().mockReturnValue({ afterClosed: () => of(undefined) });
+    (fixture.componentInstance as unknown as { dialog: { open: unknown } }).dialog = {
+      open: openSpy,
+    };
+
+    const previewButton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      "button[aria-label='Preview PDF']",
+    );
+    expect(previewButton).not.toBeNull();
+    previewButton?.click();
+
+    expect(openSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ data: { id: 1, code: "CERT-AAAA-BBBB" } }),
+    );
+  });
 });

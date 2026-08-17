@@ -10,7 +10,7 @@
 - [x] 2.3 Not-found state (404): a clear "no certificate found for this code" message, not a generic error.
 - [x] 2.4 Rate-limited state (429): a distinct "too many attempts" message.
 - [x] 2.5 Generic error state for anything else.
-- [x] 2.6 `.html`/`.scss`: tokens only, `@if`/`@for` only, `OnPush`, no layout chrome (no toolbar/sidenav).
+- [x] 2.6 `.html`/`.scss`: tokens only, `@if`/`@switch` only, `OnPush`, no layout chrome (no toolbar/sidenav).
 
 ## 3. Routing
 

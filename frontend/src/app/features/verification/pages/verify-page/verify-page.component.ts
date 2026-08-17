@@ -46,4 +46,8 @@ export class VerifyPageComponent {
     }
     return "generic";
   });
+
+  protected retry(): void {
+    this.verifyResource.reload();
+  }
 }

@@ -108,6 +108,50 @@ describe("VerifyPageComponent", () => {
     );
   });
 
+  it("shows a generic error message and a working retry on a 500", async () => {
+    const { fixture } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/public/verify/CERT-AAAA-BBBB"))
+      .flush(null, { status: 500, statusText: "Internal Server Error" });
+    await tick();
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    expect(nativeElement.textContent).toContain(
+      "Something went wrong while checking this certificate.",
+    );
+
+    const retryButton = nativeElement.querySelector("button");
+    retryButton?.click();
+    fixture.detectChanges();
+
+    flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "ISSUED" });
+    await tick();
+    fixture.detectChanges();
+    expect(nativeElement.textContent).toContain("Jane Doe");
+  });
+
+  it("escapes a malicious recipient/course name instead of rendering it as markup", async () => {
+    const { fixture } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+    flushVerify("CERT-AAAA-BBBB", {
+      recipientName: "<img src=x onerror=alert(1)>",
+      courseName: "<script>alert(2)</script>",
+      workloadHours: 40,
+      issueDate: "2026-05-15",
+      status: "ISSUED",
+    });
+    await tick();
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    expect(nativeElement.querySelector("img")).toBeNull();
+    expect(nativeElement.querySelector("script")).toBeNull();
+    expect(nativeElement.textContent).toContain("<img src=x onerror=alert(1)>");
+    expect(nativeElement.textContent).toContain("<script>alert(2)</script>");
+  });
+
   it("re-fetches and re-renders when the route's code param changes without the component being destroyed", async () => {
     const { fixture, paramMap$ } = setup("CERT-AAAA-BBBB");
     fixture.detectChanges();

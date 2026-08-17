@@ -7,13 +7,15 @@
     } @else if (errorKind() === "not-found") {
       <p class="verify-page__state" role="alert">No certificate was found for this code.</p>
     } @else if (errorKind() === "rate-limited") {
-      <p class="verify-page__state" role="alert">
-        Too many verification attempts. Please try again shortly.
-      </p>
+      <div class="verify-page__state" role="alert">
+        <p>Too many verification attempts. Please try again shortly.</p>
+        <button type="button" (click)="retry()">Retry</button>
+      </div>
     } @else if (errorKind() === "generic") {
-      <p class="verify-page__state" role="alert">
-        Something went wrong while checking this certificate. Please try again.
-      </p>
+      <div class="verify-page__state" role="alert">
+        <p>Something went wrong while checking this certificate. Please try again.</p>
+        <button type="button" (click)="retry()">Retry</button>
+      </div>
     } @else if (certificate(); as cert) {
       <div class="verify-page__details">
         <span
@@ -28,6 +30,9 @@
             }
             @case ("DRAFT") {
               Not yet issued
+            }
+            @default {
+              Unknown status
             }
           }
         </span>

@@ -1,13 +1,6 @@
 #!/usr/bin/env node
-// Regenerates src/environments/environment.ts from the API_BASE_URL environment variable,
-// run immediately before ng build (see package.json's "build" script). Angular's own
-// fileReplacements mechanism only swaps between committed files at a build *configuration*
-// level, decided when angular.json is written — it has no way to read a real environment
-// variable at build time. This script is that missing piece, used to point the production
-// build at the deployed Render backend without hardcoding its URL into source control.
-//
-// Locally and in CI, API_BASE_URL is never set, so this reproduces exactly what's committed
-// today (apiBaseUrl: ""): no behavior change for anyone who isn't Vercel.
+// Regenerates src/environments/environment.ts from the API_BASE_URL environment variable.
+// See the `header` comment below (written into that file) for why this script exists.
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -37,4 +30,4 @@ export const environment = {
 `;
 
 writeFileSync(outputPath, contents);
-console.log(`Wrote ${outputPath} with apiBaseUrl=${JSON.stringify(apiBaseUrl)}`);
+console.log(`Wrote ${outputPath} with apiBaseUrl="${apiBaseUrl}"`);

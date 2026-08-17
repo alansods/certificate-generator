@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { API_BASE_URL } from "../../../core/config/api.config";
+import { BatchImportResponse } from "./batch-import-response";
 import { CertificatePageResponse, CertificateResponse, CertificateStatus } from "./certificate-page-response";
 import { CertificateRequest } from "./certificate-request";
 
@@ -48,5 +49,17 @@ export class CertificatesApi {
 
   downloadPdf(id: number): Observable<Blob> {
     return this.http.get(`${this.apiBaseUrl}/api/v1/certificates/${id}/pdf`, { responseType: "blob" });
+  }
+
+  uploadBatch(file: File): Observable<BatchImportResponse> {
+    const formData = new FormData();
+    formData.append("file", file);
+    return this.http.post<BatchImportResponse>(`${this.apiBaseUrl}/api/v1/certificates/batch`, formData);
+  }
+
+  downloadTemplate(): Observable<Blob> {
+    return this.http.get(`${this.apiBaseUrl}/api/v1/certificates/batch/template.csv`, {
+      responseType: "blob",
+    });
   }
 }

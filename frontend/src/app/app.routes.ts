@@ -1,6 +1,7 @@
 import { Routes } from "@angular/router";
 import { authGuard } from "./features/auth/auth-guard";
 import { LoginPageComponent } from "./features/auth/pages/login-page/login-page.component";
+import { BatchUploadPageComponent } from "./features/certificates/pages/batch-upload-page/batch-upload-page.component";
 import { CertificateFormPageComponent } from "./features/certificates/pages/certificate-form-page/certificate-form-page.component";
 import { CertificateListPageComponent } from "./features/certificates/pages/certificate-list-page/certificate-list-page.component";
 import { ShellComponent } from "./layout/shell.component";
@@ -25,6 +26,7 @@ export const routes: Routes = [
       { path: "", pathMatch: "full", redirectTo: "certificates" },
       { path: "certificates", component: CertificateListPageComponent },
       { path: "certificates/new", component: CertificateFormPageComponent },
+      { path: "certificates/batch", component: BatchUploadPageComponent },
       { path: "certificates/:id/edit", component: CertificateFormPageComponent },
     ],
   },

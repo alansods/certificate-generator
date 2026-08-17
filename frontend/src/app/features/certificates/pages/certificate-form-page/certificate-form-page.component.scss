@@ -1,0 +1,63 @@
+@use "../../../../../styles/tokens";
+
+.certificate-form-page {
+  max-width: tokens.$login-form-max-width * 1.5;
+  padding: tokens.spacing(lg);
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.spacing(sm);
+  }
+
+  &__state {
+    display: flex;
+    justify-content: center;
+    padding: tokens.spacing(xl);
+  }
+
+  &__error {
+    color: var(--mat-sys-error);
+    margin: 0;
+  }
+
+  &__previews {
+    display: flex;
+    gap: tokens.spacing(sm);
+    margin-bottom: tokens.spacing(sm);
+  }
+
+  &__preview {
+    flex: 1;
+    padding: tokens.spacing(sm);
+    border: 2px solid var(--mat-sys-outline-variant);
+    border-radius: tokens.radius(md);
+    background: var(--mat-sys-surface);
+    cursor: pointer;
+    text-align: center;
+
+    &--selected {
+      border-color: var(--mat-sys-primary);
+    }
+
+    &--classic {
+      font-family: serif;
+    }
+
+    &--modern {
+      font-family: sans-serif;
+      font-weight: 700;
+    }
+
+    &--minimal {
+      font-family: sans-serif;
+      font-weight: 300;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: tokens.spacing(sm);
+  }
+}

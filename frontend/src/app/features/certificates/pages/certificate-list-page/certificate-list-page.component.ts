@@ -18,6 +18,7 @@ import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
+import { RouterLink } from "@angular/router";
 import { debounceTime, distinctUntilChanged } from "rxjs";
 import { TokenStorageService } from "../../../../core/auth/token-storage.service";
 import { ConfirmDialogComponent } from "../../../../shared/confirm-dialog.component";
@@ -30,6 +31,7 @@ const STATUSES: CertificateStatus[] = ["DRAFT", "ISSUED", "REVOKED"];
   selector: "app-certificate-list-page",
   imports: [
     ReactiveFormsModule,
+    RouterLink,
     MatTableModule,
     MatPaginatorModule,
     MatFormFieldModule,

@@ -64,4 +64,52 @@ describe("CertificatesApi", () => {
 
     expect(result).toBeInstanceOf(Blob);
   });
+
+  it("get sends a GET to the certificate's URL", () => {
+    api.get(7).subscribe();
+
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates/7") && r.method === "GET")
+      .flush({ id: 7, code: "CERT-AAAA-BBBB" });
+  });
+
+  it("create sends a POST with the request body", () => {
+    const request = {
+      recipientName: "Jane Doe",
+      recipientEmail: "jane@example.com",
+      courseName: "Advanced Angular",
+      workloadHours: 40,
+      completionDate: "2026-05-12",
+      issueDate: "2026-05-15",
+      instructorName: "John Smith",
+      template: "CLASSIC" as const,
+    };
+    api.create(request).subscribe();
+
+    const req = httpMock.expectOne(
+      (r) => r.url.endsWith("/api/v1/certificates") && r.method === "POST",
+    );
+    expect(req.request.body).toEqual(request);
+    req.flush({ id: 1, code: "CERT-AAAA-BBBB" });
+  });
+
+  it("update sends a PUT to the certificate's URL with the request body", () => {
+    const request = {
+      recipientName: "Jane Doe",
+      recipientEmail: "jane@example.com",
+      courseName: "Advanced Angular",
+      workloadHours: 40,
+      completionDate: "2026-05-12",
+      issueDate: "2026-05-15",
+      instructorName: "John Smith",
+      template: "CLASSIC" as const,
+    };
+    api.update(7, request).subscribe();
+
+    const req = httpMock.expectOne(
+      (r) => r.url.endsWith("/api/v1/certificates/7") && r.method === "PUT",
+    );
+    expect(req.request.body).toEqual(request);
+    req.flush({ id: 7, code: "CERT-AAAA-BBBB" });
+  });
 });

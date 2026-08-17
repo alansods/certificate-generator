@@ -1,0 +1,121 @@
+<div class="certificate-form-page">
+  <h1>{{ isEditMode ? "Edit certificate" : "New certificate" }}</h1>
+
+  @if (loading()) {
+    <div class="certificate-form-page__state" role="status">
+      <mat-spinner diameter="32" />
+    </div>
+  } @else if (loadError()) {
+    <p class="certificate-form-page__error" role="alert">{{ loadError() }}</p>
+  } @else {
+    <form [formGroup]="form" (ngSubmit)="submit()" class="certificate-form-page__form">
+      <mat-form-field appearance="outline">
+        <mat-label>Recipient name</mat-label>
+        <input matInput formControlName="recipientName" />
+        @if (form.controls.recipientName.invalid && form.controls.recipientName.touched) {
+          <mat-error>
+            @if (form.controls.recipientName.errors?.['server']; as message) {
+              {{ message }}
+            } @else {
+              Recipient name is required.
+            }
+          </mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Recipient email</mat-label>
+        <input matInput type="email" formControlName="recipientEmail" />
+        @if (form.controls.recipientEmail.invalid && form.controls.recipientEmail.touched) {
+          <mat-error>
+            @if (form.controls.recipientEmail.errors?.['server']; as message) {
+              {{ message }}
+            } @else {
+              A valid email is required.
+            }
+          </mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Course name</mat-label>
+        <input matInput formControlName="courseName" />
+        @if (form.controls.courseName.invalid && form.controls.courseName.touched) {
+          <mat-error>Course name is required.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Workload hours</mat-label>
+        <input matInput type="number" formControlName="workloadHours" min="1" />
+        @if (form.controls.workloadHours.invalid && form.controls.workloadHours.touched) {
+          <mat-error>Workload hours must be a positive number.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Completion date</mat-label>
+        <input matInput type="date" formControlName="completionDate" />
+        @if (form.controls.completionDate.invalid && form.controls.completionDate.touched) {
+          <mat-error>Completion date is required.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Issue date</mat-label>
+        <input matInput type="date" formControlName="issueDate" />
+        @if (form.controls.issueDate.invalid && form.controls.issueDate.touched) {
+          <mat-error>Issue date is required.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Instructor name</mat-label>
+        <input matInput formControlName="instructorName" />
+        @if (form.controls.instructorName.invalid && form.controls.instructorName.touched) {
+          <mat-error>Instructor name is required.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Template</mat-label>
+        <mat-select formControlName="template">
+          @for (option of templates; track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <div class="certificate-form-page__previews">
+        @for (option of templates; track option) {
+          <button
+            type="button"
+            class="certificate-form-page__preview certificate-form-page__preview--{{ option.toLowerCase() }}"
+            [class.certificate-form-page__preview--selected]="form.controls.template.value === option"
+            (click)="form.controls.template.setValue(option)"
+          >
+            <span class="certificate-form-page__preview-title">{{ option }}</span>
+          </button>
+        }
+      </div>
+
+      @if (submitError()) {
+        <p class="certificate-form-page__error" role="alert">{{ submitError() }}</p>
+      }
+
+      <div class="certificate-form-page__actions">
+        <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+          @if (submitting()) {
+            <mat-spinner diameter="20" />
+          } @else {
+            Save
+          }
+        </button>
+
+        @if (isEditMode && isAdmin()) {
+          <button mat-button type="button" color="warn" (click)="confirmDelete()">Delete</button>
+        }
+      </div>
+    </form>
+  }
+</div>

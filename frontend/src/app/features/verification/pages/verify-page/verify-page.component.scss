@@ -1,0 +1,74 @@
+@use "../../../../../styles/tokens";
+
+.verify-page {
+  display: flex;
+  justify-content: center;
+  padding: tokens.spacing(xl);
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.spacing(md);
+    max-width: tokens.$content-max-width;
+    width: 100%;
+    padding: tokens.spacing(lg);
+    border-radius: tokens.radius(md);
+    background: var(--mat-sys-surface);
+    box-shadow: tokens.elevation(1);
+  }
+
+  &__state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: tokens.spacing(sm);
+    margin: 0;
+
+    p {
+      margin: 0;
+    }
+  }
+
+  &__details {
+    display: flex;
+    flex-direction: column;
+    gap: tokens.spacing(md);
+  }
+
+  &__badge {
+    align-self: flex-start;
+    padding: tokens.spacing(xs) tokens.spacing(sm);
+    border-radius: tokens.radius(full);
+    font-weight: 700;
+
+    &--issued {
+      background: var(--mat-sys-tertiary-container);
+      color: var(--mat-sys-on-tertiary-container);
+    }
+
+    &--revoked {
+      background: var(--mat-sys-error-container);
+      color: var(--mat-sys-on-error-container);
+    }
+
+    &--draft {
+      background: var(--mat-sys-surface-variant);
+      color: var(--mat-sys-on-surface-variant);
+    }
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: tokens.spacing(xs) tokens.spacing(sm);
+    margin: 0;
+  }
+
+  dt {
+    font-weight: 700;
+  }
+
+  dd {
+    margin: 0;
+  }
+}

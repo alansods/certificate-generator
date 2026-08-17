@@ -2,7 +2,8 @@ import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { API_BASE_URL } from "../../../core/config/api.config";
-import { CertificatePageResponse, CertificateStatus } from "./certificate-page-response";
+import { CertificatePageResponse, CertificateResponse, CertificateStatus } from "./certificate-page-response";
+import { CertificateRequest } from "./certificate-request";
 
 export interface CertificateListParams {
   page: number;
@@ -27,6 +28,18 @@ export class CertificatesApi {
     return this.http.get<CertificatePageResponse>(`${this.apiBaseUrl}/api/v1/certificates`, {
       params: httpParams,
     });
+  }
+
+  get(id: number): Observable<CertificateResponse> {
+    return this.http.get<CertificateResponse>(`${this.apiBaseUrl}/api/v1/certificates/${id}`);
+  }
+
+  create(request: CertificateRequest): Observable<CertificateResponse> {
+    return this.http.post<CertificateResponse>(`${this.apiBaseUrl}/api/v1/certificates`, request);
+  }
+
+  update(id: number, request: CertificateRequest): Observable<CertificateResponse> {
+    return this.http.put<CertificateResponse>(`${this.apiBaseUrl}/api/v1/certificates/${id}`, request);
   }
 
   deleteById(id: number): Observable<void> {

@@ -54,6 +54,16 @@ $toolbar-height: 64px;
 $nav-width: 240px;
 $login-form-max-width: 360px;
 
+// Border widths for interactive surfaces (e.g. selectable cards).
+$border-width-scale: (
+  thin: 1px,
+  selectable: 2px,
+);
+
+@function border-width($key) {
+  @return map.get($border-width-scale, $key);
+}
+
 @function spacing($key) {
   @return map.get($spacing-scale, $key);
 }

@@ -2,6 +2,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { provideRouter } from "@angular/router";
 import { of } from "rxjs";
 import { TokenStorageService } from "../../../../core/auth/token-storage.service";
 import { CertificateListPageComponent } from "./certificate-list-page.component";
@@ -43,7 +44,12 @@ describe("CertificateListPageComponent", () => {
     localStorage.clear();
     TestBed.configureTestingModule({
       imports: [CertificateListPageComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideNoopAnimations()],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideNoopAnimations(),
+        provideRouter([]),
+      ],
     });
     httpMock = TestBed.inject(HttpTestingController);
     tokenStorage = TestBed.inject(TokenStorageService);

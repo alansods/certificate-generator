@@ -24,7 +24,6 @@ import { TokenStorageService } from "../../../../core/auth/token-storage.service
 import { ConfirmDialogComponent } from "../../../../shared/confirm-dialog.component";
 import { CertificateResponse, CertificateStatus } from "../../data/certificate-page-response";
 import { CertificatesApi } from "../../data/certificates.api";
-import { PdfPreviewDialogComponent } from "../../shared/pdf-preview-dialog/pdf-preview-dialog.component";
 
 const STATUSES: CertificateStatus[] = ["DRAFT", "ISSUED", "REVOKED"];
 
@@ -102,12 +101,6 @@ export class CertificateListPageComponent {
 
   protected retry(): void {
     this.listResource.reload();
-  }
-
-  protected previewPdf(certificate: CertificateResponse): void {
-    this.dialog.open(PdfPreviewDialogComponent, {
-      data: { id: certificate.id, code: certificate.code },
-    });
   }
 
   protected downloadPdf(certificate: CertificateResponse): void {

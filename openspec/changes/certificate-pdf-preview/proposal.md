@@ -4,7 +4,7 @@ Owner request, surfaced while manually trying the running app: the download acti
 
 ## What Changes
 
-A "Preview" action added to each row's action column, next to the existing download and delete actions: opens a dialog showing the certificate's actual generated PDF inline (not a static approximation — the same bytes `GET /{id}/pdf` already returns), with a "Download" button inside the dialog for the user to save it once they've looked at it. The existing direct-download icon action is unchanged, for anyone who just wants the file without looking first.
+A "Preview" action added to each row's action column, next to the existing download and delete actions: navigates to a new page (`/certificates/:id/preview`) showing the certificate's actual generated PDF inline (not a static approximation — the same bytes `GET /{id}/pdf` already returns), with a "Download" button on the page for the user to save it once they've looked at it, and a link back to the list. The existing direct-download icon action on the list row is unchanged, for anyone who just wants the file without looking first.
 
 ## Capabilities
 
@@ -13,6 +13,7 @@ A "Preview" action added to each row's action column, next to the existing downl
 
 ## Impact
 
-- Adds `frontend/src/app/features/certificates/shared/pdf-preview-dialog.component.ts` (new, reusable — not scoped to the list page only, in case a future page wants the same preview).
-- `certificate-list-page.component.ts`/`.html`: adds the preview action, reusing the existing `CertificatesApi.downloadPdf(id)` call (already returns a blob) rather than adding a new endpoint or backend change.
-- No backend impact — `GET /api/v1/certificates/{id}/pdf` already returns the exact bytes needed; the dialog just renders them inline via a blob URL instead of triggering an immediate save.
+- Adds `frontend/src/app/features/certificates/pages/certificate-preview-page/`.
+- `app.routes.ts`: adds `certificates/:id/preview` to the authenticated shell's children.
+- `certificate-list-page.component.ts`/`.html`: adds the preview action as a link to the new route, reusing the existing `CertificatesApi.downloadPdf(id)`/`get(id)` calls rather than adding a new endpoint or backend change.
+- No backend impact — `GET /api/v1/certificates/{id}/pdf` already returns the exact bytes needed; the new page just renders them inline via a blob URL instead of triggering an immediate save.

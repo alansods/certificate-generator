@@ -68,9 +68,9 @@
           <a mat-icon-button aria-label="Edit certificate" [routerLink]="['/certificates', certificate.id, 'edit']">
             <mat-icon>edit</mat-icon>
           </a>
-          <button mat-icon-button aria-label="Preview PDF" (click)="previewPdf(certificate)">
+          <a mat-icon-button aria-label="Preview PDF" [routerLink]="['/certificates', certificate.id, 'preview']">
             <mat-icon>visibility</mat-icon>
-          </button>
+          </a>
           <button mat-icon-button aria-label="Download PDF" (click)="downloadPdf(certificate)">
             <mat-icon>download</mat-icon>
           </button>

@@ -1,0 +1,29 @@
+<div class="certificate-preview-page">
+  <div class="certificate-preview-page__header">
+    <a mat-button routerLink="/certificates">← Back to certificates</a>
+    <h1>
+      @if (code(); as certificateCode) {
+        Certificate preview — {{ certificateCode }}
+      } @else {
+        Certificate preview
+      }
+    </h1>
+    @if (!loading() && !error()) {
+      <button mat-flat-button color="primary" (click)="download()">Download</button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="certificate-preview-page__state" role="status">
+      <mat-spinner diameter="32" />
+    </div>
+  } @else if (error()) {
+    <p class="certificate-preview-page__state" role="alert">Could not load this certificate's PDF.</p>
+  } @else if (pdfUrl(); as url) {
+    <iframe
+      [src]="url"
+      class="certificate-preview-page__frame"
+      title="Certificate PDF preview — {{ code() }}"
+    ></iframe>
+  }
+</div>

@@ -5,19 +5,19 @@ The system SHALL let any authenticated user preview or download a certificate's 
 
 #### Scenario: Preview PDF
 - **WHEN** a user selects the preview action on a row
-- **THEN** `GET /api/v1/certificates/{id}/pdf` is requested and the certificate's actual PDF is rendered inline in a dialog, not immediately saved to disk
+- **THEN** the user is taken to that certificate's preview page, which requests `GET /api/v1/certificates/{id}/pdf` and renders the certificate's actual PDF inline, not immediately saved to disk
 
-#### Scenario: Download from within the preview
-- **WHEN** a user selects the download action inside the preview dialog
+#### Scenario: Download from the preview page
+- **WHEN** a user selects the download action on the preview page
 - **THEN** the previewed PDF is saved to disk
 
 #### Scenario: Preview fetch fails
-- **WHEN** the PDF request made by opening the preview fails
-- **THEN** the dialog shows an error message and a way to close it, not a blank or stuck-loading dialog
+- **WHEN** the certificate or PDF request made by the preview page fails
+- **THEN** the page shows an error message instead of a blank or stuck-loading state
 
 #### Scenario: Download PDF
-- **WHEN** a user selects the download action on a row (outside the preview dialog)
-- **THEN** `GET /api/v1/certificates/{id}/pdf` is requested and the returned file is saved to disk directly, without opening the preview dialog
+- **WHEN** a user selects the download action on a row (not the preview action)
+- **THEN** `GET /api/v1/certificates/{id}/pdf` is requested and the returned file is saved to disk directly, without navigating to the preview page
 
 #### Scenario: Delete as ADMIN
 - **WHEN** an ADMIN selects the delete action on a row and confirms

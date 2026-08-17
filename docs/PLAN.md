@@ -90,7 +90,7 @@ One row, one branch, one pull request.
 | # | Branch | Delivers |
 |---|---|---|
 | 3.1 | `ci/github-actions` | ✅ done — build and test both stacks, `openspec validate --strict`, lint, approval workflow |
-| 3.2 | `chore/deploy-render-neon` | multi-stage Dockerfile, production migrations, environment variables, CORS |
+| 3.2 | `chore/deploy-render-neon` | ✅ done — multi-stage Dockerfile, production migrations, environment variables, CORS. Manual Neon/Render account setup still pending (`docs/deployment.md`) |
 | 3.3 | `chore/deploy-vercel` | production build, `vercel.json`, API environment variable, project linked to the repo |
 | 3.4 | `docs/final` | README with local setup, architecture and how to run the spec-driven loop |
 

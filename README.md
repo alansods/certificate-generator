@@ -41,7 +41,7 @@ The `dev` profile ships a working `JWT_SECRET` and a bootstrap admin (`admin@exa
 
 ```bash
 cd frontend
-npm start                  # http://localhost:4200, proxies API calls to http://localhost:8080
+npm start                  # http://localhost:4200
 npm test                   # unit tests (Vitest, headless)
 npm run lint
 npm run build               # production build, output at dist/frontend/browser

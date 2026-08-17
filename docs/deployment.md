@@ -1,6 +1,6 @@
 # Deployment
 
-Manual steps to put the backend live on Render, backed by Neon Postgres. Nothing here is automated — no agent or CI job can create accounts, enter credentials, or configure a third-party dashboard. Follow this once, by hand, when you're ready to deploy.
+Manual steps to put the backend live on Render (backed by Neon Postgres) and the frontend live on Vercel. Nothing here is automated — no agent or CI job can create accounts, enter credentials, or configure a third-party dashboard. Follow this once, by hand, when you're ready to deploy.
 
 ## 1. Neon (database)
 
@@ -48,6 +48,14 @@ Save the output somewhere safe (a password manager, not this repo) — this is `
 
 Once deployed, `GET https://<your-service>.onrender.com/actuator/health` should return `{"status":"UP"}`. That's the same endpoint Render's own health check polls.
 
-## 5. Coming back to update CORS after the frontend is deployed
+## 5. Vercel (frontend)
 
-Once `chore/deploy-vercel` (3.3) gives you a real frontend URL, come back to the Render dashboard and set `APP_CORS_ALLOWED_ORIGINS`/`APP_FRONTEND_BASE_URL` to it, then trigger a redeploy (Render redeploys automatically on an environment variable change).
+1. Create a free account at [vercel.com](https://vercel.com) if you don't have one, and "Add New… → Project", importing this GitHub repository.
+2. Set the project's **Root Directory** to `frontend` — this is a monorepo, and Vercel needs to know the Angular workspace doesn't live at the repo root.
+3. Vercel auto-detects `frontend/vercel.json` for the build command and output directory; nothing else to configure there.
+4. Add one environment variable on the Vercel project (Settings → Environment Variables): `API_BASE_URL` = the Render backend's public URL from step 3 above (e.g. `https://certificate-generator-backend.onrender.com`, no trailing slash). `frontend/scripts/write-environment.mjs` reads this at build time and bakes it into the production build — see that file's header comment for how.
+5. Deploy. Vercel gives you a `https://<project>.vercel.app` URL (or a custom domain if you set one up).
+
+## 6. Coming back to update CORS after the frontend is deployed
+
+Once step 5 gives you a real frontend URL, come back to the Render dashboard and set `APP_CORS_ALLOWED_ORIGINS`/`APP_FRONTEND_BASE_URL` to it, then trigger a redeploy (Render redeploys automatically on an environment variable change).

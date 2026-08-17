@@ -1,4 +1,4 @@
-import { Injectable, signal } from "@angular/core";
+import { computed, Injectable, signal } from "@angular/core";
 
 const REFRESH_TOKEN_KEY = "certificate-generator.refreshToken";
 
@@ -17,6 +17,13 @@ export class TokenStorageService {
 
   readonly accessToken = this.accessTokenSignal.asReadonly();
 
+  /**
+   * UI-only: decoded from the access token's own JWT payload, not verified client-side (no need
+   * to — the backend re-validates the token's signature on every request regardless). Only used
+   * to hide actions a non-admin would get a 403 on; never trusted as an authorization boundary.
+   */
+  readonly role = computed(() => decodeRoleClaim(this.accessTokenSignal()));
+
   get refreshToken(): string | null {
     return localStorage.getItem(REFRESH_TOKEN_KEY);
   }
@@ -29,5 +36,27 @@ export class TokenStorageService {
   clear(): void {
     this.accessTokenSignal.set(null);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+}
+
+function decodeRoleClaim(accessToken: string | null): string | null {
+  if (!accessToken) {
+    return null;
+  }
+  const payloadSegment = accessToken.split(".")[1];
+  if (!payloadSegment) {
+    return null;
+  }
+  try {
+    const base64 = payloadSegment.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(base64);
+    const claims: unknown = JSON.parse(json);
+    if (typeof claims === "object" && claims !== null && "role" in claims) {
+      const role = (claims as { role: unknown }).role;
+      return typeof role === "string" ? role : null;
+    }
+    return null;
+  } catch {
+    return null;
   }
 }

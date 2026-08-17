@@ -11,3 +11,7 @@
 .shell-content {
   padding: tokens.spacing(lg);
 }
+
+.shell-nav__link--active {
+  color: var(--mat-sys-primary);
+}

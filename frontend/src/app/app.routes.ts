@@ -1,6 +1,7 @@
 import { Routes } from "@angular/router";
 import { authGuard } from "./features/auth/auth-guard";
 import { LoginPageComponent } from "./features/auth/pages/login-page/login-page.component";
+import { CertificateListPageComponent } from "./features/certificates/pages/certificate-list-page/certificate-list-page.component";
 import { ShellComponent } from "./layout/shell.component";
 import { PlaceholderComponent } from "./shared/placeholder.component";
 
@@ -19,6 +20,9 @@ export const routes: Routes = [
     path: "",
     component: ShellComponent,
     canActivate: [authGuard],
-    children: [],
+    children: [
+      { path: "", pathMatch: "full", redirectTo: "certificates" },
+      { path: "certificates", component: CertificateListPageComponent },
+    ],
   },
 ];

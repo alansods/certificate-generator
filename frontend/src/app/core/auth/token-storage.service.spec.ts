@@ -38,4 +38,34 @@ describe("TokenStorageService", () => {
     expect(service.accessToken()).toBeNull();
     expect(service.refreshToken).toBeNull();
   });
+
+  it("decodes the role claim from the access token", () => {
+    const service = TestBed.inject(TokenStorageService);
+
+    service.setTokens(fakeJwt({ role: "ADMIN" }), "refresh-1");
+
+    expect(service.role()).toBe("ADMIN");
+  });
+
+  it("role is null when there is no access token", () => {
+    const service = TestBed.inject(TokenStorageService);
+
+    expect(service.role()).toBeNull();
+  });
+
+  it("role is null for a malformed token instead of throwing", () => {
+    const service = TestBed.inject(TokenStorageService);
+
+    service.setTokens("not-a-real-jwt", "refresh-1");
+
+    expect(service.role()).toBeNull();
+  });
 });
+
+function fakeJwt(payload: Record<string, unknown>): string {
+  const base64url = (value: string) =>
+    btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const header = base64url(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const body = base64url(JSON.stringify(payload));
+  return `${header}.${body}.signature`;
+}

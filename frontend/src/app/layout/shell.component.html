@@ -7,8 +7,11 @@
 
 <mat-sidenav-container class="shell-container">
   <mat-sidenav mode="side" [opened]="navOpen()" class="shell-nav">
-    <!-- Nav links land alongside their features (2.3+). Empty until then. -->
-    <mat-nav-list></mat-nav-list>
+    <mat-nav-list>
+      <a mat-list-item routerLink="/certificates" routerLinkActive="shell-nav__link--active">
+        Certificates
+      </a>
+    </mat-nav-list>
   </mat-sidenav>
   <mat-sidenav-content class="shell-content">
     <router-outlet />

@@ -203,4 +203,18 @@ describe("CertificateListPageComponent", () => {
     await tick();
     fixture.detectChanges();
   });
+
+  it("the preview action links to the certificate's preview page", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const previewLink = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
+      "a[aria-label='Preview PDF']",
+    );
+    expect(previewLink).not.toBeNull();
+    expect(previewLink?.getAttribute("href")).toBe("/certificates/1/preview");
+  });
 });

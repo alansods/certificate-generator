@@ -1,3 +1,3 @@
 # certificate-pdf-preview
 
-Preview a certificate's PDF in a dialog before downloading it
+Preview a certificate's PDF on its own page before downloading it

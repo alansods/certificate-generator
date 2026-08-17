@@ -1,0 +1,51 @@
+<div class="verify-page">
+  <div class="verify-page__card">
+    <h1>Certificate verification</h1>
+
+    @if (isLoading()) {
+      <p class="verify-page__state" role="status">Checking…</p>
+    } @else if (errorKind() === "not-found") {
+      <p class="verify-page__state" role="alert">No certificate was found for this code.</p>
+    } @else if (errorKind() === "rate-limited") {
+      <p class="verify-page__state" role="alert">
+        Too many verification attempts. Please try again shortly.
+      </p>
+    } @else if (errorKind() === "generic") {
+      <p class="verify-page__state" role="alert">
+        Something went wrong while checking this certificate. Please try again.
+      </p>
+    } @else if (certificate(); as cert) {
+      <div class="verify-page__details">
+        <span
+          class="verify-page__badge verify-page__badge--{{ cert.status.toLowerCase() }}"
+        >
+          @switch (cert.status) {
+            @case ("ISSUED") {
+              Valid certificate
+            }
+            @case ("REVOKED") {
+              Revoked
+            }
+            @case ("DRAFT") {
+              Not yet issued
+            }
+          }
+        </span>
+
+        <dl>
+          <dt>Recipient</dt>
+          <dd>{{ cert.recipientName }}</dd>
+
+          <dt>Course</dt>
+          <dd>{{ cert.courseName }}</dd>
+
+          <dt>Workload</dt>
+          <dd>{{ cert.workloadHours }} hours</dd>
+
+          <dt>Issue date</dt>
+          <dd>{{ cert.issueDate }}</dd>
+        </dl>
+      </div>
+    }
+  </div>
+</div>

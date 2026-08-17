@@ -4,16 +4,12 @@ import { LoginPageComponent } from "./features/auth/pages/login-page/login-page.
 import { BatchUploadPageComponent } from "./features/certificates/pages/batch-upload-page/batch-upload-page.component";
 import { CertificateFormPageComponent } from "./features/certificates/pages/certificate-form-page/certificate-form-page.component";
 import { CertificateListPageComponent } from "./features/certificates/pages/certificate-list-page/certificate-list-page.component";
+import { VerifyPageComponent } from "./features/verification/pages/verify-page/verify-page.component";
 import { ShellComponent } from "./layout/shell.component";
-import { PlaceholderComponent } from "./shared/placeholder.component";
 
 export const routes: Routes = [
   // Public group: no authenticated shell chrome, no auth guard.
-  {
-    path: "verify/:code",
-    component: PlaceholderComponent,
-    data: { label: "Certificate verification" },
-  },
+  { path: "verify/:code", component: VerifyPageComponent },
   { path: "login", component: LoginPageComponent },
 
   // Authenticated shell, guarded — see design.md ("Auth guard") for why the guard has to

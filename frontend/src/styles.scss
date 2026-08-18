@@ -1,42 +1,65 @@
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
-@use '@angular/material' as mat;
-@use 'styles/tokens';
-@use 'styles/theme-colors';
-@use 'styles/material-overrides';
+// Angular Material's typography, density and shape systems, with every color role re-pointed at
+// the Nocturne tokens in src/styles.css. This file exists only for the Material components still
+// on screen during the Tailwind migration (docs/design-spec.md, section 5) and is deleted along
+// with the last of them.
+@use "@angular/material" as mat;
+@use "styles/tokens";
+@use "styles/material-overrides";
 
 html {
-  height: 100%;
   @include mat.theme(
     (
       color: (
-        primary: theme-colors.$primary-palette,
-        tertiary: theme-colors.$tertiary-palette,
+        primary: mat.$violet-palette,
+        tertiary: mat.$violet-palette,
       ),
       typography: tokens.$font-family-base,
-      density: 0,
+      density: -3,
     )
   );
+
+  // The generated palette is never used: every color role below resolves to a Nocturne token, so
+  // Material components and Tailwind utilities cannot drift apart. Written as plain custom
+  // properties rather than `mat.theme-overrides()` so the mapping reads as the one-to-one table
+  // it is.
+  --mat-sys-background: var(--color-bg);
+  --mat-sys-on-background: var(--color-text);
+  --mat-sys-surface: var(--color-surface);
+  --mat-sys-surface-dim: var(--color-bg);
+  --mat-sys-surface-bright: var(--color-neutral-800);
+  --mat-sys-surface-container-lowest: var(--color-bg);
+  --mat-sys-surface-container-low: var(--color-surface);
+  --mat-sys-surface-container: var(--color-surface);
+  --mat-sys-surface-container-high: var(--color-neutral-900);
+  --mat-sys-surface-container-highest: var(--color-neutral-800);
+  --mat-sys-surface-variant: var(--color-neutral-900);
+  --mat-sys-on-surface: var(--color-text);
+  --mat-sys-on-surface-variant: var(--color-muted);
+  --mat-sys-surface-tint: var(--color-accent-500);
+  --mat-sys-inverse-surface: var(--color-neutral-200);
+  --mat-sys-inverse-on-surface: var(--color-neutral-900);
+
+  --mat-sys-primary: var(--color-accent-500);
+  --mat-sys-on-primary: var(--color-accent-900);
+  --mat-sys-primary-container: var(--color-accent-900);
+  --mat-sys-on-primary-container: var(--color-accent-200);
+  --mat-sys-inverse-primary: var(--color-accent-700);
+  --mat-sys-secondary: var(--color-accent-400);
+  --mat-sys-on-secondary: var(--color-accent-900);
+  --mat-sys-secondary-container: var(--color-accent-800);
+  --mat-sys-on-secondary-container: var(--color-accent-200);
+  --mat-sys-tertiary: var(--color-accent-400);
+  --mat-sys-on-tertiary: var(--color-accent-900);
+  --mat-sys-tertiary-container: var(--color-accent-800);
+  --mat-sys-on-tertiary-container: var(--color-accent-200);
+
+  --mat-sys-error: var(--color-revoked);
+  --mat-sys-on-error: var(--color-revoked-bg);
+  --mat-sys-error-container: var(--color-revoked-bg);
+  --mat-sys-on-error-container: var(--color-revoked);
+
+  --mat-sys-outline: var(--color-neutral-700);
+  --mat-sys-outline-variant: var(--color-neutral-800);
+  --mat-sys-shadow: #000000;
+  --mat-sys-scrim: var(--color-neutral-900);
 }
-
-body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
-  color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
-  margin: 0;
-  height: 100%;
-}
-/* You can add global styles to this file, and also import other style files */

@@ -1,0 +1,155 @@
+/* Nocturne design tokens. Single source of truth for color, spacing, radius, typography and
+   elevation (docs/style-guide.md, docs/design-spec.md). A raw hex or px value outside this file
+   is a review blocker. */
+@import "tailwindcss";
+
+@theme static {
+  /* Clear Tailwind's default palette: the design system defines every color it uses. */
+  --color-*: initial;
+
+  --color-bg: #161826;
+  --color-surface: #232532;
+  --color-text: #e9e9ed;
+  --color-muted: #b2b6ca;
+  --color-subtle: #9397ab;
+
+  --color-accent-100: #f5f4ff;
+  --color-accent-200: #e7e5fe;
+  --color-accent-300: #d2cefd;
+  --color-accent-400: #b5abfc;
+  --color-accent-500: #9184d9;
+  --color-accent-600: #796cbf;
+  --color-accent-700: #5d5294;
+  --color-accent-800: #423a6a;
+  --color-accent-900: #2b2741;
+
+  --color-neutral-100: #f3f5fe;
+  --color-neutral-200: #e4e7f5;
+  --color-neutral-300: #cfd3e5;
+  --color-neutral-400: #b2b6ca;
+  --color-neutral-500: #9397ab;
+  --color-neutral-600: #75798c;
+  --color-neutral-700: #595d6c;
+  --color-neutral-800: #3f424d;
+  --color-neutral-900: #292b31;
+
+  /* Certificate status and neutral notices: foreground over a tinted ground, 1px line. */
+  --color-draft: #9397ab;
+  --color-draft-bg: #292b31;
+  --color-draft-line: #3f424d;
+  --color-issued: #6fd3a3;
+  --color-issued-bg: #1b3a2c;
+  --color-issued-line: #2f6b50;
+  --color-revoked: #f2938c;
+  --color-revoked-bg: #3a2224;
+  --color-revoked-line: #7a3b3c;
+  --color-pending: #e7b76a;
+  --color-pending-bg: #392f1c;
+  --color-pending-line: #7a6231;
+  --color-info: #93bde0;
+  --color-info-bg: #1e2b3a;
+  --color-info-line: #3f5f7d;
+
+  --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+
+  --font-sans: Inter, "Helvetica Neue", Arial, sans-serif;
+
+  /* Density 0.7 against a 4px base: p-3 is 8.4px, gap-4 is 11.2px. Tailwind's spacing numbers
+     do NOT mean n x 4px in this project. */
+  --spacing: 2.8px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --text-overline: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1.1875rem;
+  --text-lg: 1.4375rem;
+  --text-xl: 1.6875rem;
+  --text-display: 1.9375rem;
+
+  /* Dark elevation is a hairline edge plus ambient darkness, not a blurred drop shadow. */
+  --shadow-e1: 0 0 0 1px #3f424d;
+  --shadow-e2:
+    0 0 0 1px #595d6c, 0 6px 18px rgb(0 0 0 / 0.55);
+  --shadow-e3:
+    0 0 0 1px #9397ab, 0 16px 40px rgb(0 0 0 / 0.65);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    height: 100%;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.12;
+  }
+
+  /* Tailwind's preflight strips the user agent's heading sizes. Restating them from the type
+     scale keeps a hierarchy on every screen, including the ones not yet rebuilt. */
+  h1 {
+    font-size: var(--text-xl);
+  }
+
+  h2 {
+    font-size: var(--text-lg);
+  }
+
+  h3 {
+    font-size: var(--text-md);
+  }
+
+  h4 {
+    font-size: var(--text-base);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent-500) 30%, transparent);
+  }
+}
+
+/* Freestanding rules fade out at both ends — a Nocturne signature. Box outlines and in-control
+   separators stay solid. */
+@utility rule-fade {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-neutral-800) 48px,
+    var(--color-neutral-800) calc(100% - 48px),
+    transparent
+  );
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -320px 0;
+  }
+  100% {
+    background-position: 320px 0;
+  }
+}

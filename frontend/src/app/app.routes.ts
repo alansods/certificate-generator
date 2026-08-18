@@ -10,6 +10,7 @@ import { ShellComponent } from "./layout/shell.component";
 
 export const routes: Routes = [
   // Public group: no authenticated shell chrome, no auth guard.
+  { path: "verify", component: VerifyPageComponent },
   { path: "verify/:code", component: VerifyPageComponent },
   { path: "login", component: LoginPageComponent },
 

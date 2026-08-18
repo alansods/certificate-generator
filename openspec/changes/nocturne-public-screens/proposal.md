@@ -9,7 +9,8 @@ Two behavioral gaps show up in the mockups while doing it. The public verificati
 - The login screen is rebuilt without Material: the accent radial glow behind the card, the form on a `surface` card with 14px radius, labelled inputs with the accent caret and focus border, inline field errors, and the wrong-credentials and rate-limit notices as bordered tinted panels rather than a shared error line. The cold-start state keeps its behavior and gains the inline spinner inside the submit button.
 - The login screen gains a "Verify a code" link to the public verification page.
 - The public verification page accepts a code typed into the page, not only one carried in the URL. `/verify` renders the same page with an empty form; `/verify/:code` pre-fills it and looks the code up immediately. Submitting the form navigates to `/verify/:code` so the result stays linkable and shareable.
-- The form validates the code shape (`CERT-XXXX-XXXX`) before calling the API, so a typo produces an inline message instead of a round trip and a "not found".
+- The form validates the code shape (`CERT-XXXX-XXXX`) before calling the API, so a typo produces an inline message instead of a round trip and a "not found". Codes are upper-cased and trimmed first, so a link shared in any case resolves; a malformed code arriving in the URL gets the same treatment as one typed into the field.
+- The page links back to the login screen, as the login screen links to it.
 - The result becomes the loudest element on the page, per `design-spec.md` §3: a 58px status circle, a title in the semantic color, the code in tabular numerals inside an accent-bordered capsule, then the `<dl>` of details. Revoked keeps every field visible at reduced opacity — the information is disqualified, not hidden. The checking, not-found and rate-limited states get their own treatments.
 - `MatCard`, `MatFormField`, `MatButton` and `MatProgressSpinner` leave both screens.
 
@@ -24,6 +25,7 @@ Two behavioral gaps show up in the mockups while doing it. The public verificati
 - `frontend/src/app/features/auth/pages/login-page/` — template rewritten to Tailwind utilities, `.scss` reduced to what utilities cannot express, Material imports dropped.
 - `frontend/src/app/features/verification/pages/verify-page/` — gains the form, the code-shape validation and the state treatments.
 - `frontend/src/app/app.routes.ts` — adds the public `verify` route alongside `verify/:code`.
+- `frontend/src/styles.css`, `frontend/src/styles/_tokens.scss`, `docs/design-spec.md` — a 12px step joins the type scale, which the mockups use for field labels and inline errors throughout, plus an `accent-glow` utility so the two pages share one gradient rather than two hand-tuned ones, and a `values-dimmed` utility for the revoked result.
 - No backend impact: `GET /api/v1/public/verify/{code}` already returns everything the page renders, and its rate limiting already produces the 429 the page shows.
 
 ## Non-goals

@@ -141,4 +141,61 @@ describe("LoginPageComponent", () => {
       vi.useRealTimers();
     }
   });
+
+  it("offers a link to public verification for someone without an account", () => {
+    const { nativeElement } = setup();
+
+    const link = requireElement<HTMLAnchorElement>(nativeElement, "a[href='/verify']");
+
+    expect(link.textContent?.trim()).toBe("Verify a code");
+  });
+
+  it("keeps the submit button reachable and gives it the specified interaction states", () => {
+    const { nativeElement } = setup();
+
+    const button = requireElement<HTMLButtonElement>(nativeElement, "button[type='submit']");
+
+    // The three states this change's "Interaction states are uniform" requirement asks for.
+    // Focus comes from the global rule and is deliberately not restated per control.
+    const classes = button.className.split(/\s+/);
+
+    expect(classes).toContain("hover:bg-accent-900");
+    expect(classes).toContain("active:bg-accent-800");
+    expect(classes).toContain("aria-disabled:opacity-45");
+    expect(classes).toContain("aria-disabled:pointer-events-none");
+  });
+
+  it("stays focusable while submitting and turns a second activation away", () => {
+    // `disabled` would drop focus to <body> for the length of a cold start, which can be a minute.
+    const { fixture, nativeElement, emailInput, passwordInput, form } = setup();
+    fillAndSubmit(emailInput, passwordInput, form);
+    fixture.detectChanges();
+
+    const button = requireElement<HTMLButtonElement>(nativeElement, "button[type='submit']");
+
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+
+    // A second submit must not fire a second request; httpMock.verify() would fail if it did.
+    form.dispatchEvent(new Event("submit"));
+
+    httpMock
+      .expectOne((request) => request.url.endsWith("/api/v1/auth/login"))
+      .flush({ accessToken: "a", refreshToken: "r", expiresIn: 900 });
+  });
+
+  it("surfaces a required-field error on blur alone, with no keystroke to trigger it", () => {
+    // The case that distinguishes `form.events` from `statusChanges`: leaving an untouched field
+    // changes `touched` but not the validation status, so a status-only subscription never ticks
+    // and the message stays hidden.
+    const { fixture, nativeElement, emailInput } = setup();
+    emailInput.dispatchEvent(new Event("blur"));
+    fixture.detectChanges();
+
+    expect(emailInput.getAttribute("aria-invalid")).toBe("true");
+    expect(emailInput.getAttribute("aria-describedby")).toBe("email-error");
+    expect(requireElement<HTMLElement>(nativeElement, "#email-error").textContent).toContain(
+      "A valid email is required.",
+    );
+  });
 });

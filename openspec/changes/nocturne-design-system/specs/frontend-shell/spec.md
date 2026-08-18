@@ -15,6 +15,8 @@ The system SHALL centralize color, spacing, radius, typography and elevation val
 - **WHEN** the application is loaded in a browser
 - **THEN** the document declares a dark color scheme and paints the Nocturne background and text tokens on `body`
 
+## ADDED Requirements
+
 ### Requirement: Interaction states are uniform
 The system SHALL give every interactive control the same four states: an accent-tinted hover, a pressed state one step stronger than hover, a visible focus ring on keyboard focus, and a reduced-opacity disabled state.
 

@@ -12,7 +12,9 @@ The migration runs over several PRs (see `design-spec.md` §5). If the tokens la
 
 ## Accent contrast
 
-`#9184d9` on `#161826` measures ~3.4:1. That passes for large text, icons and chrome, and fails for body copy. Paragraph text that needs to be accent-colored uses `accent-300` (`#d2cefd`). This is written into the spec rather than left to reviewer memory because every screen change that follows will be tempted to break it.
+Measured, `#9184d9` is 5.45:1 on `#161826` and 4.71:1 on `#232532` — it clears AA for body text on both grounds. (An earlier draft of the design specification put it at ~3.4:1; that figure is wrong and is corrected in `docs/design-spec.md` §6.)
+
+Paragraph text that needs to be accent-colored still uses `accent-300` (`#d2cefd`, 11.7:1). The rule is kept for two reasons that survive the corrected number: it leaves headroom if the accent is ever retuned, and the pairing that genuinely fails is `accent-900` text on an `accent-500` fill at 4.43:1 — which is the real argument for the design's bordered buttons over filled ones. It is written into the spec rather than left to reviewer memory because every screen change that follows will be tempted to break it.
 
 ## `@reference` in component SCSS
 

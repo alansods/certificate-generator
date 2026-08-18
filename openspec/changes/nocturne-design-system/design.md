@@ -16,6 +16,12 @@ Measured, `#9184d9` is 5.45:1 on `#161826` and 4.71:1 on `#232532` — it clears
 
 Paragraph text that needs to be accent-colored still uses `accent-300` (`#d2cefd`, 11.7:1). The rule is kept for two reasons that survive the corrected number: it leaves headroom if the accent is ever retuned, and the pairing that genuinely fails is `accent-900` text on an `accent-500` fill at 4.43:1 — which is the real argument for the design's bordered buttons over filled ones. It is written into the spec rather than left to reviewer memory because every screen change that follows will be tempted to break it.
 
+## Material density stops at -1, not -3
+
+The Nocturne spacing scale is a 4px base at density 0.7, which maps to Material's `density: -3`. Shipped at `-3`, every Material control measured 28px and `--mat-icon-button-touch-target-display` came back `none`: Material switches off its invisible touch-target expander past `-2`, so the compact setting silently trades away the 44px hit area the same design specification asks for in section 6.
+
+`density: -1` is therefore the densest setting this app can use while Material controls remain, with the icon button pinned to 44px on top of it. This is not a retreat from the design's density — the Tailwind spacing base is still 2.8px, and the rebuilt controls hit the mockups' sizes directly. It only applies to the Material components on their way out, and it should not be "corrected" back to `-3` by a later change.
+
 ## `@reference` in component SCSS
 
 Any component stylesheet that uses `@apply` needs `@reference "../../styles.css";` at the top, or Tailwind resolves none of the tokens and fails silently at build time. Component styles written from scratch during the migration should prefer utility classes in the template and keep SCSS for what utilities cannot express.

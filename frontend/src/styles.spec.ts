@@ -64,6 +64,17 @@ describe("Nocturne token layer", () => {
     }
   });
 
+  it("keeps a visible keyboard focus ring on both kinds of control", () => {
+    // Two mechanisms, because Material's component styles are unlayered and beat the base
+    // layer's rule: the global `:focus-visible` outline serves the plain markup the rebuilt
+    // screens introduce, and Material's strong focus indicators serve its own controls. Losing
+    // either leaves a set of controls with no visible focus at all, silently.
+    expect(tailwindLayer).toMatch(/:focus-visible\s*{[^}]*outline:[^}]*var\(--color-accent-500\)/);
+    expect(materialLayer).toMatch(
+      /strong-focus-indicators\s*\(\s*\(\s*border-color:\s*var\(--color-accent-500\)/,
+    );
+  });
+
   it("renders the application on a dark scheme over the Nocturne ground", () => {
     expect(tailwindLayer).toMatch(/html\s*{[^}]*color-scheme:\s*dark/);
     expect(tailwindLayer).toMatch(/body\s*{[^}]*background-color:\s*var\(--color-bg\)/);

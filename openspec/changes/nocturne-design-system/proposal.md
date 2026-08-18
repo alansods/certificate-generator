@@ -26,9 +26,11 @@ This change lays the foundation only: tokens, the Tailwind 4 build, and the base
 - `frontend/src/styles/_tokens.scss` — values replaced, structure kept.
 - `frontend/src/styles/_theme-colors.scss` — deleted (with every color role overridden, the generated M3 palette has no consumer).
 - `docs/style-guide.md`, `docs/design-spec.md`.
+- `frontend/src/index.html` — the Roboto stylesheet link is removed; the type token names Inter, which is now self-hosted. The Material Icons link stays until the icons leave with the screens.
+- `frontend/tsconfig.spec.json` — `node` types, for the stylesheet-contract test.
 - Every screen changes appearance in this PR (dark ground, new accent) without changing behavior. No backend impact.
 
 ## Non-goals
 
 - Redesigning any screen's layout or markup — that is `nocturne-public-screens`, `nocturne-shell-navigation`, `nocturne-certificate-list` and `nocturne-certificate-screens`.
-- Removing Angular Material. `MatDialog` and `MatSnackBar` are kept for their focus and accessibility behavior; the rest leaves screen by screen.
+- Removing Angular Material. It leaves screen by screen, and `npm uninstall @angular/material` happens in `nocturne-certificate-screens`, once the last component is gone. `@angular/cdk` stays: it is a separate package with no Material styling, and it is what gives the rebuilt dialog a focus trap and correct modal semantics.

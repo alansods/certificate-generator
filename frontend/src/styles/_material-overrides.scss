@@ -8,8 +8,12 @@
 @mixin nocturne {
   @include mat.theme-overrides(
     (
+      corner-extra-small: tokens.radius(sm),
       corner-medium: tokens.radius(md),
       corner-large: tokens.radius(lg),
+      // `MatDialog` reads `corner-extra-large`; left alone it renders at Material's 28px, off a
+      // scale that tops out at 14px.
+      corner-extra-large: tokens.radius(lg),
     )
   );
 

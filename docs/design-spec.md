@@ -87,8 +87,10 @@ The scale also carries `--tracking-*` (the `.08em` the overline is set in), `--b
 matching the Sass values so a `md:` variant and the `respond-to` mixin mean the same width, and
 the layout constants as `--container-*` and `--size-*` so a migrated component writes
 `max-w-content` rather than `max-w-[820px]`. Every default Tailwind scale — color, text, radius,
-shadow, font, tracking, breakpoint — is reset to `initial` first, so a value the system never
-chose is never one class away.
+shadow, font, font weight, leading, tracking, breakpoint — is reset to `initial` first, so a
+value the system never chose is never one class away. `--font-weight-*` matters as much as the
+rest: the design has no bold, and Tailwind's `font-bold` would otherwise be a class away from a
+weight the app does not even self-host.
 
 Key values: `--spacing: 2.8px` (density 0.7 — `p-3` is 8.4px, `gap-4` is 11.2px, so a Tailwind
 spacing number in this project does **not** mean `n × 4px`), the accent and neutral ramps, the

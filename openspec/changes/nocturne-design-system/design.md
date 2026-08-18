@@ -8,7 +8,7 @@ The migration runs over several PRs (see `design-spec.md` §5). If the tokens la
 
 ## Density and the spacing base
 
-`design-spec.md` sets `--spacing: 2.8px` — Material density -3 expressed as Tailwind's spacing base, so `p-3` is 8.4px and `gap-4` is 11.2px. This is deliberate: the mockups are dense, and re-deriving a 4px base later would silently loosen every screen. The consequence to remember when reading Tailwind class names in review is that the numbers do not mean the usual `n × 4px`.
+`design-spec.md` sets `--spacing: 2.8px` — a 4px base at density 0.7, so `p-3` is 8.4px and `gap-4` is 11.2px. (This is the Tailwind spacing base only. What Material's own `density` setting ends up at is a separate decision, taken below for a different reason.) This is deliberate: the mockups are dense, and re-deriving a 4px base later would silently loosen every screen. The consequence to remember when reading Tailwind class names in review is that the numbers do not mean the usual `n × 4px`.
 
 ## Accent contrast
 

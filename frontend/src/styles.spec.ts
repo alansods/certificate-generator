@@ -35,13 +35,23 @@ describe("Nocturne token layer", () => {
     // Read the role list from Material's own source rather than restating it here: a role this
     // file forgets resolves to the generated violet palette, silently, on whichever component
     // happens to read it.
-    const roleSource = readFileSync(
-      join(
-        import.meta.dirname,
-        "../node_modules/@angular/material/core/tokens/m3/_md-sys-color.scss",
-      ),
-      "utf8",
+    // An internal path of the library, deliberately: it is the only authoritative list. If a
+    // Material release moves it, fail with something that says what to do rather than a bare
+    // ENOENT that reads like broken infrastructure.
+    const roleSourcePath = join(
+      import.meta.dirname,
+      "../node_modules/@angular/material/core/tokens/m3/_md-sys-color.scss",
     );
+    let roleSource: string;
+    try {
+      roleSource = readFileSync(roleSourcePath, "utf8");
+    } catch {
+      throw new Error(
+        `Angular Material no longer publishes its color roles at ${roleSourcePath}. ` +
+          "Find the new path and update this test, or the --mat-sys-* mapping in styles.scss " +
+          "can lose a role without anything noticing.",
+      );
+    }
     const roles = [...new Set([...roleSource.matchAll(/^\s+([a-z0-9-]+):/gm)].map((m) => m[1]))];
     const mapped = new Set(
       [...materialLayer.matchAll(/^\s*--mat-sys-([a-z0-9-]+):/gm)].map((match) => match[1]),

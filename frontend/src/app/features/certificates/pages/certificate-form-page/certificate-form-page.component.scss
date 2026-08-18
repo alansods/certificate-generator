@@ -30,7 +30,7 @@
   &__preview {
     flex: 1;
     padding: tokens.spacing(sm);
-    border: tokens.border-width(selectable) solid var(--mat-sys-outline-variant);
+    border: tokens.border-width(selectable) solid var(--mat-sys-outline);
     border-radius: tokens.radius(md);
     background: var(--mat-sys-surface);
     cursor: pointer;

@@ -14,6 +14,8 @@
   --font-*: initial;
   --tracking-*: initial;
   --breakpoint-*: initial;
+  --leading-*: initial;
+  --font-weight-*: initial;
 
   --color-bg: #161826;
   --color-surface: #232532;
@@ -62,6 +64,13 @@
   --color-shadow: #000000;
 
   --font-sans: Inter, "Helvetica Neue", Arial, sans-serif;
+
+  /* Never heavier than 500: the design has no bold. */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+
+  --leading-tight: 1.12;
+  --leading-base: 1.55;
 
   /* Density 0.7 against a 4px base: p-3 is 8.4px, gap-4 is 11.2px. Tailwind's spacing numbers
      do NOT mean n x 4px in this project. */
@@ -122,7 +131,7 @@
     color: var(--color-text);
     font-family: var(--font-sans);
     font-size: var(--text-base);
-    line-height: 1.55;
+    line-height: var(--leading-base);
     -webkit-font-smoothing: antialiased;
   }
 
@@ -130,9 +139,9 @@
   h2,
   h3,
   h4 {
-    font-weight: 500;
+    font-weight: var(--font-weight-medium);
     letter-spacing: -0.015em;
-    line-height: 1.12;
+    line-height: var(--leading-tight);
   }
 
   /* Tailwind's preflight strips the user agent's heading sizes. Restating them from the type

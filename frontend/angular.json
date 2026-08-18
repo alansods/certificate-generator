@@ -30,6 +30,7 @@
               }
             ],
             "styles": [
+              "@fontsource/inter/300.css",
               "@fontsource/inter/400.css",
               "@fontsource/inter/500.css",
               "src/styles.css",

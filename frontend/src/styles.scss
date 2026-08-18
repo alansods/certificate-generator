@@ -55,7 +55,7 @@ html {
 
   // `on-primary` is the app ground rather than `accent-900`: text at `accent-900` over an
   // `accent-500` fill measures 4.43:1 and fails AA, which is exactly the pairing the style guide
-  // forbids. Over the ground it is 6.03:1. The filled button disappears with the screen
+  // forbids. Over the ground it is 5.45:1. The filled button disappears with the screen
   // rebuilds, but it must not fail accessibility while it is still on screen.
   --mat-sys-primary: var(--color-accent-500);
   --mat-sys-on-primary: var(--color-bg);

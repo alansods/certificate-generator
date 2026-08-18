@@ -13,7 +13,7 @@
 - [x] 2.2 `verify-page.component.ts`: read the optional `code` route param; when absent, `rxResource`'s params return `undefined` so the idle page issues no request at all. The code-shape check lives in `verification/data/certificate-code.ts` so the in-app lookup can share it.
 - [x] 2.3 Submitting the form navigates to `/verify/{code}` rather than calling the API in place, so the result stays linkable.
 - [x] 2.4 `verify-page.component.html`: the entry form on a `surface` card, then the result card — 58px status circle, title in the semantic color, code in tabular numerals inside an accent-bordered capsule, `<dl>` of recipient, course, workload and issue date.
-- [x] 2.5 State treatments: checking (spinner plus the code being checked), valid (issued tokens), revoked (revoked tokens, fields at reduced opacity), not yet issued (pending tokens), not found (neutral), rate limited (pending tokens with the wait message). Every existing state requirement keeps its wording on screen.
+- [x] 2.5 State treatments: checking (spinner plus the code being checked), valid (issued tokens), revoked (revoked tokens, values dimmed while the labels keep full contrast), not yet issued (pending tokens), not found (neutral), rate limited (pending tokens with the wait message and a retry action, which the base requirement asks for). Every existing state requirement keeps its behavior on screen.
 - [x] 2.6 Drop the Material imports; both component stylesheets are deleted outright — nothing on either screen needs CSS the utilities cannot express.
 
 - [x] 2.7 A 12px step joins the type scale, and the gradient and the revoked dimming become named utilities, so neither page carries a raw value.

@@ -11,6 +11,10 @@ The system SHALL let a visitor look up a certificate by typing its code on the p
 - **WHEN** a visitor types a well-formed code and submits the form
 - **THEN** the application navigates to `/verify/{code}` and the result for that code is shown
 
+#### Scenario: Visitor re-submits the code already being shown
+- **WHEN** a visitor submits the same code that is already in the URL
+- **THEN** the lookup runs again, rather than navigating to an unchanged URL and appearing to do nothing
+
 #### Scenario: Visitor arrives with a code in the URL
 - **WHEN** a visitor navigates to `/verify/{code}`
 - **THEN** the code field is pre-filled with that code and the lookup runs without further interaction

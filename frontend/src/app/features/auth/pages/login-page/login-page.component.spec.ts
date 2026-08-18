@@ -155,8 +155,8 @@ describe("LoginPageComponent", () => {
 
     const button = requireElement<HTMLButtonElement>(nativeElement, "button[type='submit']");
 
-    // The four states the shell's "Interaction states are uniform" requirement asks for. Focus is
-    // the global rule and is deliberately absent here.
+    // The three states this change's "Interaction states are uniform" requirement asks for.
+    // Focus comes from the global rule and is deliberately not restated per control.
     expect(button.className).toContain("hover:bg-accent-900");
     expect(button.className).toContain("active:bg-accent-800");
     expect(button.className).toContain("disabled:opacity-45");

@@ -353,4 +353,45 @@ describe("VerifyPageComponent", () => {
 
     expect(link?.textContent?.trim()).toBe("Sign in");
   });
+
+  it("re-runs the lookup when the code already in the URL is submitted again", async () => {
+    const { fixture } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+    flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "ISSUED" });
+    await tick();
+    fixture.detectChanges();
+
+    // Navigating to an unchanged URL would do nothing at all, which reads as a dead button.
+    submitForm(fixture);
+    fixture.detectChanges();
+
+    flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "ISSUED" });
+    await tick();
+  });
+
+  it("invites another attempt when the lookup is rate limited", async () => {
+    const { fixture } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/public/verify/CERT-AAAA-BBBB"))
+      .flush(null, { status: 429, statusText: "Too Many Requests" });
+    await tick();
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+
+    expect(nativeElement.textContent).toContain("Too many checks");
+
+    const tryAgain = [...nativeElement.querySelectorAll("button")].find(
+      (button) => button.textContent?.trim() === "Try again",
+    );
+    if (!tryAgain) {
+      throw new Error("Expected a retry action on the rate-limited state");
+    }
+    tryAgain.click();
+    fixture.detectChanges();
+
+    flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "ISSUED" });
+    await tick();
+  });
 });

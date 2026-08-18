@@ -394,4 +394,24 @@ describe("VerifyPageComponent", () => {
     flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "ISSUED" });
     await tick();
   });
+
+  it("stops reporting the field invalid once the visitor starts correcting it", async () => {
+    const { fixture } = setup("");
+    fixture.detectChanges();
+
+    const input = codeField(fixture);
+    input.value = "NOPE";
+    input.dispatchEvent(new Event("input"));
+    submitForm(fixture);
+    fixture.detectChanges();
+
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+
+    input.value = "CERT-7K2M-9XQ4";
+    input.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+
+    expect(input.getAttribute("aria-invalid")).toBe("false");
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain("Use the format");
+  });
 });

@@ -1,0 +1,19 @@
+## Why Tailwind 4 and not a retuned `mat.theme()`
+
+`mat.theme()` is a palette generator: it takes a seed and emits a full Material 3 role set, then every Material component reads those roles. Getting the Nocturne look out of it means overriding the roles *and* overriding the components that read them — `_material-overrides.scss` is already that file, and it only grows. The mockups are not Material: the table is a CSS grid with a header in overline type, the status filter is a segmented control, elevation is a hairline `box-shadow` ring rather than a blurred drop shadow, and the accent is used as a 1px line on a transparent fill. Tailwind 4's CSS-first `@theme` gives one token source that both utility classes and any remaining SCSS can read.
+
+## Why the Material variables are re-pointed in this change
+
+The migration runs over several PRs (see `design-spec.md` §5). If the tokens land first and the Material mapping lands last, `main` sits for days with a dark shell around light Material controls. Mapping `--mat-sys-*` to the Nocturne tokens here costs a dozen lines and keeps every intermediate state shippable. The mapping is deleted along with the last Material component.
+
+## Density and the spacing base
+
+`design-spec.md` sets `--spacing: 2.8px` — Material density -3 expressed as Tailwind's spacing base, so `p-3` is 8.4px and `gap-4` is 11.2px. This is deliberate: the mockups are dense, and re-deriving a 4px base later would silently loosen every screen. The consequence to remember when reading Tailwind class names in review is that the numbers do not mean the usual `n × 4px`.
+
+## Accent contrast
+
+`#9184d9` on `#161826` measures ~3.4:1. That passes for large text, icons and chrome, and fails for body copy. Paragraph text that needs to be accent-colored uses `accent-300` (`#d2cefd`). This is written into the spec rather than left to reviewer memory because every screen change that follows will be tempted to break it.
+
+## `@reference` in component SCSS
+
+Any component stylesheet that uses `@apply` needs `@reference "../../styles.css";` at the top, or Tailwind resolves none of the tokens and fails silently at build time. Component styles written from scratch during the migration should prefer utility classes in the template and keep SCSS for what utilities cannot express.

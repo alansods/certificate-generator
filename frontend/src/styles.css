@@ -51,6 +51,7 @@
   --color-info-line: #3f5f7d;
 
   --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+  --color-shadow: #000000;
 
   --font-sans: Inter, "Helvetica Neue", Arial, sans-serif;
 
@@ -143,13 +144,4 @@
     var(--color-neutral-800) calc(100% - 48px),
     transparent
   );
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: -320px 0;
-  }
-  100% {
-    background-position: 320px 0;
-  }
 }

@@ -12,6 +12,7 @@ $text: #e9e9ed;
 $text-muted: #b2b6ca;
 $text-subtle: #9397ab;
 $divider: rgba(233, 233, 237, 0.16);
+$shadow: #000000;
 
 // Tonal ramps. Both are generated on one shared lightness scale, so the same step of either
 // reads at the same visual value.
@@ -122,16 +123,4 @@ $border-width-scale: (
 
 @function elevation($key) {
   @return map.get($elevation-scale, $key);
-}
-
-@function accent($step) {
-  @return map.get($accent, $step);
-}
-
-@function neutral($step) {
-  @return map.get($neutral, $step);
-}
-
-@function status($name, $role) {
-  @return map.get(map.get($status, $name), $role);
 }

@@ -60,6 +60,6 @@ html {
 
   --mat-sys-outline: var(--color-neutral-700);
   --mat-sys-outline-variant: var(--color-neutral-800);
-  --mat-sys-shadow: #000000;
+  --mat-sys-shadow: var(--color-shadow);
   --mat-sys-scrim: var(--color-neutral-900);
 }

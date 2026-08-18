@@ -1,32 +1,52 @@
-import { ChangeDetectionStrategy, Component, signal } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
-import { MatListModule } from "@angular/material/list";
-import { MatSidenavModule } from "@angular/material/sidenav";
-import { MatToolbarModule } from "@angular/material/toolbar";
-import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from "@angular/core";
+import { FormControl, ReactiveFormsModule } from "@angular/forms";
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
+import { SessionService } from "../core/auth/session.service";
+import { CERTIFICATE_CODE_LENGTH } from "../features/verification/data/certificate-code";
 
-/** Authenticated-area chrome: toolbar + collapsible nav. Nav links are added as features land. */
+/** Authenticated-area chrome: top bar with a quick code lookup, side navigation, and the
+ * signed-in identity with sign-out pinned to the bottom. */
 @Component({
   selector: "app-shell",
-  imports: [
-    RouterOutlet,
-    RouterLink,
-    RouterLinkActive,
-    MatToolbarModule,
-    MatSidenavModule,
-    MatListModule,
-    MatIconModule,
-    MatButtonModule,
-  ],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ReactiveFormsModule],
   templateUrl: "./shell.component.html",
-  styleUrl: "./shell.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ShellComponent {
-  protected readonly navOpen = signal(true);
+export class ShellComponent implements OnInit {
+  private readonly session = inject(SessionService);
+  private readonly router = inject(Router);
 
-  protected toggleNav(): void {
-    this.navOpen.update((open) => !open);
+  protected readonly maxLength = CERTIFICATE_CODE_LENGTH;
+  protected readonly quickCode = new FormControl("", { nonNullable: true });
+
+  protected readonly currentUser = this.session.currentUser;
+
+  protected readonly initials = computed(() => {
+    const name = this.currentUser()?.fullName?.trim();
+    if (!name) {
+      return null;
+    }
+    const parts = name.split(/\s+/);
+    const first = parts[0]?.[0] ?? "";
+    const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";
+    return (first + last).toUpperCase();
+  });
+
+  ngOnInit(): void {
+    this.session.load();
+  }
+
+  /** Hands the code to the in-app lookup rather than checking it here: one page owns the states. */
+  protected quickVerify(): void {
+    const code = this.quickCode.value.trim().toUpperCase();
+    if (!code) {
+      return;
+    }
+    void this.router.navigate(["/verify-code"], { queryParams: { code } });
+    this.quickCode.setValue("");
+  }
+
+  protected signOut(): void {
+    this.session.signOut();
   }
 }

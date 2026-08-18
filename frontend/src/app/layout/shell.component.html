@@ -1,19 +1,115 @@
-<mat-toolbar color="primary">
-  <button mat-icon-button (click)="toggleNav()" aria-label="Toggle navigation">
-    <mat-icon>menu</mat-icon>
-  </button>
-  <span>Certificate Generator</span>
-</mat-toolbar>
+<div class="flex min-h-dvh flex-col">
+  <header
+    class="sticky top-0 z-5 flex h-(--size-toolbar) flex-none items-center gap-8 bg-surface px-7 shadow-[inset_0_-1px_0_var(--color-divider)]"
+  >
+    <a routerLink="/certificates" class="text-sm font-medium text-text no-underline hover:text-text">
+      Certificate Generator
+    </a>
 
-<mat-sidenav-container class="shell-container">
-  <mat-sidenav mode="side" [opened]="navOpen()" class="shell-nav">
-    <mat-nav-list>
-      <a mat-list-item routerLink="/certificates" routerLinkActive="shell-nav__link--active">
+    <!-- Hidden below the medium breakpoint: the navigation still reaches the same page. -->
+    <form
+      (submit)="$event.preventDefault(); quickVerify()"
+      class="ml-auto hidden items-center gap-3 rounded-md border border-divider py-2 pr-2 pl-4 md:flex"
+    >
+      <label>
+        <span class="sr-only">Verify a certificate code</span>
+        <input
+          [formControl]="quickCode"
+          placeholder="Verify code"
+          [maxlength]="maxLength"
+          autocomplete="off"
+          spellcheck="false"
+          class="w-40 border-0 bg-transparent text-xs tabular-nums text-text placeholder:text-neutral-600"
+        />
+      </label>
+      <button
+        type="submit"
+        class="rounded-sm border border-divider px-3 py-1 text-xs text-muted hover:bg-neutral-900 active:bg-neutral-800"
+      >
+        Verify
+      </button>
+    </form>
+  </header>
+
+  <div class="flex min-h-0 flex-1 flex-col md:flex-row">
+    <nav
+      aria-label="Main"
+      class="order-2 flex flex-none gap-1 bg-surface p-4 shadow-[inset_0_1px_0_var(--color-divider)] md:order-1 md:w-(--size-nav) md:flex-col md:shadow-[inset_-1px_0_0_var(--color-divider)]"
+    >
+      <p class="hidden px-4 pt-2 pb-3 text-overline tracking-wide text-subtle uppercase md:block">
+        Menu
+      </p>
+
+      <a
+        routerLink="/certificates"
+        routerLinkActive="bg-accent-900 text-accent-300"
+        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline hover:bg-neutral-900 hover:text-text active:bg-neutral-800 md:flex-none md:justify-start"
+      >
+        <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="14" rx="2" />
+          <path d="M7 9h6M7 13h4" />
+        </svg>
         Certificates
       </a>
-    </mat-nav-list>
-  </mat-sidenav>
-  <mat-sidenav-content class="shell-content">
-    <router-outlet />
-  </mat-sidenav-content>
-</mat-sidenav-container>
+
+      <a
+        routerLink="/verify-code"
+        routerLinkActive="bg-accent-900 text-accent-300"
+        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline hover:bg-neutral-900 hover:text-text active:bg-neutral-800 md:flex-none md:justify-start"
+      >
+        <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+        Verify code
+      </a>
+
+      <div class="hidden md:mt-auto md:flex md:flex-col md:gap-1">
+        <div class="mx-1 my-2 h-px bg-divider" aria-hidden="true"></div>
+
+        <div class="flex items-center gap-3 px-4 py-3">
+          <span
+            class="grid size-10 flex-none place-items-center rounded-full bg-accent-800 text-xs font-medium text-accent-100"
+            aria-hidden="true"
+          >
+            {{ initials() ?? "—" }}
+          </span>
+          <span class="flex min-w-0 flex-col leading-tight">
+            <span class="truncate text-xs">{{ currentUser()?.fullName ?? "Signed in" }}</span>
+            <span class="text-overline tracking-wide text-accent-300">
+              {{ currentUser()?.role ?? "" }}
+            </span>
+          </span>
+        </div>
+
+        <button
+          type="button"
+          (click)="signOut()"
+          class="flex min-h-(--size-touch-target) items-center gap-3 rounded-md px-4 text-sm text-muted hover:bg-neutral-900 hover:text-text active:bg-neutral-800"
+        >
+          Sign out
+        </button>
+      </div>
+    </nav>
+
+    <main class="order-1 min-w-0 flex-1 md:order-2">
+      <router-outlet />
+    </main>
+  </div>
+
+  <!-- Below the medium breakpoint the identity block has no room in the bar, so sign-out moves
+       here rather than becoming unreachable. -->
+  <div class="order-3 flex items-center justify-between gap-4 bg-surface px-7 py-3 md:hidden">
+    <span class="truncate text-xs text-muted">
+      {{ currentUser()?.fullName ?? "Signed in" }}
+      <span class="text-accent-300">{{ currentUser()?.role ?? "" }}</span>
+    </span>
+    <button
+      type="button"
+      (click)="signOut()"
+      class="inline-flex min-h-(--size-touch-target) items-center rounded-md border border-divider px-4 text-sm text-muted hover:bg-neutral-900 active:bg-neutral-800"
+    >
+      Sign out
+    </button>
+  </div>
+</div>

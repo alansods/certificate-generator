@@ -5,6 +5,7 @@ import { BatchUploadPageComponent } from "./features/certificates/pages/batch-up
 import { CertificateFormPageComponent } from "./features/certificates/pages/certificate-form-page/certificate-form-page.component";
 import { CertificateListPageComponent } from "./features/certificates/pages/certificate-list-page/certificate-list-page.component";
 import { CertificatePreviewPageComponent } from "./features/certificates/pages/certificate-preview-page/certificate-preview-page.component";
+import { VerifyCodePageComponent } from "./features/verification/pages/verify-code-page/verify-code-page.component";
 import { VerifyPageComponent } from "./features/verification/pages/verify-page/verify-page.component";
 import { ShellComponent } from "./layout/shell.component";
 
@@ -23,6 +24,7 @@ export const routes: Routes = [
     children: [
       { path: "", pathMatch: "full", redirectTo: "certificates" },
       { path: "certificates", component: CertificateListPageComponent },
+      { path: "verify-code", component: VerifyCodePageComponent },
       { path: "certificates/new", component: CertificateFormPageComponent },
       { path: "certificates/batch", component: BatchUploadPageComponent },
       { path: "certificates/:id/edit", component: CertificateFormPageComponent },

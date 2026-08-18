@@ -39,7 +39,7 @@ describe("VerifyPageComponent", () => {
 
   function codeField(fixture: { nativeElement: unknown }): HTMLInputElement {
     const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
-      "input[name='code']",
+      "form input",
     );
     if (!input) {
       throw new Error("Expected the code field to be rendered");
@@ -47,12 +47,14 @@ describe("VerifyPageComponent", () => {
     return input;
   }
 
+  /** `requestSubmit()` rather than a bare submit event: it runs the same algorithm the browser's
+   * implicit submission does, so the test exercises the path a user actually takes. */
   function submitForm(fixture: { nativeElement: unknown }): void {
     const form = (fixture.nativeElement as HTMLElement).querySelector("form");
     if (!form) {
       throw new Error("Expected the lookup form to be rendered");
     }
-    form.dispatchEvent(new Event("submit"));
+    form.requestSubmit();
   }
 
   afterEach(() => {
@@ -102,10 +104,10 @@ describe("VerifyPageComponent", () => {
   });
 
   it("shows a not-found message for an unknown code", async () => {
-    const { fixture } = setup("UNKNOWN-CODE");
+    const { fixture } = setup("CERT-ZZZZ-9999");
     fixture.detectChanges();
     httpMock
-      .expectOne((r) => r.url.endsWith("/api/v1/public/verify/UNKNOWN-CODE"))
+      .expectOne((r) => r.url.endsWith("/api/v1/public/verify/CERT-ZZZZ-9999"))
       .flush(null, { status: 404, statusText: "Not Found" });
     await tick();
     fixture.detectChanges();
@@ -271,5 +273,84 @@ describe("VerifyPageComponent", () => {
         issueDate: "2026-05-15",
         status: "ISSUED",
       });
+  });
+
+  it("treats a malformed code in the URL as a typo rather than a missing certificate", () => {
+    const { fixture } = setup("not-a-code");
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
+
+    expect(text).toContain("Use the format");
+    expect(text).not.toContain("No certificate found");
+    // httpMock.verify() in afterEach asserts the API was never called.
+  });
+
+  it("normalizes a lowercase code from a shared link before looking it up", () => {
+    const { fixture } = setup("cert-7k2m-9xq4");
+    fixture.detectChanges();
+
+    expect(codeField(fixture).value).toBe("CERT-7K2M-9XQ4");
+
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/public/verify/CERT-7K2M-9XQ4"))
+      .flush({ ...VALID_RESPONSE, status: "ISSUED" });
+  });
+
+  it("keeps the field in step with the URL when the code changes after first render", async () => {
+    const { fixture, paramMap$ } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+    flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "ISSUED" });
+    await tick();
+    fixture.detectChanges();
+
+    paramMap$.next(convertToParamMap({ code: "CERT-CCCC-DDDD" }));
+    fixture.detectChanges();
+
+    expect(codeField(fixture).value).toBe("CERT-CCCC-DDDD");
+
+    flushVerify("CERT-CCCC-DDDD", { ...VALID_RESPONSE, status: "ISSUED" });
+    await tick();
+  });
+
+  it("keeps every detail readable on a revoked certificate, dimming only the values", async () => {
+    const { fixture } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+    flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "REVOKED" });
+    await tick();
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    const text = nativeElement.textContent ?? "";
+
+    expect(text).toContain("Certificate revoked");
+    expect(text).toContain("Jane Doe");
+    expect(text).toContain("Advanced Angular");
+    expect(text).toContain("40 hours");
+    expect(text).toContain("2026-05-15");
+
+    const list = nativeElement.querySelector("dl");
+
+    expect(list?.classList.contains("values-dimmed")).toBe(true);
+  });
+
+  it("labels the code field for assistive technology", () => {
+    const { fixture } = setup("");
+    fixture.detectChanges();
+
+    const label = (fixture.nativeElement as HTMLElement).querySelector("label span.sr-only");
+
+    expect(label?.textContent?.trim()).toBe("Certificate code");
+  });
+
+  it("offers a way back to sign in", () => {
+    const { fixture } = setup("");
+    fixture.detectChanges();
+
+    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
+      "a[href='/login']",
+    );
+
+    expect(link?.textContent?.trim()).toBe("Sign in");
   });
 });

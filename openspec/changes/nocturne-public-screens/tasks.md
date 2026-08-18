@@ -2,7 +2,7 @@
 
 - [x] 1.1 `login-page.component.html`: rewrite on Tailwind utilities — accent radial glow layer, 400px column, title and subtitle, `surface` card at `rounded-lg` with the elevation-1 ring.
 - [x] 1.2 Replace each `mat-form-field` with a `label` + `input` pair: 12px muted label, input with `bg-bg`, neutral border, accent caret, accent focus border, and an 11.5px error line bound to the existing form control state.
-- [x] 1.3 Wrong-credentials and rate-limit notices become bordered tinted panels (revoked and pending token pairs) with a leading icon, replacing the shared error line. Keep the existing distinction between the two — it is already specified.
+- [x] 1.3 Wrong-credentials, rate-limit and cold-start notices become bordered tinted panels (revoked, pending and info token pairs) with a leading icon, replacing the shared error line. Keep the existing distinction between the two — it is already specified.
 - [x] 1.4 Submit button: accent-bordered ghost, disabled at `opacity-45` while submitting, with the inline spinner and the cold-start label already specified.
 - [x] 1.5 Add the "Verify a code" link to the public verification page.
 - [x] 1.6 Drop `MatCard`, `MatFormField`, `MatInput`, `MatButton` and `MatProgressSpinner` from the component's imports; reduce `.scss` to what utilities cannot express.
@@ -15,6 +15,8 @@
 - [x] 2.4 `verify-page.component.html`: the entry form on a `surface` card, then the result card — 58px status circle, title in the semantic color, code in tabular numerals inside an accent-bordered capsule, `<dl>` of recipient, course, workload and issue date.
 - [x] 2.5 State treatments: checking (spinner plus the code being checked), valid (issued tokens), revoked (revoked tokens, fields at reduced opacity), not yet issued (pending tokens), not found (neutral), rate limited (pending tokens with the wait message). Every existing state requirement keeps its wording on screen.
 - [x] 2.6 Drop the Material imports; both component stylesheets are deleted outright — nothing on either screen needs CSS the utilities cannot express.
+
+- [x] 2.7 A 12px step joins the type scale, and the gradient and the revoked dimming become named utilities, so neither page carries a raw value.
 
 ## 3. Tests
 

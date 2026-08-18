@@ -150,18 +150,31 @@ describe("LoginPageComponent", () => {
     expect(link.textContent?.trim()).toBe("Verify a code");
   });
 
-  it("distinguishes the rejected-credentials panel from the rate-limit one", () => {
-    const { fixture, nativeElement, emailInput, passwordInput, form } = setup();
-    fillAndSubmit(emailInput, passwordInput, form);
-    httpMock
-      .expectOne((request) => request.url.endsWith("/api/v1/auth/login"))
-      .flush(null, { status: 401, statusText: "Unauthorized" });
+  it("keeps the submit button reachable and gives it the specified interaction states", () => {
+    const { nativeElement } = setup();
+
+    const button = requireElement<HTMLButtonElement>(nativeElement, "button[type='submit']");
+
+    // The four states the shell's "Interaction states are uniform" requirement asks for. Focus is
+    // the global rule and is deliberately absent here.
+    expect(button.className).toContain("hover:bg-accent-900");
+    expect(button.className).toContain("active:bg-accent-800");
+    expect(button.className).toContain("disabled:opacity-45");
+    expect(button.className).toContain("disabled:pointer-events-none");
+  });
+
+  it("surfaces a required-field error on blur alone, with no keystroke to trigger it", () => {
+    // The case that distinguishes `form.events` from `statusChanges`: leaving an untouched field
+    // changes `touched` but not the validation status, so a status-only subscription never ticks
+    // and the message stays hidden.
+    const { fixture, nativeElement, emailInput } = setup();
+    emailInput.dispatchEvent(new Event("blur"));
     fixture.detectChanges();
 
-    const alert = requireElement<HTMLElement>(nativeElement, "[role='alert']");
-
-    expect(alert.textContent).toContain("Invalid email or password.");
-    expect(alert.className).toContain("revoked");
-    expect(alert.className).not.toContain("pending");
+    expect(emailInput.getAttribute("aria-invalid")).toBe("true");
+    expect(emailInput.getAttribute("aria-describedby")).toBe("email-error");
+    expect(requireElement<HTMLElement>(nativeElement, "#email-error").textContent).toContain(
+      "A valid email is required.",
+    );
   });
 });

@@ -47,7 +47,9 @@ export class LoginPageComponent {
   });
 
   constructor() {
-    this.form.statusChanges
+    // `statusChanges` does not emit when a control merely becomes touched, so a field blurred
+    // while invalid stayed silent until the next keystroke. `events` covers touch and status both.
+    this.form.events
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.formState.update((tick) => tick + 1));
   }

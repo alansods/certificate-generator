@@ -173,6 +173,26 @@
   }
 }
 
+/* The accent glow behind the public screens' cards: the one place the accent covers area, and it
+   is a gradient to transparent rather than a fill. Declared once so the two pages cannot drift
+   into separately hand-tuned geometries. */
+@utility accent-glow {
+  background: radial-gradient(
+    880px 400px at 50% -14%,
+    var(--color-accent-900),
+    transparent 72%
+  );
+}
+
+/* Revoked verification results: the values are de-emphasized, the labels are not. Dimming the
+   whole list would drop the 12px labels to 3.3:1, failing AA on the one state whose requirement
+   is that every field stays readable. */
+@utility values-dimmed {
+  & > dd {
+    opacity: 0.7;
+  }
+}
+
 /* Freestanding rules fade out at both ends — a Nocturne signature. Box outlines and in-control
    separators stay solid. */
 @utility rule-fade {

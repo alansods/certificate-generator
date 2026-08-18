@@ -11,7 +11,8 @@ All code, identifiers, comments, commit messages, PR titles and bodies, specs, d
 Read these before working. Do not inline their content here.
 
 - `docs/PLAN.md` — full project plan: architecture, domain model, API surface, task backlog, deploy strategy
-- `docs/style-guide.md` — Angular, SCSS and Java conventions
+- `docs/style-guide.md` — Angular, styling and Java conventions
+- `docs/design-spec.md` — the Nocturne design system: tokens, components, screen states, migration order
 - `docs/api-reference.md` — REST contract
 - `docs/testing.md` — what "tested" means per layer
 - `openspec/project.md` — OpenSpec project context
@@ -21,7 +22,7 @@ Read these before working. Do not inline their content here.
 
 | Layer | Choice |
 |---|---|
-| Frontend | Angular 22, standalone components, signals, Angular Material + custom SCSS |
+| Frontend | Angular 22, standalone components, signals, Tailwind CSS 4 (Nocturne tokens). Angular Material is still on screen and leaving one change at a time — it is uninstalled by `nocturne-certificate-screens`; `@angular/cdk` stays for the dialog |
 | Backend | Java 21, Spring Boot 4.1.x, Maven, Spring Security, Spring Data JPA, Flyway |
 | Database | PostgreSQL (Neon free tier) |
 | PDF | Thymeleaf templates rendered by OpenHTMLtoPDF, QR via ZXing |

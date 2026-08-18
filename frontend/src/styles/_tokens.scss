@@ -1,44 +1,88 @@
-// Single source of truth for design values. A raw hex/px value outside this file is a review
-// blocker (docs/style-guide.md). The Material theme itself is generated from $brand-primary via
-// `ng generate @angular/material:theme-color` (see _theme-colors.scss) rather than a predefined
-// Material palette, so the brand color lives here too.
+// Nocturne design values for the SCSS that survives the Tailwind migration. The hexes here are
+// the same ones src/styles.css declares in `@theme` — that file is the source of truth, this one
+// mirrors it for Sass consumers and disappears with the last component stylesheet
+// (docs/design-spec.md, section 1.1). A raw hex/px value outside these two files is a review
+// blocker (docs/style-guide.md).
 @use "sass:map";
 
-// Brand seed color, fed into _theme-colors.scss's generated M3 palette.
-$brand-primary: #3457d5;
+// Ground and text.
+$bg: #161826;
+$surface: #232532;
+$text: #e9e9ed;
+$text-muted: #b2b6ca;
+$text-subtle: #9397ab;
+$divider: rgba(233, 233, 237, 0.16);
+$shadow: #000000;
 
-// Spacing scale (multiples of a 4px base unit).
-$spacing-scale: (
-  xs: 0.25rem,
-  sm: 0.5rem,
-  md: 1rem,
-  lg: 1.5rem,
-  xl: 2rem,
-  xxl: 3rem,
+// Tonal ramps. Both are generated on one shared lightness scale, so the same step of either
+// reads at the same visual value.
+$accent: (
+  100: #f5f4ff,
+  200: #e7e5fe,
+  300: #d2cefd,
+  400: #b5abfc,
+  500: #9184d9,
+  600: #796cbf,
+  700: #5d5294,
+  800: #423a6a,
+  900: #2b2741,
+);
+$neutral: (
+  100: #f3f5fe,
+  200: #e4e7f5,
+  300: #cfd3e5,
+  400: #b2b6ca,
+  500: #9397ab,
+  600: #75798c,
+  700: #595d6c,
+  800: #3f424d,
+  900: #292b31,
 );
 
-// Corner radii.
+// Certificate status, and the neutral pair used for informational notices.
+$status: (
+  draft: (fg: #9397ab, bg: #292b31, line: #3f424d),
+  issued: (fg: #6fd3a3, bg: #1b3a2c, line: #2f6b50),
+  revoked: (fg: #f2938c, bg: #3a2224, line: #7a3b3c),
+  pending: (fg: #e7b76a, bg: #392f1c, line: #7a6231),
+);
+$info: (fg: #93bde0, bg: #1e2b3a, line: #3f5f7d);
+
+// Spacing: a 4px base at density 0.7. The keys are unchanged from the Material-era scale so
+// component stylesheets keep compiling; the values are not.
+$spacing-scale: (
+  xs: 2.8px,
+  sm: 5.6px,
+  md: 11.2px,
+  lg: 16.8px,
+  xl: 22.4px,
+  xxl: 33.6px,
+);
+
 $radius-scale: (
   sm: 4px,
   md: 8px,
-  lg: 16px,
+  lg: 14px,
   full: 9999px,
 );
 
-// Typography scale, layered on top of Material's own system typography (var(--mat-sys-*)).
-$font-family-base: Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-family-base: Inter, "Helvetica Neue", Arial, sans-serif;
 $font-size-scale: (
-  sm: 0.75rem,
-  base: 1rem,
-  lg: 1.25rem,
-  xl: 1.5rem,
+  overline: 0.6875rem,
+  sm: 0.8125rem,
+  base: 0.9375rem,
+  md: 1.1875rem,
+  lg: 1.4375rem,
+  xl: 1.6875rem,
+  display: 1.9375rem,
 );
 
-// Elevation (box-shadow), for the rare non-Material surface that still needs one.
+// On a dark ground, elevation is a hairline edge plus ambient darkness rather than a blurred
+// drop shadow.
 $elevation-scale: (
-  1: 0 1px 2px rgba(0, 0, 0, 0.12),
-  2: 0 2px 4px rgba(0, 0, 0, 0.16),
-  3: 0 4px 8px rgba(0, 0, 0, 0.2),
+  1: (0 0 0 1px #3f424d),
+  2: (0 0 0 1px #595d6c, 0 6px 18px rgba(0, 0, 0, 0.55)),
+  3: (0 0 0 1px #9397ab, 0 16px 40px rgba(0, 0, 0, 0.65)),
 );
 
 // Breakpoints, consumed by the `respond-to` mixin in _breakpoints.scss.
@@ -48,12 +92,13 @@ $breakpoints: (
   lg: 1200px,
 );
 
-// Layout constants used by the authenticated shell (Material's own toolbar height and this
-// project's chosen sidenav width — neither comes from Material itself as a token).
+// Layout constants for the authenticated shell and the standalone public pages.
 $toolbar-height: 64px;
+$touch-target-min: 44px;
 $nav-width: 240px;
-$login-form-max-width: 360px;
-$content-max-width: 540px;
+$login-form-max-width: 400px;
+$verify-card-max-width: 560px;
+$content-max-width: 820px;
 
 // Border widths for interactive surfaces (e.g. selectable cards).
 $border-width-scale: (

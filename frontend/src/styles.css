@@ -1,0 +1,186 @@
+/* Nocturne design tokens. Single source of truth for color, spacing, radius, typography and
+   elevation (docs/style-guide.md, docs/design-spec.md). A raw hex or px value outside this file
+   is a review blocker. */
+@import "tailwindcss";
+
+@theme static {
+  /* Clear every default scale, not just the palette: a surviving `--shadow-md` or `--text-xs`
+     puts a value the design system never chose one class away, where no reviewer would see it as
+     a raw value. */
+  --color-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --font-*: initial;
+  --tracking-*: initial;
+  --breakpoint-*: initial;
+  --leading-*: initial;
+  --font-weight-*: initial;
+
+  --color-bg: #161826;
+  --color-surface: #232532;
+  --color-text: #e9e9ed;
+  --color-muted: #b2b6ca;
+  --color-subtle: #9397ab;
+
+  --color-accent-100: #f5f4ff;
+  --color-accent-200: #e7e5fe;
+  --color-accent-300: #d2cefd;
+  --color-accent-400: #b5abfc;
+  --color-accent-500: #9184d9;
+  --color-accent-600: #796cbf;
+  --color-accent-700: #5d5294;
+  --color-accent-800: #423a6a;
+  --color-accent-900: #2b2741;
+
+  --color-neutral-100: #f3f5fe;
+  --color-neutral-200: #e4e7f5;
+  --color-neutral-300: #cfd3e5;
+  --color-neutral-400: #b2b6ca;
+  --color-neutral-500: #9397ab;
+  --color-neutral-600: #75798c;
+  --color-neutral-700: #595d6c;
+  --color-neutral-800: #3f424d;
+  --color-neutral-900: #292b31;
+
+  /* Certificate status and neutral notices: foreground over a tinted ground, 1px line. */
+  --color-draft: #9397ab;
+  --color-draft-bg: #292b31;
+  --color-draft-line: #3f424d;
+  --color-issued: #6fd3a3;
+  --color-issued-bg: #1b3a2c;
+  --color-issued-line: #2f6b50;
+  --color-revoked: #f2938c;
+  --color-revoked-bg: #3a2224;
+  --color-revoked-line: #7a3b3c;
+  --color-pending: #e7b76a;
+  --color-pending-bg: #392f1c;
+  --color-pending-line: #7a6231;
+  --color-info: #93bde0;
+  --color-info-bg: #1e2b3a;
+  --color-info-line: #3f5f7d;
+
+  --color-divider: color-mix(in srgb, var(--color-text) 16%, transparent);
+  --color-shadow: #000000;
+
+  --font-sans: Inter, "Helvetica Neue", Arial, sans-serif;
+
+  /* Never heavier than 500: the design has no bold. */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+
+  --leading-tight: 1.12;
+  --leading-base: 1.55;
+
+  /* Density 0.7 against a 4px base: p-3 is 8.4px, gap-4 is 11.2px. Tailwind's spacing numbers
+     do NOT mean n x 4px in this project. */
+  --spacing: 2.8px;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.01em;
+  --tracking-normal: 0;
+  /* The overline tracking the table headers and section kickers are drawn with. */
+  --tracking-wide: 0.08em;
+
+  --text-overline: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.9375rem;
+  --text-md: 1.1875rem;
+  --text-lg: 1.4375rem;
+  --text-xl: 1.6875rem;
+  --text-display: 1.9375rem;
+
+  /* Dark elevation is a hairline edge plus ambient darkness, not a blurred drop shadow. */
+  --shadow-e1: 0 0 0 1px var(--color-neutral-800);
+  --shadow-e2:
+    0 0 0 1px var(--color-neutral-700), 0 6px 18px rgb(0 0 0 / 0.55);
+  --shadow-e3:
+    0 0 0 1px var(--color-neutral-500), 0 16px 40px rgb(0 0 0 / 0.65);
+
+  /* Breakpoints, matching _tokens.scss and the `respond-to` mixin. Tailwind's own 640/768/1024
+     would otherwise make "below the medium breakpoint" mean two different widths depending on
+     whether a rule was written as a `md:` variant or in Sass. */
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 900px;
+  --breakpoint-lg: 1200px;
+
+  /* Layout constants, so a migrated component writes `max-w-content` rather than `max-w-[820px]`.
+     The two sizes are read as `w-(--size-nav)` and `h-(--size-toolbar)`. */
+  --container-login: 400px;
+  --container-verify: 560px;
+  --container-content: 820px;
+  --size-toolbar: 64px;
+  --size-nav: 240px;
+  --size-touch-target: 44px;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    height: 100%;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: var(--leading-base);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: var(--font-weight-medium);
+    letter-spacing: -0.015em;
+    line-height: var(--leading-tight);
+  }
+
+  /* Tailwind's preflight strips the user agent's heading sizes. Restating them from the type
+     scale keeps a hierarchy on every screen, including the ones not yet rebuilt. */
+  h1 {
+    font-size: var(--text-xl);
+  }
+
+  h2 {
+    font-size: var(--text-lg);
+  }
+
+  h3 {
+    font-size: var(--text-md);
+  }
+
+  h4 {
+    font-size: var(--text-base);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-500);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-accent-500) 30%, transparent);
+  }
+}
+
+/* Freestanding rules fade out at both ends — a Nocturne signature. Box outlines and in-control
+   separators stay solid. */
+@utility rule-fade {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--color-neutral-800) 48px,
+    var(--color-neutral-800) calc(100% - 48px),
+    transparent
+  );
+}

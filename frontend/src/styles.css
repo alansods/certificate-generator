@@ -4,8 +4,16 @@
 @import "tailwindcss";
 
 @theme static {
-  /* Clear Tailwind's default palette: the design system defines every color it uses. */
+  /* Clear every default scale, not just the palette: a surviving `--shadow-md` or `--text-xs`
+     puts a value the design system never chose one class away, where no reviewer would see it as
+     a raw value. */
   --color-*: initial;
+  --text-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --font-*: initial;
+  --tracking-*: initial;
+  --breakpoint-*: initial;
 
   --color-bg: #161826;
   --color-surface: #232532;
@@ -50,7 +58,7 @@
   --color-info-bg: #1e2b3a;
   --color-info-line: #3f5f7d;
 
-  --color-divider: color-mix(in srgb, #e9e9ed 16%, transparent);
+  --color-divider: color-mix(in srgb, var(--color-text) 16%, transparent);
   --color-shadow: #000000;
 
   --font-sans: Inter, "Helvetica Neue", Arial, sans-serif;
@@ -63,6 +71,12 @@
   --radius-md: 8px;
   --radius-lg: 14px;
 
+  --tracking-tight: -0.02em;
+  --tracking-snug: -0.01em;
+  --tracking-normal: 0;
+  /* The overline tracking the table headers and section kickers are drawn with. */
+  --tracking-wide: 0.08em;
+
   --text-overline: 0.6875rem;
   --text-sm: 0.8125rem;
   --text-base: 0.9375rem;
@@ -72,11 +86,27 @@
   --text-display: 1.9375rem;
 
   /* Dark elevation is a hairline edge plus ambient darkness, not a blurred drop shadow. */
-  --shadow-e1: 0 0 0 1px #3f424d;
+  --shadow-e1: 0 0 0 1px var(--color-neutral-800);
   --shadow-e2:
-    0 0 0 1px #595d6c, 0 6px 18px rgb(0 0 0 / 0.55);
+    0 0 0 1px var(--color-neutral-700), 0 6px 18px rgb(0 0 0 / 0.55);
   --shadow-e3:
-    0 0 0 1px #9397ab, 0 16px 40px rgb(0 0 0 / 0.65);
+    0 0 0 1px var(--color-neutral-500), 0 16px 40px rgb(0 0 0 / 0.65);
+
+  /* Breakpoints, matching _tokens.scss and the `respond-to` mixin. Tailwind's own 640/768/1024
+     would otherwise make "below the medium breakpoint" mean two different widths depending on
+     whether a rule was written as a `md:` variant or in Sass. */
+  --breakpoint-sm: 600px;
+  --breakpoint-md: 900px;
+  --breakpoint-lg: 1200px;
+
+  /* Layout constants, so a migrated component writes `max-w-content` rather than `max-w-[820px]`.
+     The two sizes are read as `w-(--size-nav)` and `h-(--size-toolbar)`. */
+  --container-login: 400px;
+  --container-verify: 560px;
+  --container-content: 820px;
+  --size-toolbar: 64px;
+  --size-nav: 240px;
+  --size-touch-target: 44px;
 }
 
 @layer base {

@@ -31,8 +31,32 @@ describe("Nocturne token layer", () => {
     expect([...new Set(referenced)].filter((token) => !declaredTokens.has(token))).toEqual([]);
   });
 
+  it("maps every Material color role Angular Material defines", () => {
+    // Read the role list from Material's own source rather than restating it here: a role this
+    // file forgets resolves to the generated violet palette, silently, on whichever component
+    // happens to read it.
+    const roleSource = readFileSync(
+      join(
+        import.meta.dirname,
+        "../node_modules/@angular/material/core/tokens/m3/_md-sys-color.scss",
+      ),
+      "utf8",
+    );
+    const roles = [...new Set([...roleSource.matchAll(/^\s+([a-z0-9-]+):/gm)].map((m) => m[1]))];
+    const mapped = new Set(
+      [...materialLayer.matchAll(/^\s*--mat-sys-([a-z0-9-]+):/gm)].map((match) => match[1]),
+    );
+
+    expect(roles.length).toBeGreaterThan(40);
+    expect(roles.filter((role) => !mapped.has(role))).toEqual([]);
+  });
+
   it("resolves every Material color role to a token rather than a literal", () => {
-    const roles = [...materialLayer.matchAll(/^\s*(--mat-sys-[a-z0-9-]+):\s*([^;]+);/gm)];
+    // The elevation roles are exempt: `level0` is legitimately `none`, and the rest carry a
+    // composite shadow that is itself a token.
+    const roles = [...materialLayer.matchAll(/^\s*(--mat-sys-[a-z0-9-]+):\s*([^;]+);/gm)].filter(
+      ([, role]) => !role.startsWith("--mat-sys-level"),
+    );
 
     expect(roles.length).toBeGreaterThan(0);
     for (const [, role, value] of roles) {

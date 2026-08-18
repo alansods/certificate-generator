@@ -50,6 +50,7 @@ $font-size-scale: (
   overline: 0.6875rem,  // 11px, uppercase, letter-spacing .08em
   sm:       0.8125rem,  // 13px
   base:     0.9375rem,  // 15px
+  md:       1.1875rem,  // 19px — card titles, result headings
   lg:       1.4375rem,  // 23px — page titles
   xl:       1.6875rem,  // 27px
   display:  1.9375rem   // 31px
@@ -81,6 +82,13 @@ sight, and tree-shaken variables would silently resolve to nothing there.
 
 The palette is cleared with `--color-*: initial` before the Nocturne colors are declared, so the
 project does not carry Tailwind's twenty-two default hues that nobody uses.
+
+The scale also carries `--tracking-*` (the `.08em` the overline is set in), `--breakpoint-*`
+matching the Sass values so a `md:` variant and the `respond-to` mixin mean the same width, and
+the layout constants as `--container-*` and `--size-*` so a migrated component writes
+`max-w-content` rather than `max-w-[820px]`. Every default Tailwind scale — color, text, radius,
+shadow, font, tracking, breakpoint — is reset to `initial` first, so a value the system never
+chose is never one class away.
 
 Key values: `--spacing: 2.8px` (density 0.7 — `p-3` is 8.4px, `gap-4` is 11.2px, so a Tailwind
 spacing number in this project does **not** mean `n × 4px`), the accent and neutral ramps, the

@@ -26,7 +26,7 @@ The system SHALL give every interactive control the same four states: an accent-
 
 #### Scenario: A control receives keyboard focus
 - **WHEN** a user moves keyboard focus to an interactive control
-- **THEN** an accent outline is painted around it with an offset, via `:focus-visible` rather than per-component styling
+- **THEN** an accent outline is painted around it — from the global `:focus-visible` rule for plain markup, and from the component library's own focus indicators for the Material components still on screen — and never from focus styling written per component
 
 #### Scenario: A control is disabled
 - **WHEN** an interactive control is disabled

@@ -1,10 +1,10 @@
-<div class="relative flex min-h-screen items-center justify-center px-7 py-14">
+<div class="relative flex min-h-dvh items-center justify-center px-7 py-14">
   <div class="accent-glow pointer-events-none absolute inset-0" aria-hidden="true"></div>
 
   <div class="relative flex w-full max-w-verify flex-col gap-6">
     <h1 class="text-center text-sm font-medium">Certificate Generator</h1>
 
-    <form (submit)="submit(); $event.preventDefault()" class="flex flex-col gap-3 rounded-lg bg-surface p-4 shadow-e1">
+    <form (submit)="$event.preventDefault(); submit()" class="flex flex-col gap-3 rounded-lg bg-surface p-4 shadow-e1">
       <div class="flex gap-3">
         <label class="flex-1">
           <span class="sr-only">Certificate code</span>
@@ -16,7 +16,7 @@
             spellcheck="false"
             [attr.aria-invalid]="showFormatError() || urlCodeMalformed()"
             [attr.aria-describedby]="showFormatError() || urlCodeMalformed() ? 'code-format-error' : null"
-            class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm tabular-nums tracking-wide caret-accent-500 hover:border-neutral-500 focus:border-accent-500"
+            class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm tabular-nums tracking-wide caret-accent-500 hover:border-neutral-500"
             [class.border-neutral-600]="!(showFormatError() || urlCodeMalformed())"
             [class.border-revoked]="showFormatError() || urlCodeMalformed()"
           />
@@ -29,7 +29,7 @@
         </button>
       </div>
       @if (showFormatError() || urlCodeMalformed()) {
-        <p id="code-format-error" class="m-0 px-1 text-xs text-revoked">
+        <p id="code-format-error" class="m-0 px-1 text-xs text-revoked" role="alert">
           Use the format CERT-XXXX-XXXX (letters and numbers).
         </p>
       }
@@ -37,17 +37,17 @@
 
     <!-- One persistent live region: swapping the contents of an existing region announces far more
          reliably than creating the region and its content together. -->
-    <div aria-live="polite" role="status">
+    <div aria-live="polite" aria-atomic="false">
       @if (hasResult() && !urlCodeMalformed()) {
         <div class="overflow-hidden rounded-lg bg-surface shadow-e2">
           @if (isLoading()) {
             <div class="flex flex-col items-center gap-5 px-9 py-16 text-center">
               <span
-                class="size-10 animate-spin rounded-full border-[2.5px] border-accent-800 border-t-accent-500"
+                class="size-10 animate-spin rounded-full border-2 border-accent-800 border-t-accent-500"
                 aria-hidden="true"
               ></span>
               <p class="m-0 font-medium">Checking {{ code() }}</p>
-              <p class="m-0 max-w-prose text-sm text-subtle">Checking the official registry.</p>
+              <p class="m-0 text-sm text-subtle">Checking the official registry.</p>
             </div>
           } @else if (errorKind() === "not-found") {
             <div class="flex flex-col items-center gap-5 px-9 py-16 text-center">
@@ -61,7 +61,7 @@
                 </svg>
               </span>
               <h2 class="text-lg">No certificate found</h2>
-              <p class="m-0 max-w-prose text-sm text-subtle">
+              <p class="m-0 max-w-measure text-sm text-subtle">
                 The code <span class="tabular-nums text-text">{{ code() }}</span> does not match any
                 issued certificate. Check it character by character.
               </p>
@@ -78,7 +78,7 @@
                 </svg>
               </span>
               <h2 class="text-lg text-pending">Too many checks</h2>
-              <p class="m-0 max-w-prose text-sm text-subtle">
+              <p class="m-0 max-w-measure text-sm text-subtle">
                 This address made too many lookups in a short time. Wait a few seconds and try again.
               </p>
               <button
@@ -92,7 +92,7 @@
           } @else if (errorKind() === "generic") {
             <div class="flex flex-col items-center gap-5 px-9 py-16 text-center">
               <h2 class="text-lg">Something went wrong</h2>
-              <p class="m-0 max-w-prose text-sm text-subtle">
+              <p class="m-0 max-w-measure text-sm text-subtle">
                 We could not check this certificate. Please try again.
               </p>
               <button
@@ -109,7 +109,7 @@
                 @switch (cert.status) {
                   @case ("ISSUED") {
                     <span
-                      class="grid size-21 place-items-center rounded-full border border-issued-line bg-issued-bg text-issued"
+                      class="grid size-20 place-items-center rounded-full border border-issued-line bg-issued-bg text-issued"
                       aria-hidden="true"
                     >
                       <svg class="size-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -118,14 +118,14 @@
                     </span>
                     <div class="flex flex-col gap-2">
                       <h2 class="text-lg text-issued">Valid certificate</h2>
-                      <p class="m-0 max-w-prose text-sm text-subtle">
+                      <p class="m-0 max-w-measure text-sm text-subtle">
                         Issued by Certificate Generator and verified just now.
                       </p>
                     </div>
                   }
                   @case ("REVOKED") {
                     <span
-                      class="grid size-21 place-items-center rounded-full border border-revoked-line bg-revoked-bg text-revoked"
+                      class="grid size-20 place-items-center rounded-full border border-revoked-line bg-revoked-bg text-revoked"
                       aria-hidden="true"
                     >
                       <svg class="size-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -134,7 +134,7 @@
                     </span>
                     <div class="flex flex-col gap-2">
                       <h2 class="text-lg text-revoked">Certificate revoked</h2>
-                      <p class="m-0 max-w-prose text-sm text-subtle">
+                      <p class="m-0 max-w-measure text-sm text-subtle">
                         This certificate was issued and later revoked. Its details are shown below
                         and are no longer valid.
                       </p>
@@ -142,7 +142,7 @@
                   }
                   @case ("DRAFT") {
                     <span
-                      class="grid size-21 place-items-center rounded-full border border-pending-line bg-pending-bg text-pending"
+                      class="grid size-20 place-items-center rounded-full border border-pending-line bg-pending-bg text-pending"
                       aria-hidden="true"
                     >
                       <svg class="size-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -152,7 +152,7 @@
                     </span>
                     <div class="flex flex-col gap-2">
                       <h2 class="text-lg text-pending">Not yet issued</h2>
-                      <p class="m-0 max-w-prose text-sm text-subtle">
+                      <p class="m-0 max-w-measure text-sm text-subtle">
                         This certificate exists but has not been issued yet.
                       </p>
                     </div>
@@ -160,7 +160,7 @@
                   @default {
                     <div class="flex flex-col gap-2">
                       <h2 class="text-lg">Status unavailable</h2>
-                      <p class="m-0 max-w-prose text-sm text-subtle">
+                      <p class="m-0 max-w-measure text-sm text-subtle">
                         This certificate's status could not be interpreted. Treat it as unverified.
                       </p>
                     </div>

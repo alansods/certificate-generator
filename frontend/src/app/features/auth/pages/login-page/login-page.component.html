@@ -1,4 +1,4 @@
-<div class="relative flex min-h-screen items-center justify-center px-7 py-14">
+<div class="relative flex min-h-dvh items-center justify-center px-7 py-14">
   <div class="accent-glow pointer-events-none absolute inset-0" aria-hidden="true"></div>
 
   <div class="relative flex w-full max-w-login flex-col gap-7">
@@ -21,7 +21,7 @@
           placeholder="you@example.com"
           [attr.aria-invalid]="emailInvalid()"
           [attr.aria-describedby]="emailInvalid() ? 'email-error' : null"
-          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500 focus:border-accent-500"
+          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
           [class.border-neutral-600]="!emailInvalid()"
           [class.border-revoked]="emailInvalid()"
         />
@@ -39,7 +39,7 @@
           placeholder="••••••••"
           [attr.aria-invalid]="passwordInvalid()"
           [attr.aria-describedby]="passwordInvalid() ? 'password-error' : null"
-          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500 focus:border-accent-500"
+          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
           [class.border-neutral-600]="!passwordInvalid()"
           [class.border-revoked]="passwordInvalid()"
         />
@@ -48,46 +48,48 @@
         }
       </label>
 
-      @if (errorKind() === "credentials") {
-        <p
-          class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
-          role="alert"
-        >
-          <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
-          Invalid email or password.
-        </p>
-      } @else if (errorKind() === "rate-limited") {
-        <p
-          class="m-0 flex items-start gap-4 rounded-md border border-pending-line bg-pending-bg px-4 py-3 text-sm text-pending"
-          role="alert"
-        >
-          <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
-          Too many attempts. Try again in a few minutes.
-        </p>
-      } @else if (errorMessage(); as message) {
-        <p
-          class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
-          role="alert"
-        >
-          <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
-          {{ message }}
-        </p>
-      }
+      <div aria-live="polite" aria-atomic="false">
+        @if (errorKind() === "credentials") {
+          <p
+            class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+            role="alert"
+          >
+            <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+            Invalid email or password.
+          </p>
+        } @else if (errorKind() === "rate-limited") {
+          <p
+            class="m-0 flex items-start gap-4 rounded-md border border-pending-line bg-pending-bg px-4 py-3 text-sm text-pending"
+            role="alert"
+          >
+            <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+            Too many attempts. Try again in a few minutes.
+          </p>
+        } @else if (errorMessage(); as message) {
+          <p
+            class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+            role="alert"
+          >
+            <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+            {{ message }}
+          </p>
+        }
 
-      @if (showColdStart()) {
-        <p
-          class="m-0 flex items-start gap-4 rounded-md border border-info-line bg-info-bg px-4 py-3 text-sm text-info"
-          role="status"
-        >
-          <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
-          The server is waking up — this can take up to a minute on the first request.
-        </p>
-      }
+        @if (showColdStart()) {
+          <p
+            class="m-0 flex items-start gap-4 rounded-md border border-info-line bg-info-bg px-4 py-3 text-sm text-info"
+            role="status"
+          >
+            <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+            The server is waking up — this can take up to a minute on the first request.
+          </p>
+        }
+      </div>
 
       <button
         type="submit"
-        [disabled]="submitting()"
-        class="mt-1 inline-flex min-h-(--size-touch-target) items-center justify-center gap-3 rounded-md border border-accent-500 px-6 py-3 text-sm font-medium text-accent-500 hover:bg-accent-900 active:bg-accent-800 disabled:pointer-events-none disabled:opacity-45"
+        [attr.aria-disabled]="submitting()"
+        class="mt-1 inline-flex min-h-(--size-touch-target) items-center justify-center gap-3 rounded-md border border-accent-500 px-6 py-3 text-sm font-medium text-accent-500 hover:bg-accent-900 active:bg-accent-800 aria-disabled:pointer-events-none aria-disabled:opacity-45"
       >
         @if (submitting()) {
           <span

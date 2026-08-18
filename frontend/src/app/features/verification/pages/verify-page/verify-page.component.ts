@@ -38,8 +38,12 @@ export class VerifyPageComponent {
   );
 
   protected readonly control = new FormControl("", { nonNullable: true });
+
+  /** Cleared as soon as the visitor edits the field: leaving `aria-invalid` set while they type a
+   * correct code reports the control as invalid for input that is not. */
+  private readonly typed = toSignal(this.control.valueChanges, { initialValue: "" });
   protected readonly showFormatError = linkedSignal({
-    source: this.code,
+    source: () => ({ code: this.code(), typed: this.typed() }),
     computation: () => false,
   });
 
@@ -72,7 +76,8 @@ export class VerifyPageComponent {
   constructor() {
     // The field follows the URL, including back and forward between two codes — seeding it once
     // would leave the text of one lookup beside the result of another.
-    effect(() => this.control.setValue(this.code()));
+    // `emitEvent: false` so following the route does not look like the visitor typing.
+    effect(() => this.control.setValue(this.code(), { emitEvent: false }));
   }
 
   /** The result stays linkable: submitting navigates rather than fetching in place. */

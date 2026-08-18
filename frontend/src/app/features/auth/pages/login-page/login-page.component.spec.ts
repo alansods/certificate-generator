@@ -157,10 +157,31 @@ describe("LoginPageComponent", () => {
 
     // The three states this change's "Interaction states are uniform" requirement asks for.
     // Focus comes from the global rule and is deliberately not restated per control.
-    expect(button.className).toContain("hover:bg-accent-900");
-    expect(button.className).toContain("active:bg-accent-800");
-    expect(button.className).toContain("disabled:opacity-45");
-    expect(button.className).toContain("disabled:pointer-events-none");
+    const classes = button.className.split(/\s+/);
+
+    expect(classes).toContain("hover:bg-accent-900");
+    expect(classes).toContain("active:bg-accent-800");
+    expect(classes).toContain("aria-disabled:opacity-45");
+    expect(classes).toContain("aria-disabled:pointer-events-none");
+  });
+
+  it("stays focusable while submitting and turns a second activation away", () => {
+    // `disabled` would drop focus to <body> for the length of a cold start, which can be a minute.
+    const { fixture, nativeElement, emailInput, passwordInput, form } = setup();
+    fillAndSubmit(emailInput, passwordInput, form);
+    fixture.detectChanges();
+
+    const button = requireElement<HTMLButtonElement>(nativeElement, "button[type='submit']");
+
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute("aria-disabled")).toBe("true");
+
+    // A second submit must not fire a second request; httpMock.verify() would fail if it did.
+    form.dispatchEvent(new Event("submit"));
+
+    httpMock
+      .expectOne((request) => request.url.endsWith("/api/v1/auth/login"))
+      .flush({ accessToken: "a", refreshToken: "r", expiresIn: 900 });
   });
 
   it("surfaces a required-field error on blur alone, with no keystroke to trigger it", () => {

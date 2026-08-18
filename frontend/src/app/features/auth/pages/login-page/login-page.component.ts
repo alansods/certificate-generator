@@ -55,6 +55,12 @@ export class LoginPageComponent {
   }
 
   protected submit(): void {
+    // The button stays focusable while submitting (see the template: `aria-disabled`, not
+    // `disabled`, so focus is not dropped to <body> for the length of a cold start), which means
+    // a second activation has to be turned away here.
+    if (this.submitting()) {
+      return;
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       this.formState.update((tick) => tick + 1);

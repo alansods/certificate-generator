@@ -112,6 +112,7 @@
   /* Layout constants, so a migrated component writes `max-w-content` rather than `max-w-[820px]`.
      The two sizes are read as `w-(--size-nav)` and `h-(--size-toolbar)`. */
   --container-login: 400px;
+  --container-measure: 42ch;
   --container-verify: 560px;
   --container-content: 820px;
   --size-toolbar: 64px;

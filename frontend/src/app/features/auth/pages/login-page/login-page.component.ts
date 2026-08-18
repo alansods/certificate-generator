@@ -1,11 +1,7 @@
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, signal } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { MatButtonModule } from "@angular/material/button";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
-import { Router } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { finalize } from "rxjs";
 import { toProblemDetail } from "../../../../core/http/problem-detail";
 import { AuthApi } from "../../data/auth.api";
@@ -13,17 +9,14 @@ import { AuthApi } from "../../data/auth.api";
 /** Long enough that a normal warm-server login never shows it; see design.md ("Cold-start state"). */
 const COLD_START_THRESHOLD_MS = 5000;
 
+/** Rejected credentials and rate limiting get their own treatments; anything else falls back to
+ * the server's own message. */
+type LoginErrorKind = "credentials" | "rate-limited" | "generic";
+
 @Component({
   selector: "app-login-page",
-  imports: [
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatProgressSpinnerModule,
-  ],
+  imports: [ReactiveFormsModule, RouterLink],
   templateUrl: "./login-page.component.html",
-  styleUrl: "./login-page.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginPageComponent {
@@ -38,16 +31,37 @@ export class LoginPageComponent {
 
   protected readonly submitting = signal(false);
   protected readonly showColdStart = signal(false);
+  protected readonly errorKind = signal<LoginErrorKind | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
+
+  private readonly formState = signal(0);
+
+  protected readonly emailInvalid = computed(() => {
+    this.formState();
+    return this.form.controls.email.invalid && this.form.controls.email.touched;
+  });
+
+  protected readonly passwordInvalid = computed(() => {
+    this.formState();
+    return this.form.controls.password.invalid && this.form.controls.password.touched;
+  });
+
+  constructor() {
+    this.form.statusChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.formState.update((tick) => tick + 1));
+  }
 
   protected submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.formState.update((tick) => tick + 1);
       return;
     }
 
     const { email, password } = this.form.getRawValue();
     this.submitting.set(true);
+    this.errorKind.set(null);
     this.errorMessage.set(null);
     this.showColdStart.set(false);
 
@@ -65,18 +79,21 @@ export class LoginPageComponent {
       )
       .subscribe({
         next: () => void this.router.navigateByUrl("/"),
-        error: (error: unknown) => this.errorMessage.set(this.messageFor(error)),
+        error: (error: unknown) => this.handle(error),
       });
   }
 
-  private messageFor(error: unknown): string {
+  private handle(error: unknown): void {
     const problem = toProblemDetail(error);
     if (problem.status === 401) {
-      return "Invalid email or password.";
+      this.errorKind.set("credentials");
+      return;
     }
     if (problem.status === 429) {
-      return "Too many attempts. Try again in a few minutes.";
+      this.errorKind.set("rate-limited");
+      return;
     }
-    return problem.detail ?? "Something went wrong. Please try again.";
+    this.errorKind.set("generic");
+    this.errorMessage.set(problem.detail ?? "Something went wrong. Please try again.");
   }
 }

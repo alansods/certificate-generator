@@ -1,45 +1,106 @@
-<div class="login-page">
-  <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
-    <h1>Sign in</h1>
+<div class="relative flex min-h-full flex-1 items-center justify-center px-7 py-14">
+  <!-- The accent glow behind the card: the only place the accent covers area, and it is a
+       gradient to transparent rather than a fill. -->
+  <div
+    class="pointer-events-none absolute inset-0 bg-[radial-gradient(880px_400px_at_50%_-14%,var(--color-accent-900),transparent_72%)]"
+    aria-hidden="true"
+  ></div>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Email</mat-label>
-      <input matInput type="email" formControlName="email" autocomplete="email" />
-      @if (form.controls.email.invalid && form.controls.email.touched) {
-        <mat-error>A valid email is required.</mat-error>
-      }
-    </mat-form-field>
+  <div class="relative flex w-full max-w-login flex-col gap-7">
+    <div class="flex flex-col gap-3">
+      <h1 class="text-lg">Certificate Generator</h1>
+      <p class="m-0 text-sm text-subtle">Sign in to issue and manage certificates.</p>
+    </div>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Password</mat-label>
-      <input matInput type="password" formControlName="password" autocomplete="current-password" />
-      @if (form.controls.password.invalid && form.controls.password.touched) {
-        <mat-error>Password is required.</mat-error>
-      }
-    </mat-form-field>
-
-    @if (errorMessage()) {
-      <p class="login-form__error" role="alert">{{ errorMessage() }}</p>
-    }
-
-    @if (showColdStart()) {
-      <p class="login-form__cold-start" role="status">
-        The server is waking up — this can take up to a minute on the first request.
-      </p>
-    }
-
-    <button
-      mat-flat-button
-      color="primary"
-      type="submit"
-      [disabled]="submitting()"
-      [attr.aria-label]="submitting() ? 'Signing in' : null"
+    <form
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      class="flex flex-col gap-5 rounded-lg bg-surface p-7 shadow-e1"
     >
-      @if (submitting()) {
-        <mat-spinner diameter="20" />
-      } @else {
-        Sign in
+      <label class="flex flex-col gap-2">
+        <span class="text-xs text-muted">Email</span>
+        <input
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          placeholder="you@example.com"
+          [attr.aria-invalid]="emailInvalid()"
+          class="w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 outline-none hover:border-neutral-600 focus:border-accent-500"
+          [class.border-neutral-700]="!emailInvalid()"
+          [class.border-revoked]="emailInvalid()"
+        />
+        @if (emailInvalid()) {
+          <span class="text-xs text-revoked">A valid email is required.</span>
+        }
+      </label>
+
+      <label class="flex flex-col gap-2">
+        <span class="text-xs text-muted">Password</span>
+        <input
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          placeholder="••••••••"
+          [attr.aria-invalid]="passwordInvalid()"
+          class="w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 outline-none hover:border-neutral-600 focus:border-accent-500"
+          [class.border-neutral-700]="!passwordInvalid()"
+          [class.border-revoked]="passwordInvalid()"
+        />
+        @if (passwordInvalid()) {
+          <span class="text-xs text-revoked">Password is required.</span>
+        }
+      </label>
+
+      @if (errorKind() === "credentials") {
+        <p
+          class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+          role="alert"
+        >
+          Invalid email or password.
+        </p>
+      } @else if (errorKind() === "rate-limited") {
+        <p
+          class="m-0 flex items-start gap-4 rounded-md border border-pending-line bg-pending-bg px-4 py-3 text-sm text-pending"
+          role="alert"
+        >
+          Too many attempts. Try again in a few minutes.
+        </p>
+      } @else if (errorMessage(); as message) {
+        <p
+          class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+          role="alert"
+        >
+          {{ message }}
+        </p>
       }
-    </button>
-  </form>
+
+      @if (showColdStart()) {
+        <p
+          class="m-0 flex items-start gap-4 rounded-md border border-info-line bg-info-bg px-4 py-3 text-sm text-info"
+          role="status"
+        >
+          The server is waking up — this can take up to a minute on the first request.
+        </p>
+      }
+
+      <button
+        type="submit"
+        [disabled]="submitting()"
+        class="mt-1 inline-flex min-h-(--size-touch-target) items-center justify-center gap-3 rounded-md border border-accent-500 px-6 py-3 text-sm font-medium text-accent-500 hover:bg-accent-900 active:bg-accent-800 disabled:opacity-45"
+      >
+        @if (submitting()) {
+          <span
+            class="size-5 flex-none animate-spin rounded-full border-2 border-accent-800 border-t-accent-500"
+            aria-hidden="true"
+          ></span>
+        }
+        {{ submitting() ? "Signing in…" : "Sign in" }}
+      </button>
+    </form>
+
+    <p class="m-0 text-center text-xs text-subtle">
+      Holding a certificate?
+      <a routerLink="/verify" class="text-accent-300 hover:underline">Verify a code</a>
+    </p>
+  </div>
 </div>

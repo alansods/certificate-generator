@@ -92,7 +92,7 @@ describe("Nocturne token layer", () => {
   });
 
   it("keeps the type scale complete for headings the preflight would otherwise flatten", () => {
-    for (const step of ["--text-overline", "--text-sm", "--text-base", "--text-md", "--text-lg", "--text-xl", "--text-display"]) {
+    for (const step of ["--text-overline", "--text-xs", "--text-sm", "--text-base", "--text-md", "--text-lg", "--text-xl", "--text-display"]) {
       expect(declaredTokens).toContain(step);
     }
     for (const heading of ["h1", "h2", "h3", "h4"]) {

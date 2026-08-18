@@ -1,7 +1,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { ActivatedRoute, convertToParamMap } from "@angular/router";
+import { ActivatedRoute, convertToParamMap, provideRouter, Router } from "@angular/router";
 import { BehaviorSubject } from "rxjs";
 import { VerifyPageComponent } from "./verify-page.component";
 
@@ -21,17 +21,38 @@ describe("VerifyPageComponent", () => {
   let httpMock: HttpTestingController;
 
   function setup(initialCode: string) {
-    const paramMap$ = new BehaviorSubject(convertToParamMap({ code: initialCode }));
+    const paramMap$ = new BehaviorSubject(
+      initialCode ? convertToParamMap({ code: initialCode }) : convertToParamMap({}),
+    );
     TestBed.configureTestingModule({
       imports: [VerifyPageComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: ActivatedRoute, useValue: { paramMap: paramMap$ } },
       ],
     });
     httpMock = TestBed.inject(HttpTestingController);
     return { fixture: TestBed.createComponent(VerifyPageComponent), paramMap$ };
+  }
+
+  function codeField(fixture: { nativeElement: unknown }): HTMLInputElement {
+    const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+      "input[name='code']",
+    );
+    if (!input) {
+      throw new Error("Expected the code field to be rendered");
+    }
+    return input;
+  }
+
+  function submitForm(fixture: { nativeElement: unknown }): void {
+    const form = (fixture.nativeElement as HTMLElement).querySelector("form");
+    if (!form) {
+      throw new Error("Expected the lookup form to be rendered");
+    }
+    form.dispatchEvent(new Event("submit"));
   }
 
   afterEach(() => {
@@ -67,7 +88,7 @@ describe("VerifyPageComponent", () => {
 
     const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
     expect(text).toContain("Jane Doe");
-    expect(text).toContain("Revoked");
+    expect(text).toContain("Certificate revoked");
   });
 
   it("shows a not-yet-issued indicator for a DRAFT certificate", async () => {
@@ -90,7 +111,7 @@ describe("VerifyPageComponent", () => {
     fixture.detectChanges();
 
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-      "No certificate was found for this code.",
+      "No certificate found",
     );
   });
 
@@ -104,7 +125,7 @@ describe("VerifyPageComponent", () => {
     fixture.detectChanges();
 
     expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-      "Too many verification attempts",
+      "Too many checks",
     );
   });
 
@@ -119,11 +140,17 @@ describe("VerifyPageComponent", () => {
 
     const nativeElement = fixture.nativeElement as HTMLElement;
     expect(nativeElement.textContent).toContain(
-      "Something went wrong while checking this certificate.",
+      "Something went wrong",
     );
 
-    const retryButton = nativeElement.querySelector("button");
-    retryButton?.click();
+    // Not `querySelector("button")`: the lookup form's own submit button comes first in the DOM.
+    const retryButton = [...nativeElement.querySelectorAll("button")].find(
+      (button) => button.textContent?.trim() === "Retry",
+    );
+    if (!retryButton) {
+      throw new Error("Expected a Retry button in the error state");
+    }
+    retryButton.click();
     fixture.detectChanges();
 
     flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "ISSUED" });
@@ -175,5 +202,74 @@ describe("VerifyPageComponent", () => {
     const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
     expect(text).toContain("John Smith");
     expect(text).not.toContain("Jane Doe");
+  });
+
+  it("renders an empty form and makes no request when opened without a code", () => {
+    const { fixture } = setup("");
+    fixture.detectChanges();
+
+    expect(codeField(fixture).value).toBe("");
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain("No certificate found");
+    // httpMock.verify() in afterEach is the assertion that nothing was requested.
+  });
+
+  it("rejects a malformed code inline without calling the API", async () => {
+    const { fixture } = setup("");
+    fixture.detectChanges();
+
+    const input = codeField(fixture);
+    input.value = "NOPE";
+    input.dispatchEvent(new Event("input"));
+    submitForm(fixture);
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain("Use the format");
+  });
+
+  it("navigates to the code's own URL on submit, so the result stays linkable", async () => {
+    const { fixture } = setup("");
+    const navigateSpy = vi.spyOn(TestBed.inject(Router), "navigate");
+    fixture.detectChanges();
+
+    const input = codeField(fixture);
+    input.value = "cert-7k2m-9xq4";
+    input.dispatchEvent(new Event("input"));
+    submitForm(fixture);
+
+    expect(navigateSpy).toHaveBeenCalledWith(["/verify", "CERT-7K2M-9XQ4"]);
+  });
+
+  it("shows the code it is checking while the lookup is in flight", () => {
+    const { fixture } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain("Checking CERT-AAAA-BBBB");
+
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/public/verify/CERT-AAAA-BBBB"))
+      .flush({
+        recipientName: "Jane",
+        courseName: "Angular",
+        workloadHours: 40,
+        issueDate: "2026-05-15",
+        status: "ISSUED",
+      });
+  });
+
+  it("pre-fills the field from the URL so a shared link can be corrected", () => {
+    const { fixture } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+
+    expect(codeField(fixture).value).toBe("CERT-AAAA-BBBB");
+
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/public/verify/CERT-AAAA-BBBB"))
+      .flush({
+        recipientName: "Jane",
+        courseName: "Angular",
+        workloadHours: 40,
+        issueDate: "2026-05-15",
+        status: "ISSUED",
+      });
   });
 });

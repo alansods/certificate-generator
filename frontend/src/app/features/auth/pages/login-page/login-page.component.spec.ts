@@ -141,4 +141,27 @@ describe("LoginPageComponent", () => {
       vi.useRealTimers();
     }
   });
+
+  it("offers a link to public verification for someone without an account", () => {
+    const { nativeElement } = setup();
+
+    const link = requireElement<HTMLAnchorElement>(nativeElement, "a[href='/verify']");
+
+    expect(link.textContent?.trim()).toBe("Verify a code");
+  });
+
+  it("distinguishes the rejected-credentials panel from the rate-limit one", () => {
+    const { fixture, nativeElement, emailInput, passwordInput, form } = setup();
+    fillAndSubmit(emailInput, passwordInput, form);
+    httpMock
+      .expectOne((request) => request.url.endsWith("/api/v1/auth/login"))
+      .flush(null, { status: 401, statusText: "Unauthorized" });
+    fixture.detectChanges();
+
+    const alert = requireElement<HTMLElement>(nativeElement, "[role='alert']");
+
+    expect(alert.textContent).toContain("Invalid email or password.");
+    expect(alert.className).toContain("revoked");
+    expect(alert.className).not.toContain("pending");
+  });
 });

@@ -27,6 +27,17 @@ The system SHALL display certificates in a paginated table backed by `GET /api/v
 - **WHEN** a user opens the page size control
 - **THEN** the options offered are 10, 20 and 50
 
+### Requirement: Search
+The system SHALL let a user filter the list by a search term matching recipient name, course name, or code, via the backend's `q` parameter, and SHALL offer a control inside the search field that clears the term.
+
+#### Scenario: Search narrows results
+- **WHEN** a user types a search term
+- **THEN** the request is re-issued with `q` set to that term (debounced, not on every keystroke) and the table shows only matching rows
+
+#### Scenario: Clearing the search from the field
+- **WHEN** the search field holds a term
+- **THEN** a labeled clear control is shown inside the field, and selecting it empties the term and re-runs the query unfiltered
+
 ### Requirement: Row actions
 The system SHALL offer each row's actions in a single per-row menu containing edit, preview and download, and SHALL include delete in that menu only for an ADMIN.
 
@@ -92,6 +103,10 @@ The system SHALL distinguish an empty dataset from a search that matched nothing
 #### Scenario: Search matched nothing
 - **WHEN** a query with a search term returns zero certificates
 - **THEN** an empty state naming the search is shown, offering both the create action and an action that clears the search and re-runs the query
+
+#### Scenario: The current page emptied
+- **WHEN** the dataset shrinks under the user so that the current page number is past the end, for example after deleting the last row of the final page
+- **THEN** the list steps back to the last page that has rows instead of showing the empty state over a dataset that is not empty
 
 #### Scenario: Request fails
 - **WHEN** the list request fails

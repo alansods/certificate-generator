@@ -28,6 +28,15 @@
 - [x] 5.1 Drop `MatTable`, `MatPaginator`, `MatFormField`, `MatSelect` and `MatIcon` from the component's imports; reduce `.scss` to what utilities cannot express.
 - [x] 5.2 `certificate-list-page.component.spec.ts`: rewrite the table assertions against the grid markup; add cases for the row menu (opens, only one open, closes on Escape and outside click, delete hidden for non-admins), the two empty states, the skeleton during an in-flight request, and the paginator's page size options.
 - [x] 5.3 Remove the status-filter test cases and assert that no `status` parameter is sent.
+- [x] 5.4 `toast-host.component.spec.ts`: render the host and assert the live region, the alert role on failures, manual dismissal and self-dismissal against the DOM. Review found the host shipped with only a service-level spec.
+- [x] 5.5 Move the list's toast assertions off `ToastService.toasts()` and onto the rendered host, per `docs/testing.md`: assert on the DOM, not on internals.
+- [x] 5.6 Add the row-menu cases task 5.2 claimed but did not write: only one menu open, Escape returning focus to the trigger, dismissal by pointer, and arrow-key movement between items.
+
+## 5b. Review fixes
+
+- [x] 5b.1 Raise the search field's clear control and the rows-per-page select to `--size-touch-target`; both shipped at roughly 25px, under the 44px the shell requires.
+- [x] 5b.2 Step back to the last populated page when the dataset shrinks under the user, instead of rendering the empty state over a non-empty dataset.
+- [x] 5b.3 Specify the search field's clear control under `### Requirement: Search`, and the toast host under a new `frontend-shell` requirement — both shipped unspecified.
 
 ## 6. Verification
 

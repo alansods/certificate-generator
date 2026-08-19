@@ -95,9 +95,29 @@ export class CertificateListPageComponent {
     return error ? (toProblemDetail(error).traceId ?? null) : null;
   });
 
+  // Deleting the last row of a page, or reloading straight into a page past the end, answers with
+  // an empty page while the dataset itself is not empty. Step back to the last real page rather
+  // than rendering "No certificates yet" over a list that still has rows.
+  private readonly clampPagePastTheEnd = effect(() => {
+    const total = this.totalElements();
+    if (!this.listResource.hasValue() || total === 0) {
+      return;
+    }
+    const lastPage = Math.ceil(total / this.pageSize()) - 1;
+    if (this.page() > lastPage) {
+      this.page.set(lastPage);
+    }
+  });
+
   protected readonly hasQuery = computed(() => this.query().trim().length > 0);
+  // `totalElements` guards the transient window where a page past the end has already answered
+  // empty but `clampPagePastTheEnd` has not yet re-fetched.
   protected readonly isEmpty = computed(
-    () => !this.isLoading() && !this.loadError() && this.certificates().length === 0,
+    () =>
+      !this.isLoading() &&
+      !this.loadError() &&
+      this.certificates().length === 0 &&
+      this.totalElements() === 0,
   );
 
   protected readonly rangeLabel = computed(() => {

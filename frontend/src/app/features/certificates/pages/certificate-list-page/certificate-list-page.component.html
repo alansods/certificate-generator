@@ -33,7 +33,7 @@
       <button
         type="button"
         (click)="clearSearch()"
-        class="grid size-9 flex-none place-items-center rounded-md text-subtle hover:text-accent-500"
+        class="grid size-(--size-touch-target) flex-none place-items-center rounded-md text-subtle hover:bg-accent-900 hover:text-accent-500 active:bg-accent-800"
         aria-label="Clear search"
       >
         <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -203,7 +203,7 @@
           Rows per page:
           <select
             [formControl]="pageSizeControl"
-            class="rounded-sm border border-divider bg-transparent px-3 py-1 text-sm text-text"
+            class="min-h-(--size-touch-target) rounded-sm border border-divider bg-transparent px-3 text-sm text-text"
           >
             @for (size of pageSizes; track size) {
               <option [value]="size" class="bg-surface">{{ size }}</option>

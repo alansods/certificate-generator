@@ -6,7 +6,7 @@ import { provideRouter } from "@angular/router";
 import { of } from "rxjs";
 import { TokenStorageService } from "../../../../core/auth/token-storage.service";
 import { ConfirmDialogService } from "../../../../shared/confirm-dialog/confirm-dialog.service";
-import { ToastService } from "../../../../shared/toast/toast.service";
+import { ToastHostComponent } from "../../../../shared/toast/toast-host.component";
 import { CertificateListPageComponent } from "./certificate-list-page.component";
 
 function fakeJwt(payload: Record<string, unknown>): string {
@@ -14,6 +14,18 @@ function fakeJwt(payload: Record<string, unknown>): string {
     btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   return `${base64url(JSON.stringify({ alg: "HS256" }))}.${base64url(JSON.stringify(payload))}.sig`;
 }
+
+const SECOND_ROW = {
+  id: 2,
+  code: "CERT-CCCC-DDDD",
+  recipientName: "John Roe",
+  recipientEmail: "john@example.edu",
+  courseName: "Reactive Forms",
+  workloadHours: 20,
+  template: "MODERN",
+  status: "ISSUED",
+  issueDate: "2026-05-16",
+};
 
 function samplePage(content: unknown[] = [
   {
@@ -133,6 +145,7 @@ describe("CertificateListPageComponent", () => {
     flushList(samplePage());
     await tick();
     fixture.detectChanges();
+    const toasts = renderToastHost();
 
     openRowMenu(fixture);
     fixture.detectChanges();
@@ -144,10 +157,8 @@ describe("CertificateListPageComponent", () => {
       .flush(null, { status: 500, statusText: "Internal Server Error" });
     await tick();
 
-    expect(TestBed.inject(ToastService).toasts()[0]).toMatchObject({
-      kind: "error",
-      message: expect.stringContaining("CERT-AAAA-BBBB"),
-    });
+    expect(toasts.text()).toContain("CERT-AAAA-BBBB");
+    expect(toasts.roles()).toEqual(["alert"]);
   });
 
   it("reports a successful delete", async () => {
@@ -156,6 +167,7 @@ describe("CertificateListPageComponent", () => {
     flushList(samplePage());
     await tick();
     fixture.detectChanges();
+    const toasts = renderToastHost();
     vi.spyOn(TestBed.inject(ConfirmDialogService), "confirm").mockReturnValue(of(true));
 
     openRowMenu(fixture);
@@ -165,7 +177,9 @@ describe("CertificateListPageComponent", () => {
     httpMock.expectOne((r) => r.method === "DELETE").flush(null);
     await tick();
 
-    expect(TestBed.inject(ToastService).toasts()[0]).toMatchObject({ kind: "success" });
+    expect(toasts.text()).toContain("CERT-AAAA-BBBB");
+    // A success is announced politely, so it must not carry the assertive alert role.
+    expect(toasts.roles()).toEqual([null]);
 
     flushList(samplePage([]));
     await tick();
@@ -262,6 +276,41 @@ describe("CertificateListPageComponent", () => {
       throw new Error("Expected the row's actions trigger");
     }
     trigger.click();
+  }
+
+  /**
+   * The shell renders the host in the real application; rendering it here lets the toast cases
+   * assert what reaches the screen rather than what the service happens to hold.
+   */
+  function renderToastHost(): { text: () => string; roles: () => (string | null)[] } {
+    const hostFixture = TestBed.createComponent(ToastHostComponent);
+    hostFixture.detectChanges();
+    const nodes = () =>
+      Array.from(
+        (hostFixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>(
+          "[aria-live] > div",
+        ),
+      );
+    return {
+      text: () => {
+        hostFixture.detectChanges();
+        return nodes()
+          .map((node) => node.textContent?.trim() ?? "")
+          .join(" | ");
+      },
+      roles: () => {
+        hostFixture.detectChanges();
+        return nodes().map((node) => node.getAttribute("role"));
+      },
+    };
+  }
+
+  const KEY_CODES: Record<string, number> = { Escape: 27, ArrowUp: 38, ArrowDown: 40 };
+
+  function pressKey(key: string): void {
+    const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+    Object.defineProperty(event, "keyCode", { get: () => KEY_CODES[key] ?? 0 });
+    (document.activeElement ?? document.body).dispatchEvent(event);
   }
 
   function menuItem(label: string): HTMLElement | undefined {
@@ -374,6 +423,113 @@ describe("CertificateListPageComponent", () => {
     // Every item is a real menuitem, which is what makes arrow-key navigation the CDK provides
     // match the role the panel advertises.
     expect(document.querySelectorAll("[role='menuitem']").length).toBeGreaterThan(0);
+  });
+
+  it("keeps only one row menu open at a time", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage([samplePage().content[0], SECOND_ROW]));
+    await tick();
+    fixture.detectChanges();
+
+    openRowMenu(fixture, 0);
+    fixture.detectChanges();
+    expect(document.querySelectorAll("[role='menu']")).toHaveLength(1);
+
+    openRowMenu(fixture, 1);
+    fixture.detectChanges();
+
+    const menus = document.querySelectorAll("[role='menu']");
+    expect(menus).toHaveLength(1);
+    expect(menus[0]?.getAttribute("aria-label")).toBe("Actions for CERT-CCCC-DDDD");
+  });
+
+  it("closes the row menu on Escape and returns focus to its trigger", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const trigger = rowTriggers(fixture)[0]!;
+    trigger.click();
+    fixture.detectChanges();
+    expect(document.querySelector("[role='menu']")).not.toBeNull();
+
+    pressKey("Escape");
+    fixture.detectChanges();
+
+    expect(document.querySelector("[role='menu']")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("closes the row menu when the pointer goes elsewhere", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    openRowMenu(fixture);
+    fixture.detectChanges();
+    expect(document.querySelector("[role='menu']")).not.toBeNull();
+
+    document.body.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+    document.body.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(document.querySelector("[role='menu']")).toBeNull();
+  });
+
+  it("moves focus between menu items with the arrow keys", async () => {
+    const fixture = setup("ADMIN");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    openRowMenu(fixture);
+    fixture.detectChanges();
+
+    const items = [...document.querySelectorAll<HTMLElement>("[role='menuitem']")];
+    expect(items.length).toBeGreaterThan(1);
+    // The CDK puts focus on the first item as the panel opens.
+    expect(document.activeElement).toBe(items[0]);
+
+    pressKey("ArrowDown");
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(items[1]);
+
+    pressKey("ArrowUp");
+    fixture.detectChanges();
+    expect(document.activeElement).toBe(items[0]);
+  });
+
+  it("steps back a page rather than showing the empty state past the end", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList({ content: [SECOND_ROW], page: { size: 20, number: 0, totalElements: 25, totalPages: 2 } });
+    await tick();
+    fixture.detectChanges();
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>("button[aria-label='Next page']")!
+      .click();
+    fixture.detectChanges();
+
+    // While the user sat on page 1, the dataset shrank to a single page.
+    flushList({ content: [], page: { size: 20, number: 1, totalElements: 3, totalPages: 1 } });
+    await tick();
+    fixture.detectChanges();
+
+    const retry = httpMock.expectOne((r) => r.url.endsWith("/api/v1/certificates"));
+    expect(retry.request.params.get("page")).toBe("0");
+
+    retry.flush(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain("No certificates yet");
   });
 
   it("holds the table's shape while a request is in flight", async () => {

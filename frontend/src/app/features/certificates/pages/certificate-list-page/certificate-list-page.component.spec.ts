@@ -406,7 +406,7 @@ describe("CertificateListPageComponent", () => {
     fixture.detectChanges();
 
     expect(menuItem("Delete")).toBeUndefined();
-    expect(menuItem("Edit")).toBeDefined();
+    expect(menuItem("Edit")?.getAttribute("href")).toBe("/certificates/1/edit");
   });
 
   it("shows the delete action for ADMIN", async () => {

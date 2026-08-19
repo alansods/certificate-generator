@@ -1,6 +1,7 @@
 ---
 name: spec-reviewer
 description: Reviews a diff against its OpenSpec change. Checks that every implemented behavior is specified, every specified behavior is implemented, and the delta is valid. Use on every pull request.
+model: opus
 tools: Read, Grep, Glob, Bash
 ---
 

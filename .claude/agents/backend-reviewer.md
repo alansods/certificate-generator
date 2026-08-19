@@ -1,6 +1,7 @@
 ---
 name: backend-reviewer
 description: Reviews Java and Spring Boot changes for correctness, layering, transactions, persistence and test coverage. Use on every pull request touching backend/.
+model: opus
 tools: Read, Grep, Glob, Bash
 ---
 

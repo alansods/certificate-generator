@@ -1,6 +1,7 @@
 ---
 name: security-reviewer
 description: Adversarial security review of a diff — authorization, data exposure, injection, auth token handling and dependency risk. Use on every pull request.
+model: opus
 tools: Read, Grep, Glob, Bash
 ---
 

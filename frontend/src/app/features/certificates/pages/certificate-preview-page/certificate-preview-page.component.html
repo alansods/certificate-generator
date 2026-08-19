@@ -1,28 +1,75 @@
-<div class="certificate-preview-page">
-  <div class="certificate-preview-page__header">
-    <a mat-button routerLink="/certificates">← Back to certificates</a>
-    <h1>
-      @if (code(); as certificateCode) {
-        Certificate preview — {{ certificateCode }}
-      } @else {
-        Certificate preview
+<div class="flex flex-col gap-7 p-7">
+  <div class="flex flex-col gap-4">
+    <a
+      routerLink="/certificates"
+      class="inline-flex w-fit items-center gap-2 rounded-md px-3 py-2 text-sm text-subtle no-underline hover:bg-accent-900 hover:text-accent-500"
+    >
+      <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" />
+      </svg>
+      Certificates
+    </a>
+
+    <div class="flex flex-wrap items-start justify-between gap-5">
+      <div class="flex flex-col gap-2">
+        <h1 class="text-xl tabular-nums text-accent-300">{{ code() ?? "Certificate preview" }}</h1>
+        @if (certificate(); as certificateValue) {
+          <p class="m-0 text-sm text-subtle">
+            {{ certificateValue.recipientName }} · {{ certificateValue.courseName }} ·
+            {{ templateLabel() }}
+          </p>
+        }
+      </div>
+
+      @if (!loading() && !error()) {
+        <div class="flex flex-wrap gap-4">
+          <a
+            [routerLink]="['/certificates', certificateId, 'edit']"
+            class="inline-flex min-h-(--size-touch-target) items-center gap-3 rounded-md border border-divider px-5 text-sm font-medium text-text no-underline hover:bg-neutral-900 active:bg-neutral-800"
+          >
+            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M4 20h4l10-10-4-4L4 16v4z" />
+            </svg>
+            Edit
+          </a>
+          <button
+            type="button"
+            (click)="download()"
+            class="inline-flex min-h-(--size-touch-target) items-center gap-3 rounded-md border border-accent-500 px-6 text-sm font-medium text-accent-500 hover:bg-accent-900 active:bg-accent-800"
+          >
+            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" />
+            </svg>
+            Download PDF
+          </button>
+        </div>
       }
-    </h1>
-    @if (!loading() && !error()) {
-      <button mat-flat-button color="primary" (click)="download()">Download</button>
-    }
+    </div>
   </div>
 
   @if (loading()) {
-    <div class="certificate-preview-page__state" role="status">
-      <mat-spinner diameter="32" />
+    <!-- An A4-landscape placeholder, so the page does not resize when the iframe replaces it. -->
+    <div
+      class="skeleton grid aspect-[1.414/1] w-full place-items-center rounded-md shadow-e1"
+      role="status"
+    >
+      <span class="flex flex-col items-center gap-5">
+        <span class="size-10 animate-spin rounded-full border-2 border-accent-800 border-t-accent-500"></span>
+        <span class="text-sm text-subtle">Generating the PDF…</span>
+      </span>
     </div>
   } @else if (error()) {
-    <p class="certificate-preview-page__state" role="alert">Could not load this certificate's PDF.</p>
+    <p
+      class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+      role="alert"
+    >
+      <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+      Could not load this certificate's PDF.
+    </p>
   } @else if (pdfUrl(); as url) {
     <iframe
       [src]="url"
-      class="certificate-preview-page__frame"
+      class="aspect-[1.414/1] w-full rounded-md border-0 bg-surface shadow-e1"
       title="Certificate PDF preview — {{ code() }}"
     ></iframe>
   }

@@ -1,17 +1,15 @@
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
-import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from "@angular/core";
 import { DomSanitizer, SafeResourceUrl } from "@angular/platform-browser";
 import { ActivatedRoute, RouterLink } from "@angular/router";
 import { finalize, map, switchMap } from "rxjs";
+import { CertificateResponse } from "../../data/certificate-page-response";
 import { CertificatesApi } from "../../data/certificates.api";
 
 @Component({
   selector: "app-certificate-preview-page",
-  imports: [MatButtonModule, MatProgressSpinnerModule, RouterLink],
+  imports: [RouterLink],
   templateUrl: "./certificate-preview-page.component.html",
-  styleUrl: "./certificate-preview-page.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CertificatePreviewPageComponent {
@@ -28,7 +26,14 @@ export class CertificatePreviewPageComponent {
 
   protected readonly loading = signal(true);
   protected readonly error = signal(false);
-  protected readonly code = signal<string | null>(null);
+  /** The whole certificate, so the header can name what is being previewed, not just its code. */
+  protected readonly certificate = signal<CertificateResponse | null>(null);
+  protected readonly code = computed(() => this.certificate()?.code ?? null);
+  /** Title case for the screen; the stored value stays the API's uppercase enum. */
+  protected readonly templateLabel = computed(() => {
+    const template = this.certificate()?.template;
+    return template ? template.charAt(0) + template.slice(1).toLowerCase() : null;
+  });
   protected readonly pdfUrl = signal<SafeResourceUrl | null>(null);
 
   private blob: Blob | null = null;
@@ -41,14 +46,14 @@ export class CertificatePreviewPageComponent {
         switchMap((certificate) =>
           this.certificatesApi
             .downloadPdf(this.certificateId)
-            .pipe(map((blob) => ({ code: certificate.code, blob }))),
+            .pipe(map((blob) => ({ certificate, blob }))),
         ),
         finalize(() => this.loading.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: ({ code, blob }) => {
-          this.code.set(code);
+        next: ({ certificate, blob }) => {
+          this.certificate.set(certificate);
           this.blob = blob;
           this.objectUrl = URL.createObjectURL(blob);
           this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.objectUrl));

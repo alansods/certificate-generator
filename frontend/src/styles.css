@@ -60,6 +60,17 @@
   --color-info-bg: #1e2b3a;
   --color-info-line: #3f5f7d;
 
+  /* The certificate templates print on paper, so their thumbnails are the one place in the app
+     that is not dark. These are the literal colors of the Thymeleaf templates under
+     backend/src/main/resources/templates/certificates/; if one of those changes, change it here
+     too — the thumbnail is what gets corrected when the two disagree. */
+  --color-paper: #ffffff;
+  --color-paper-ink: #1a1a1a;
+  --color-paper-muted: #6b7280;
+  --color-paper-rule: #cccccc;
+  --color-classic-gold: #8a6d1f;
+  --color-modern-blue: #1f5fbf;
+
   --color-divider: color-mix(in srgb, var(--color-text) 16%, transparent);
   --color-shadow: #000000;
 

@@ -8,7 +8,7 @@ The mockup keeps five columns, folds the row's four actions into one menu, repla
 
 - Columns become Code, Recipient, Course, Issue date and Actions. Recipient stacks name over email; Course stacks the course name over workload and template; the code renders in tabular numerals in the light accent step.
 - The status column and the status filter are removed. `status` stops being sent as a query parameter. The field is untouched in the domain, the API and the PDF — it simply is no longer surfaced or filtered on in this screen.
-- The four per-row icon buttons become one menu: Edit, Preview, Download PDF, and — for ADMIN only — Delete, separated by a rule and in the revoked color. The menu closes on outside click and on Escape, and only one row's menu is open at a time.
+- The four per-row icon buttons become one menu on the CDK's `Menu`: Edit, Preview, Download PDF, and — for ADMIN only — Delete, separated by a rule and in the revoked color. The CDK brings the arrow-key model the menu role promises, closes on Escape and outside clicks, restores focus, and renders in an overlay so the panel is not clipped by the table card.
 - Loading renders a shimmering skeleton with the table's own column widths instead of replacing the table with a spinner.
 - The empty state distinguishes "no certificates yet" from "no results for this search": the second offers a clear-search action alongside the create action.
 - The paginator becomes a right-aligned row: page size 10/20/50, a tabular-numerals range label, and previous/next icon buttons.
@@ -22,7 +22,7 @@ The mockup keeps five columns, folds the row's four actions into one menu, repla
 ## Impact
 
 - `frontend/src/app/features/certificates/pages/certificate-list-page/` — template, styles and component rewritten.
-- `frontend/src/app/shared/confirm-dialog.component.ts` — rebuilt on `@angular/cdk/dialog` and Tailwind, keeping its current API so callers do not change.
+- `frontend/src/app/shared/confirm-dialog/` — rebuilt on `@angular/cdk/dialog` and Tailwind. The call sites *do* change: `MatDialog.open(ConfirmDialogComponent)` becomes `ConfirmDialogService.confirm(...)`, which returns an observable of the answer. Both callers move, so `frontend/src/app/features/certificates/pages/certificate-form-page/` is touched by this change even though its own redesign belongs to `nocturne-certificate-screens`.
 - Adds `frontend/src/app/shared/toast/` — a small snackbar service and host, bottom-left, one action, 4s, per `docs/design-spec.md` section 2.
 - `certificates.api.ts` — the `status` parameter stops being passed by this screen; the method signature keeps it, since the backend contract is unchanged and other callers may want it.
 - No backend impact. `GET /api/v1/certificates` already supports `q`, `page` and `size`; `status` remains supported and simply goes unused by this screen.

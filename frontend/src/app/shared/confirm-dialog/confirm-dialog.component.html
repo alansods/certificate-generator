@@ -1,9 +1,6 @@
-<div
-  class="flex w-[min(440px,100%)] flex-col gap-5 rounded-lg bg-surface p-8 shadow-e3"
-  role="document"
->
+<div class="flex w-dialog max-w-full flex-col gap-5 rounded-lg bg-surface p-8 shadow-e3">
   <h2 class="text-md" id="confirm-dialog-title">{{ data.title }}</h2>
-  <p class="m-0 text-sm text-muted">{{ data.message }}</p>
+  <p class="m-0 text-sm text-muted" id="confirm-dialog-message">{{ data.message }}</p>
   <div class="mt-2 flex justify-end gap-3">
     <button
       type="button"

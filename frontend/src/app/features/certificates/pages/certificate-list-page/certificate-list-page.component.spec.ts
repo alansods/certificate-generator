@@ -6,6 +6,7 @@ import { provideRouter } from "@angular/router";
 import { of } from "rxjs";
 import { TokenStorageService } from "../../../../core/auth/token-storage.service";
 import { ConfirmDialogService } from "../../../../shared/confirm-dialog/confirm-dialog.service";
+import { ToastService } from "../../../../shared/toast/toast.service";
 import { CertificateListPageComponent } from "./certificate-list-page.component";
 
 function fakeJwt(payload: Record<string, unknown>): string {
@@ -64,11 +65,112 @@ describe("CertificateListPageComponent", () => {
   afterEach(() => {
     httpMock.verify();
     TestBed.resetTestingModule();
+    for (const overlay of document.querySelectorAll(".cdk-overlay-container")) {
+      overlay.remove();
+    }
   });
 
   function flushList(body: object) {
     httpMock.expectOne((r) => r.url.endsWith("/api/v1/certificates")).flush(body);
   }
+
+  it("shows every field the row is specified to carry", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const row = (fixture.nativeElement as HTMLElement).querySelectorAll("[role='row']")[1];
+    const text = row?.textContent ?? "";
+
+    expect(text).toContain("CERT-AAAA-BBBB");
+    expect(text).toContain("Jane Doe");
+    expect(text).toContain("jane@example.edu");
+    expect(text).toContain("Advanced Angular");
+    expect(text).toContain("40 h");
+    expect(text).toContain("CLASSIC");
+    expect(text).toContain("2026-05-15");
+  });
+
+  it("shows the traceId when the failing response carried one", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    httpMock.expectOne((r) => r.url.endsWith("/api/v1/certificates")).flush(
+      { type: "about:blank", title: "Internal Server Error", status: 500, traceId: "abc-123" },
+      { status: 500, statusText: "Internal Server Error" },
+    );
+    await tick();
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
+
+    expect(text).toContain("Could not load certificates");
+    expect(text).toContain("abc-123");
+  });
+
+  it("downloads the PDF from the row menu without navigating", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    openRowMenu(fixture);
+    fixture.detectChanges();
+    menuItem("Download PDF")?.click();
+    fixture.detectChanges();
+
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates/1/pdf") && r.method === "GET")
+      .flush(new Blob(["%PDF-1.4"], { type: "application/pdf" }));
+    await tick();
+  });
+
+  it("reports a failed download rather than failing silently", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    openRowMenu(fixture);
+    fixture.detectChanges();
+    menuItem("Download PDF")?.click();
+    fixture.detectChanges();
+
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates/1/pdf"))
+      .flush(null, { status: 500, statusText: "Internal Server Error" });
+    await tick();
+
+    expect(TestBed.inject(ToastService).toasts()[0]).toMatchObject({
+      kind: "error",
+      message: expect.stringContaining("CERT-AAAA-BBBB"),
+    });
+  });
+
+  it("reports a successful delete", async () => {
+    const fixture = setup("ADMIN");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+    vi.spyOn(TestBed.inject(ConfirmDialogService), "confirm").mockReturnValue(of(true));
+
+    openRowMenu(fixture);
+    fixture.detectChanges();
+    menuItem("Delete")?.click();
+    fixture.detectChanges();
+    httpMock.expectOne((r) => r.method === "DELETE").flush(null);
+    await tick();
+
+    expect(TestBed.inject(ToastService).toasts()[0]).toMatchObject({ kind: "success" });
+
+    flushList(samplePage([]));
+    await tick();
+    fixture.detectChanges();
+  });
 
   it("renders a row per certificate on a successful response", async () => {
     const fixture = setup("USER");
@@ -145,18 +247,25 @@ describe("CertificateListPageComponent", () => {
     fixture.detectChanges();
   }, 10000);
 
-  function openRowMenu(fixture: { nativeElement: unknown }): void {
-    const trigger = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
-      "button[aria-haspopup='menu']",
-    );
+  /** The CDK renders the panel in an overlay, outside the component's own element. */
+  function rowTriggers(fixture: { nativeElement: unknown }): HTMLButtonElement[] {
+    return [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+        "button[aria-haspopup='menu']",
+      ),
+    ];
+  }
+
+  function openRowMenu(fixture: { nativeElement: unknown }, index = 0): void {
+    const trigger = rowTriggers(fixture)[index];
     if (!trigger) {
       throw new Error("Expected the row's actions trigger");
     }
     trigger.click();
   }
 
-  function menuItem(fixture: { nativeElement: unknown }, label: string): HTMLElement | undefined {
-    return [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>("[role='menuitem']")].find(
+  function menuItem(label: string): HTMLElement | undefined {
+    return [...document.querySelectorAll<HTMLElement>("[role='menuitem']")].find(
       (item) => item.textContent?.trim() === label,
     );
   }
@@ -171,8 +280,8 @@ describe("CertificateListPageComponent", () => {
     openRowMenu(fixture);
     fixture.detectChanges();
 
-    expect(menuItem(fixture, "Delete")).toBeUndefined();
-    expect(menuItem(fixture, "Edit")).toBeDefined();
+    expect(menuItem("Delete")).toBeUndefined();
+    expect(menuItem("Edit")).toBeDefined();
   });
 
   it("shows the delete action for ADMIN", async () => {
@@ -185,7 +294,7 @@ describe("CertificateListPageComponent", () => {
     openRowMenu(fixture);
     fixture.detectChanges();
 
-    expect(menuItem(fixture, "Delete")).toBeDefined();
+    expect(menuItem("Delete")).toBeDefined();
   });
 
   it("confirming delete removes the certificate and reloads the list", async () => {
@@ -201,7 +310,7 @@ describe("CertificateListPageComponent", () => {
 
     openRowMenu(fixture);
     fixture.detectChanges();
-    menuItem(fixture, "Delete")?.click();
+    menuItem("Delete")?.click();
     fixture.detectChanges();
 
     expect(confirmSpy).toHaveBeenCalledWith(
@@ -228,7 +337,7 @@ describe("CertificateListPageComponent", () => {
 
     openRowMenu(fixture);
     fixture.detectChanges();
-    menuItem(fixture, "Delete")?.click();
+    menuItem("Delete")?.click();
     fixture.detectChanges();
 
     // httpMock.verify() asserts no DELETE went out.
@@ -243,76 +352,28 @@ describe("CertificateListPageComponent", () => {
 
     openRowMenu(fixture);
     fixture.detectChanges();
-    const previewLink = menuItem(fixture, "Preview") as HTMLAnchorElement | undefined;
+    const previewLink = menuItem("Preview") as HTMLAnchorElement | undefined;
     expect(previewLink).not.toBeNull();
     expect(previewLink?.getAttribute("href")).toBe("/certificates/1/preview");
   });
 
-  it("closes an open row menu when another row's menu is opened", async () => {
-    const fixture = setup("USER");
-    fixture.detectChanges();
-    const [first] = samplePage().content as Record<string, unknown>[];
-    flushList(samplePage([first, { ...first, id: 2, code: "CERT-CCCC-DDDD" }]));
-    await tick();
-    fixture.detectChanges();
-
-    const triggers = [
-      ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
-        "button[aria-haspopup='menu']",
-      ),
-    ];
-    triggers[0]?.click();
-    fixture.detectChanges();
-
-    expect(triggers[0]?.getAttribute("aria-expanded")).toBe("true");
-
-    triggers[1]?.click();
-    fixture.detectChanges();
-
-    // Otherwise scrolling a long list leaves panels open over rows nobody is looking at.
-    expect(triggers[0]?.getAttribute("aria-expanded")).toBe("false");
-    expect(triggers[1]?.getAttribute("aria-expanded")).toBe("true");
-  });
-
-  it("closes the row menu on Escape and puts focus back on the trigger", async () => {
+  it("opens the row's actions in a menu the keyboard can drive", async () => {
     const fixture = setup("USER");
     fixture.detectChanges();
     flushList(samplePage());
     await tick();
     fixture.detectChanges();
 
-    const trigger = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
-      "button[aria-haspopup='menu']",
-    );
-    trigger?.click();
+    openRowMenu(fixture);
     fixture.detectChanges();
 
-    expect(trigger?.getAttribute("aria-expanded")).toBe("true");
+    const menu = document.querySelector("[role='menu']");
 
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
-    fixture.detectChanges();
-
-    expect(trigger?.getAttribute("aria-expanded")).toBe("false");
-    expect(document.activeElement).toBe(trigger);
-  });
-
-  it("closes the row menu on a click outside it", async () => {
-    const fixture = setup("USER");
-    fixture.detectChanges();
-    flushList(samplePage());
-    await tick();
-    fixture.detectChanges();
-
-    const trigger = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
-      "button[aria-haspopup='menu']",
-    );
-    trigger?.click();
-    fixture.detectChanges();
-
-    document.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-    fixture.detectChanges();
-
-    expect(trigger?.getAttribute("aria-expanded")).toBe("false");
+    expect(menu).not.toBeNull();
+    expect(menu?.getAttribute("aria-label")).toBe("Actions for CERT-AAAA-BBBB");
+    // Every item is a real menuitem, which is what makes arrow-key navigation the CDK provides
+    // match the role the panel advertises.
+    expect(document.querySelectorAll("[role='menuitem']").length).toBeGreaterThan(0);
   });
 
   it("holds the table's shape while a request is in flight", async () => {
@@ -323,9 +384,9 @@ describe("CertificateListPageComponent", () => {
     const placeholders = nativeElement.querySelectorAll(".skeleton");
 
     expect(placeholders.length).toBeGreaterThan(0);
-    // Same column template as the real rows, so the layout cannot shift when they arrive.
+    // Same column token as the real rows, so the layout cannot shift when they arrive.
     const skeletonRow = placeholders[0]?.parentElement;
-    expect(skeletonRow?.getAttribute("style")).toContain("grid-template-columns");
+    expect(skeletonRow?.className).toContain("grid-cols-(--list-columns)");
 
     flushList(samplePage());
     await tick();
@@ -363,6 +424,22 @@ describe("CertificateListPageComponent", () => {
     expect(nativeElement.textContent).toContain("No certificates match");
     expect(nativeElement.textContent).toContain("Clear search");
   }, 10000);
+
+  it("shows the page size it is actually using", async () => {
+    // The control used to be a plain `[value]` binding, applied before `@for` had rendered the
+    // options, so the browser fell back to the first one: it read 10 while the request asked 20.
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    const request = httpMock.expectOne((r) => r.url.endsWith("/api/v1/certificates"));
+    request.flush(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const select = (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>("select");
+
+    expect(select?.value).toBe(request.request.params.get("size"));
+    expect(select?.value).toBe("20");
+  });
 
   it("offers 10, 20 and 50 rows per page and re-fetches on a change", async () => {
     const fixture = setup("USER");

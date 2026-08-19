@@ -11,6 +11,10 @@ The system SHALL display certificates in a paginated table backed by `GET /api/v
 - **WHEN** a certificate is rendered as a row
 - **THEN** the row shows the code in tabular numerals, the recipient name with the recipient email beneath it, the course name with the workload and template beneath it, and the issue date
 
+#### Scenario: Narrow viewport
+- **WHEN** the table is viewed below the medium breakpoint
+- **THEN** each certificate's fields stack instead of sitting in fixed columns, and its actions remain reachable without horizontal scrolling
+
 #### Scenario: Changing page
 - **WHEN** a user selects a different page or page size
 - **THEN** the table re-fetches with the corresponding `page`/`size` query parameters
@@ -31,8 +35,16 @@ The system SHALL offer each row's actions in a single per-row menu containing ed
 - **THEN** the previously open menu closes
 
 #### Scenario: Dismissing the menu
-- **WHEN** a user presses Escape or clicks outside an open actions menu
+- **WHEN** a user presses Escape on an open actions menu
 - **THEN** the menu closes and focus returns to the control that opened it
+
+#### Scenario: Clicking away from the menu
+- **WHEN** a user clicks outside an open actions menu
+- **THEN** the menu closes, leaving focus wherever the user put it
+
+#### Scenario: The menu is navigable by keyboard
+- **WHEN** a user opens the actions menu from the keyboard
+- **THEN** focus moves into the menu and the arrow keys move between its items, matching what the menu role promises
 
 #### Scenario: Edit
 - **WHEN** a user selects the edit action
@@ -56,7 +68,11 @@ The system SHALL offer each row's actions in a single per-row menu containing ed
 
 #### Scenario: Delete as ADMIN
 - **WHEN** an ADMIN selects the delete action and confirms
-- **THEN** `DELETE /api/v1/certificates/{id}` is requested and, on success, the row is removed from the table
+- **THEN** `DELETE /api/v1/certificates/{id}` is requested and, on success, the row is removed from the table and a confirmation message is shown
+
+#### Scenario: An action fails
+- **WHEN** a delete or a download fails
+- **THEN** a dismissible error message naming the certificate is shown, rather than the action failing silently
 
 #### Scenario: Delete action hidden for non-admins
 - **WHEN** a non-ADMIN user opens a row's actions menu

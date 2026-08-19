@@ -199,9 +199,13 @@ quick-verify field drops out of the top bar.
 3. **Replace screen by screen, from the bottom up:** public verification and login → the shell →
    the list (the table and paginator are the biggest single piece) → the form (last: it has the
    most `mat-form-field`).
-4. **Material worth keeping at the start:** `MatDialog` and `MatSnackBar`, for their behavior,
-   focus handling and accessibility, with content already styled in Tailwind. `mat-table`,
-   `mat-paginator`, `mat-form-field` and `mat-select` go — they carry the most inherited CSS.
+4. **Material's behavioral components leave too, for the CDK.** An earlier round of this document
+   kept `MatDialog` and `MatSnackBar` for their focus handling and accessibility. The owner's
+   decision is that `@angular/material` is uninstalled outright, so the confirmation runs on
+   `@angular/cdk/dialog`, the row actions on `@angular/cdk/menu`, and the snackbar is a small
+   in-house service — the CDK gives the focus trap, the keyboard model and the overlay with no
+   Material styling attached. `mat-table`, `mat-paginator`, `mat-form-field` and `mat-select` go
+   first; they carry the most inherited CSS.
 5. **`_material-overrides.scss` disappears** at the end. No new `::ng-deep` during the transition.
 6. **Accessibility to check on arrival:** measured against the two grounds, accent `#9184d9` is
    5.45:1 on `#161826` and 4.71:1 on `#232532` — it clears AA for body text on both, correcting

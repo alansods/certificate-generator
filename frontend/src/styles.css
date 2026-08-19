@@ -114,6 +114,7 @@
   --container-login: 400px;
   --container-measure: 42ch;
   --container-menu: 196px;
+  --container-dialog: 440px;
   --container-verify: 560px;
   --container-content: 820px;
   --size-toolbar: 64px;
@@ -122,6 +123,12 @@
 }
 
 @layer base {
+  :root {
+    /* The certificate table's columns, shared by its header, its rows and its skeleton so the
+       three cannot drift. Applied only from the medium breakpoint up — below it the row stacks. */
+    --list-columns: 168px 1.3fr 1.5fr 128px 132px;
+  }
+
   html {
     color-scheme: dark;
     height: 100%;
@@ -207,6 +214,11 @@
   );
   background-size: 320px 100%;
   animation: shimmer 1.5s infinite linear;
+
+  /* The app's only infinite animation; it holds still for anyone who asked for that. */
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes shimmer {

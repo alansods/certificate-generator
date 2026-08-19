@@ -14,6 +14,7 @@ export class ConfirmDialogService {
       .open<boolean>(ConfirmDialogComponent, {
         data,
         ariaLabelledBy: "confirm-dialog-title",
+        ariaDescribedBy: "confirm-dialog-message",
         // The CDK leaves this false by default, which tells assistive technology the rest of the
         // page is still available while a modal is trapping focus.
         ariaModal: true,

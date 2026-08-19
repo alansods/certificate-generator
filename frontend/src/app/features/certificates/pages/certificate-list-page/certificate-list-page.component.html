@@ -17,13 +17,14 @@
     </div>
   </div>
 
-  <label class="flex min-h-(--size-touch-target) flex-1 items-center gap-3 rounded-md border border-neutral-600 bg-surface px-4 hover:border-neutral-500">
-    <span class="sr-only">Search certificates</span>
+  <div class="flex min-h-(--size-touch-target) flex-1 items-center gap-3 rounded-md border border-neutral-600 bg-surface px-4 hover:border-neutral-500">
+    <label class="sr-only" for="certificate-search">Search certificates</label>
     <svg class="size-6 flex-none text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
       <circle cx="11" cy="11" r="7" />
       <path d="M16 16l4 4" />
     </svg>
     <input
+      id="certificate-search"
       [formControl]="searchControl"
       placeholder="Search by recipient, course or code"
       class="flex-1 border-0 bg-transparent text-sm text-text placeholder:text-subtle"
@@ -40,7 +41,7 @@
         </svg>
       </button>
     }
-  </label>
+  </div>
 
   @if (loadError()) {
     <div class="flex flex-col items-center gap-5 rounded-md bg-surface px-9 py-16 text-center shadow-e1" role="alert">
@@ -62,9 +63,9 @@
     <div class="flex flex-col gap-6 rounded-md bg-surface p-6 shadow-e1" role="status">
       <span class="sr-only">Loading certificates</span>
       @for (row of skeletonRows; track row) {
-        <div class="grid items-center gap-5" [style.grid-template-columns]="columnTemplate">
+        <div class="grid grid-cols-2 items-center gap-5 md:grid-cols-(--list-columns)">
           @for (cell of [0, 1, 2, 3, 4]; track cell) {
-            <div class="skeleton h-4"></div>
+            <div class="skeleton h-3"></div>
           }
         </div>
       }
@@ -107,12 +108,11 @@
       </div>
     </div>
   } @else {
-    <div class="overflow-hidden rounded-md bg-surface shadow-e1">
+    <div class="rounded-md bg-surface shadow-e1">
       <div role="table" aria-label="Certificates">
         <div
           role="row"
-          class="grid gap-4 border-b border-divider px-6 py-4 text-overline tracking-wide text-subtle uppercase"
-          [style.grid-template-columns]="columnTemplate"
+          class="hidden gap-4 border-b border-divider px-6 py-4 text-overline tracking-wide text-subtle uppercase md:grid md:grid-cols-(--list-columns)"
         >
           <span role="columnheader">Code</span>
           <span role="columnheader">Recipient</span>
@@ -124,8 +124,7 @@
         @for (certificate of certificates(); track certificate.id) {
           <div
             role="row"
-            class="grid items-center gap-4 border-b border-neutral-900 px-6 py-5 text-sm last:border-b-0 hover:bg-neutral-900"
-            [style.grid-template-columns]="columnTemplate"
+            class="flex flex-col gap-3 border-b border-neutral-900 px-6 py-5 text-sm last:border-b-0 hover:bg-neutral-900 md:grid md:items-center md:gap-4 md:grid-cols-(--list-columns)"
           >
             <span role="cell" class="truncate tabular-nums text-sm text-accent-300">{{ certificate.code }}</span>
             <span role="cell" class="flex min-w-0 flex-col">
@@ -139,14 +138,12 @@
               </span>
             </span>
             <span role="cell" class="tabular-nums text-sm text-subtle">{{ certificate.issueDate }}</span>
-            <span role="cell" data-row-menu class="relative flex justify-end">
+            <span role="cell" class="flex justify-end">
               <button
                 type="button"
-                (click)="toggleMenu(certificate.id, $event)"
+                [cdkMenuTriggerFor]="rowActions"
                 class="grid size-(--size-touch-target) place-items-center rounded-md text-subtle hover:bg-accent-900 hover:text-accent-500 active:bg-accent-800"
                 [attr.aria-label]="'Actions for ' + certificate.code"
-                aria-haspopup="menu"
-                [attr.aria-expanded]="openMenuId() === certificate.id"
               >
                 <svg class="size-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <circle cx="12" cy="5" r="1.6" />
@@ -155,29 +152,30 @@
                 </svg>
               </button>
 
-              @if (openMenuId() === certificate.id) {
+              <ng-template #rowActions>
                 <div
-                  role="menu"
-                  class="absolute top-full right-0 z-10 flex w-menu flex-col gap-1 rounded-md bg-surface p-2 shadow-e2"
+                  cdkMenu
+                  [attr.aria-label]="'Actions for ' + certificate.code"
+                  class="flex w-menu flex-col gap-1 rounded-md bg-surface p-2 shadow-e2"
                 >
                   <a
-                    role="menuitem"
+                    cdkMenuItem
                     [routerLink]="['/certificates', certificate.id, 'edit']"
                     class="flex min-h-(--size-touch-target) items-center rounded-md px-4 text-sm text-text no-underline hover:bg-neutral-900 active:bg-neutral-800"
                   >
                     Edit
                   </a>
                   <a
-                    role="menuitem"
+                    cdkMenuItem
                     [routerLink]="['/certificates', certificate.id, 'preview']"
                     class="flex min-h-(--size-touch-target) items-center rounded-md px-4 text-sm text-text no-underline hover:bg-neutral-900 active:bg-neutral-800"
                   >
                     Preview
                   </a>
                   <button
-                    role="menuitem"
+                    cdkMenuItem
                     type="button"
-                    (click)="downloadPdf(certificate)"
+                    (cdkMenuItemTriggered)="downloadPdf(certificate)"
                     class="flex min-h-(--size-touch-target) items-center rounded-md px-4 text-left text-sm text-text hover:bg-neutral-900 active:bg-neutral-800"
                   >
                     Download PDF
@@ -185,16 +183,16 @@
                   @if (isAdmin()) {
                     <span class="mx-1 my-1 h-px bg-divider" aria-hidden="true"></span>
                     <button
-                      role="menuitem"
+                      cdkMenuItem
                       type="button"
-                      (click)="confirmDelete(certificate)"
+                      (cdkMenuItemTriggered)="confirmDelete(certificate)"
                       class="flex min-h-(--size-touch-target) items-center rounded-md px-4 text-left text-sm text-revoked hover:bg-revoked-bg active:bg-revoked-bg"
                     >
                       Delete
                     </button>
                   }
                 </div>
-              }
+              </ng-template>
             </span>
           </div>
         }
@@ -204,8 +202,7 @@
         <label class="flex items-center gap-3">
           Rows per page:
           <select
-            [value]="pageSize()"
-            (change)="onPageSize($any($event.target).value)"
+            [formControl]="pageSizeControl"
             class="rounded-sm border border-divider bg-transparent px-3 py-1 text-sm text-text"
           >
             @for (size of pageSizes; track size) {

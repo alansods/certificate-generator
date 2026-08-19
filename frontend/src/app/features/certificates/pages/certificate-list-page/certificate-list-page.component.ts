@@ -9,6 +9,7 @@ import {
 } from "@angular/core";
 import { rxResource, takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from "@angular/cdk/menu";
 import { RouterLink } from "@angular/router";
 import { debounceTime, distinctUntilChanged } from "rxjs";
 import { TokenStorageService } from "../../../../core/auth/token-storage.service";
@@ -22,13 +23,7 @@ const PAGE_SIZES = [10, 20, 50];
 
 @Component({
   selector: "app-certificate-list-page",
-  imports: [ReactiveFormsModule, RouterLink],
-  // Document-level rather than per-row: the menu has to close on any click outside it and on
-  // Escape from wherever focus happens to be.
-  host: {
-    "(document:click)": "closeMenuOnOutsideClick($event)",
-    "(document:keydown.escape)": "closeMenuAndRestoreFocus()",
-  },
+  imports: [ReactiveFormsModule, RouterLink, CdkMenu, CdkMenuItem, CdkMenuTrigger],
   templateUrl: "./certificate-list-page.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -40,8 +35,6 @@ export class CertificateListPageComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly pageSizes = PAGE_SIZES;
-  /** Declared once and shared by the header, the rows and the skeleton, so the three cannot drift. */
-  protected readonly columnTemplate = "168px 1.3fr 1.5fr 128px 132px";
   protected readonly skeletonRows = [0, 1, 2, 3, 4, 5];
 
   protected readonly searchControl = new FormControl("", { nonNullable: true });
@@ -51,16 +44,28 @@ export class CertificateListPageComponent {
   );
 
   protected readonly page = signal(0);
-  protected readonly pageSize = signal(20);
 
-  /** Only one row's menu is open at a time; without this, scrolling a long list can leave several
-   * panels open over rows the user is no longer looking at. */
-  protected readonly openMenuId = signal<number | null>(null);
+  /**
+   * A reactive control rather than `[value]` on the `<select>`: the options are rendered by `@for`,
+   * so a plain value binding is applied before they exist and the browser falls back to the first
+   * one — the control then showed 10 while the request asked for 20.
+   */
+  protected readonly pageSizeControl = new FormControl("20", { nonNullable: true });
+  private readonly pageSizeValue = toSignal(this.pageSizeControl.valueChanges, {
+    initialValue: "20",
+  });
+  protected readonly pageSize = computed(() => Number(this.pageSizeValue()));
 
   // A search narrowing the result set while on page 2+ can otherwise leave `page` pointing past
   // the end of the new results, silently rendering an empty/short table instead of jumping back.
   private readonly resetPageOnSearch = effect(() => {
     this.query();
+    this.page.set(0);
+  });
+
+  // Same reason: a smaller page size while on page 5 would otherwise point past the end.
+  private readonly resetPageOnPageSize = effect(() => {
+    this.pageSizeValue();
     this.page.set(0);
   });
 
@@ -110,44 +115,6 @@ export class CertificateListPageComponent {
     () => (this.page() + 1) * this.pageSize() >= this.totalElements(),
   );
 
-  /** The control that opened the menu, so focus can go back where the user left it. */
-  private menuTrigger: HTMLElement | null = null;
-
-  protected toggleMenu(id: number, event: Event): void {
-    this.menuTrigger = event.currentTarget as HTMLElement;
-    this.openMenuId.update((open) => (open === id ? null : id));
-  }
-
-  /**
-   * Asking where the click landed rather than stopping propagation inside the panel: a click
-   * handler on the panel itself would be a non-interactive element handling clicks, and the menu's
-   * own items still need to work.
-   */
-  protected closeMenuOnOutsideClick(event: Event): void {
-    const target = event.target;
-    if (target instanceof Element && target.closest("[data-row-menu]")) {
-      return;
-    }
-    this.closeMenu();
-  }
-
-  protected closeMenu(): void {
-    this.openMenuId.set(null);
-  }
-
-  protected closeMenuAndRestoreFocus(): void {
-    if (this.openMenuId() === null) {
-      return;
-    }
-    this.openMenuId.set(null);
-    this.menuTrigger?.focus();
-  }
-
-  protected onPageSize(value: string): void {
-    this.pageSize.set(Number(value));
-    this.page.set(0);
-  }
-
   protected previousPage(): void {
     this.page.update((page) => Math.max(0, page - 1));
   }
@@ -167,7 +134,6 @@ export class CertificateListPageComponent {
   }
 
   protected downloadPdf(certificate: CertificateResponse): void {
-    this.closeMenu();
     this.certificatesApi
       .downloadPdf(certificate.id)
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -191,7 +157,6 @@ export class CertificateListPageComponent {
   }
 
   protected confirmDelete(certificate: CertificateResponse): void {
-    this.closeMenu();
     this.confirmDialog
       .confirm({
         title: "Delete certificate",

@@ -7,10 +7,10 @@
 
 ## 2. Row actions
 
-- [x] 2.1 Replace the four icon buttons with one actions button per row, opening a menu with Edit, Preview and Download PDF, plus a separated Delete for ADMIN.
-- [x] 2.2 Hold the open row's id in a single signal so opening one menu closes any other.
-- [x] 2.3 Close on outside click and on Escape, returning focus to the button that opened the menu. Give the button `aria-haspopup="menu"` and `aria-expanded`, and the panel `role="menu"` with `role="menuitem"` children.
-- [x] 2.4 Rebuild `shared/confirm-dialog.component.ts` on `@angular/cdk/dialog`, styled in Tailwind per `docs/design-spec.md` section 2 — backdrop with the neutral scrim and blur, panel at `rounded-lg bg-surface p-8 shadow-e3`. Keep the component's current API so its callers do not change. Assert the focus trap, Escape and focus restoration in its spec.
+- [x] 2.1 Replace the four icon buttons with one actions button per row, opening a `@angular/cdk/menu` panel with Edit, Preview and Download PDF, plus a separated Delete for ADMIN.
+- [x] 2.2 The CDK's menu stack closes any other open menu, renders the panel in an overlay so the table card cannot clip it, and supplies the arrow-key model — replacing the hand-rolled signal, document listeners and `data-row-menu` probe an earlier draft used.
+- [x] 2.3 The CDK handles outside click, Escape and focus restoration, and sets `aria-haspopup`/`aria-expanded` on the trigger and the menu roles on the panel; the panel is named after the certificate it acts on.
+- [x] 2.4 Rebuild the confirmation on `@angular/cdk/dialog` as `shared/confirm-dialog/`, styled in Tailwind per `docs/design-spec.md` section 2. The call sites change: both callers move from `MatDialog.open(...)` to `ConfirmDialogService.confirm(...)`. Its spec asserts the modal semantics, the accessible name and description, and that a dismissal reads as a refusal; the focus trap and focus restoration are the CDK's own defaults and are not re-asserted here.
 - [x] 2.5 Add `shared/toast/`: a snackbar service and host, anchored bottom-left, at most one action, dismissed after 4s, replacing the `MatSnackBar` the app declares but never imported.
 
 ## 3. Loading, empty and error states
@@ -32,7 +32,7 @@
 ## 6. Verification
 
 - [x] 6.1 `cd frontend && npm run build && npm run lint && npm test` all pass.
-- [ ] 6.2 Against the running backend: search, paginate, change page size, and run every row action including delete as ADMIN and as USER. **Not done in this session** — Docker stopped partway through, taking the local Postgres and the backend with it, so the authenticated screens could not be reached. The unit suite covers the menu, both empty states, the skeleton, the paginator and the delete path; this remains to be exercised by hand once a database is available.
-- [x] 6.3 Keyboard pass: the menu closes on Escape and restores focus to its trigger, asserted in the spec. Arrow-key navigation between items is **not** implemented — the panel is a short list of links and buttons in tab order; noted here rather than left looking done.
-- [x] 6.4 Checked at 375px, 900px and 1440px against the mockup.
+- [x] 6.2 Against the running backend: the list, the row menu, delete as ADMIN through the confirmation, the success toast, the empty state and the page-size control. Docker returned later in the session, so this was done after all — and it found two defects the unit suite had not: the page-size control displayed 10 while requesting 20 (a `[value]` binding applied before `@for` had rendered the options), and the actions menu was clipped by the table card.
+- [x] 6.3 Keyboard pass: the menu is `@angular/cdk/menu`, so arrow keys, Home/End, Escape and focus restoration come from the CDK rather than being approximated. An earlier draft shipped `role="menu"` without any of that, which promised a keyboard model it did not have.
+- [x] 6.4 Checked at 375px and 1440px against the mockup. The first pass at 375px found the row unusable — the fixed columns total roughly 510px, so the recipient and course cells were empty and the actions column sat entirely off-screen — and the row now stacks below the medium breakpoint.
 - [x] 6.5 `npx -y @fission-ai/openspec@latest validate nocturne-certificate-list --type change --strict` passes.

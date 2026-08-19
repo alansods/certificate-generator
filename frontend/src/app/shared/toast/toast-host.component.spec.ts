@@ -25,7 +25,10 @@ describe("ToastHostComponent", () => {
     toastService.success("Certificate deleted.");
     fixture.detectChanges();
 
-    const region = host().querySelector("[aria-live]")!;
+    const region = host().querySelector("[aria-live]");
+    if (!region) {
+      throw new Error("Expected the live region");
+    }
     expect(region.getAttribute("aria-live")).toBe("polite");
     // Each toast must be announced on its own rather than re-reading the whole stack.
     expect(region.getAttribute("aria-atomic")).toBe("false");
@@ -40,7 +43,11 @@ describe("ToastHostComponent", () => {
 
     expect(rendered()[0]?.getAttribute("role")).toBe("alert");
 
-    toastService.dismiss(toastService.toasts()[0]!.id);
+    const [shown] = toastService.toasts();
+    if (!shown) {
+      throw new Error("Expected the error toast to be showing");
+    }
+    toastService.dismiss(shown.id);
     toastService.success("Certificate deleted.");
     fixture.detectChanges();
 
@@ -54,9 +61,11 @@ describe("ToastHostComponent", () => {
     const dismiss = host().querySelector<HTMLButtonElement>(
       "button[aria-label='Dismiss notification']",
     );
-    expect(dismiss).not.toBeNull();
+    if (!dismiss) {
+      throw new Error("Expected the dismiss control");
+    }
 
-    dismiss!.click();
+    dismiss.click();
     fixture.detectChanges();
 
     expect(rendered()).toHaveLength(0);

@@ -19,6 +19,10 @@ The system SHALL display certificates in a paginated table backed by `GET /api/v
 - **WHEN** the table is viewed below the medium breakpoint, where the header row is not drawn
 - **THEN** the column headers remain available to assistive technology, so every cell still belongs to a named column
 
+#### Scenario: Header actions
+- **WHEN** the certificate list is shown
+- **THEN** the page header offers both creating a certificate and importing a batch from CSV, each reachable as a link rather than hidden behind a menu
+
 #### Scenario: Changing page
 - **WHEN** a user selects a different page or page size
 - **THEN** the table re-fetches with the corresponding `page`/`size` query parameters

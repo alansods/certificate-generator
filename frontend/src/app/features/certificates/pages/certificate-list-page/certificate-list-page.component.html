@@ -203,7 +203,7 @@
           Rows per page:
           <select
             [formControl]="pageSizeControl"
-            class="min-h-(--size-touch-target) rounded-sm border border-divider bg-transparent px-3 text-sm text-text"
+            class="min-h-(--size-touch-target) rounded-sm border border-divider bg-transparent px-3 text-sm text-text hover:bg-neutral-900 active:bg-neutral-800"
           >
             @for (size of pageSizes; track size) {
               <option [value]="size" class="bg-surface">{{ size }}</option>

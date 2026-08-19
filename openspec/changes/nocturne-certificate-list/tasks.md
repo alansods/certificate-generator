@@ -36,6 +36,7 @@
 
 - [x] 5b.1 Raise the search field's clear control and the rows-per-page select to `--size-touch-target`; both shipped at roughly 25px, under the 44px the shell requires.
 - [x] 5b.2 Step back to the last populated page when the dataset shrinks under the user, instead of rendering the empty state over a non-empty dataset.
+- [x] 5b.4 Test the in-field clear control, assert the shell hosts the notifications exactly once, and specify the header's create and import actions — all three shipped without a test or a requirement.
 - [x] 5b.3 Specify the search field's clear control under `### Requirement: Search`, and the toast host under a new `frontend-shell` requirement — both shipped unspecified.
 
 ## 6. Verification

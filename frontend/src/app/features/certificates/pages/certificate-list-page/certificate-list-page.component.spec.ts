@@ -230,6 +230,30 @@ describe("CertificateListPageComponent", () => {
     expect(nativeElement.textContent).toContain("Jane Doe");
   });
 
+  it("offers creating and importing from the page header", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const header = (fixture.nativeElement as HTMLElement).querySelector("h1")?.parentElement;
+    if (!header) {
+      throw new Error("Expected the page header");
+    }
+    const actions = [...header.querySelectorAll("a")].map((link) => [
+      link.textContent?.trim(),
+      link.getAttribute("href"),
+    ]);
+
+    expect(actions).toEqual(
+      expect.arrayContaining([
+        ["New certificate", "/certificates/new"],
+        ["Import CSV", "/certificates/batch"],
+      ]),
+    );
+  });
+
   it("only re-fetches after the search input debounce settles", async () => {
     const fixture = setup("USER");
     fixture.detectChanges();
@@ -259,6 +283,58 @@ describe("CertificateListPageComponent", () => {
     req.flush(samplePage());
     await tick();
     fixture.detectChanges();
+  }, 10000);
+
+  it("clears the search from a control inside the field", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    const clearControl = () =>
+      nativeElement.querySelector<HTMLButtonElement>(
+        "input[placeholder='Search by recipient, course or code'] ~ button[aria-label='Clear search']",
+      );
+
+    expect(clearControl()).toBeNull();
+
+    const input = nativeElement.querySelector<HTMLInputElement>(
+      "input[placeholder='Search by recipient, course or code']",
+    );
+    if (!input) {
+      throw new Error("Expected to find the search input");
+    }
+    input.value = "jane";
+    input.dispatchEvent(new Event("input"));
+
+    // Real timer: RxJS's debounceTime schedules via a real timer, no way around actually waiting.
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates") && r.params.get("q") === "jane")
+      .flush(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const clear = clearControl();
+    if (!clear) {
+      throw new Error("Expected the in-field clear control once the search holds a term");
+    }
+    clear.click();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    fixture.detectChanges();
+
+    expect(input.value).toBe("");
+    // An empty term drops the parameter rather than sending `q=`.
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates") && !r.params.has("q"))
+      .flush(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    expect(clearControl()).toBeNull();
   }, 10000);
 
   /** The CDK renders the panel in an overlay, outside the component's own element. */
@@ -402,7 +478,7 @@ describe("CertificateListPageComponent", () => {
     openRowMenu(fixture);
     fixture.detectChanges();
     const previewLink = menuItem("Preview") as HTMLAnchorElement | undefined;
-    expect(previewLink).not.toBeNull();
+    expect(previewLink).toBeDefined();
     expect(previewLink?.getAttribute("href")).toBe("/certificates/1/preview");
   });
 
@@ -451,7 +527,10 @@ describe("CertificateListPageComponent", () => {
     await tick();
     fixture.detectChanges();
 
-    const trigger = rowTriggers(fixture)[0]!;
+    const trigger = rowTriggers(fixture)[0];
+    if (!trigger) {
+      throw new Error("Expected the row's actions trigger");
+    }
     trigger.click();
     fixture.detectChanges();
     expect(document.querySelector("[role='menu']")).not.toBeNull();
@@ -512,9 +591,13 @@ describe("CertificateListPageComponent", () => {
     await tick();
     fixture.detectChanges();
 
-    (fixture.nativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>("button[aria-label='Next page']")!
-      .click();
+    const nextPage = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      "button[aria-label='Next page']",
+    );
+    if (!nextPage) {
+      throw new Error("Expected the next-page control");
+    }
+    nextPage.click();
     fixture.detectChanges();
 
     // While the user sat on page 1, the dataset shrank to a single page.

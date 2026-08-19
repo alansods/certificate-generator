@@ -53,6 +53,13 @@ describe("ShellComponent", () => {
     expect(links).toContain("/verify-code");
   });
 
+  it("hosts the notifications exactly once, since every feature reports through it", () => {
+    const { nativeElement } = setup();
+    flushMe(USER);
+
+    expect(nativeElement.querySelectorAll("app-toast-host")).toHaveLength(1);
+  });
+
   it("links the brand back to the certificate list", () => {
     const { nativeElement } = setup();
     flushMe(USER);

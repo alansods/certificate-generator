@@ -99,11 +99,12 @@ export class CertificateListPageComponent {
   // an empty page while the dataset itself is not empty. Step back to the last real page rather
   // than rendering "No certificates yet" over a list that still has rows.
   private readonly clampPagePastTheEnd = effect(() => {
-    const total = this.totalElements();
-    if (!this.listResource.hasValue() || total === 0) {
+    if (!this.listResource.hasValue()) {
       return;
     }
-    const lastPage = Math.ceil(total / this.pageSize()) - 1;
+    const total = this.totalElements();
+    // An emptied dataset has no populated page to step back to, so page 0 is the last one.
+    const lastPage = total === 0 ? 0 : Math.ceil(total / this.pageSize()) - 1;
     if (this.page() > lastPage) {
       this.page.set(lastPage);
     }

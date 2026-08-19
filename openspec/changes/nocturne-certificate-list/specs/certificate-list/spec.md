@@ -15,6 +15,10 @@ The system SHALL display certificates in a paginated table backed by `GET /api/v
 - **WHEN** the table is viewed below the medium breakpoint
 - **THEN** each certificate's fields stack instead of sitting in fixed columns, and its actions remain reachable without horizontal scrolling
 
+#### Scenario: Column headers survive the narrow layout
+- **WHEN** the table is viewed below the medium breakpoint, where the header row is not drawn
+- **THEN** the column headers remain available to assistive technology, so every cell still belongs to a named column
+
 #### Scenario: Changing page
 - **WHEN** a user selects a different page or page size
 - **THEN** the table re-fetches with the corresponding `page`/`size` query parameters

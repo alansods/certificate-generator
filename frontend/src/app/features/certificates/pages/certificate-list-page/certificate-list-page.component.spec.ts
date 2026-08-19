@@ -478,4 +478,23 @@ describe("CertificateListPageComponent", () => {
     await tick();
     fixture.detectChanges();
   });
+
+  it("keeps the column headers in the accessibility tree at every width", async () => {
+    // Hiding the header row with `display: none` below the medium breakpoint would leave a table
+    // whose cells belong to no column, which is worse for a screen reader than a plain list.
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const header = (fixture.nativeElement as HTMLElement).querySelector("[role='row']");
+    const headers = [...(header?.querySelectorAll("[role='columnheader']") ?? [])].map((cell) =>
+      cell.textContent?.trim(),
+    );
+
+    expect(headers).toEqual(["Code", "Recipient", "Course", "Issue date", "Actions"]);
+    expect(header?.className).toContain("sr-only");
+    expect(header?.className).not.toContain("hidden");
+  });
 });

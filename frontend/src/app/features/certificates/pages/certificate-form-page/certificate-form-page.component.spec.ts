@@ -5,6 +5,7 @@ import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from "@angular/router";
 import { of } from "rxjs";
 import { TokenStorageService } from "../../../../core/auth/token-storage.service";
+import { ConfirmDialogService } from "../../../../shared/confirm-dialog/confirm-dialog.service";
 import { CertificateFormPageComponent } from "./certificate-form-page.component";
 
 function fakeJwt(payload: Record<string, unknown>): string {
@@ -231,11 +232,7 @@ describe("CertificateFormPageComponent", () => {
     expect((fixture.nativeElement as HTMLElement).querySelector("button[color='warn']")).toBeNull();
   });
 
-  it("ADMIN in edit mode: confirming delete calls MatDialog, deletes, and navigates to the list", async () => {
-    // The dialog itself is stubbed by direct field assignment rather than a TestBed provider
-    // override — see certificate-list-page.component.spec.ts for why (MatDialog's providedIn:'root'
-    // instance resolved by this component doesn't match the one TestBed.inject(MatDialog) returns
-    // in this Vitest/esbuild setup). The click itself is real, exercising the actual button binding.
+  it("ADMIN in edit mode: confirming delete deletes and navigates to the list", async () => {
     const fixture = setup("ADMIN", "7");
     const router = TestBed.inject(Router);
     const navigateSpy = vi.spyOn(router, "navigateByUrl").mockResolvedValue(true);
@@ -251,15 +248,16 @@ describe("CertificateFormPageComponent", () => {
     );
     expect(deleteButton).not.toBeNull();
 
-    const openSpy = vi.fn().mockReturnValue({ afterClosed: () => of(true) });
-    (fixture.componentInstance as unknown as { dialog: { open: unknown } }).dialog = {
-      open: openSpy,
-    };
+    // The confirmation is a plain injectable now, so a normal provider spy reaches the instance
+    // the component resolved — the Material dialog's root-instance mismatch is gone with it.
+    const confirmSpy = vi
+      .spyOn(TestBed.inject(ConfirmDialogService), "confirm")
+      .mockReturnValue(of(true));
 
     deleteButton?.click();
     fixture.detectChanges();
 
-    expect(openSpy).toHaveBeenCalled();
+    expect(confirmSpy).toHaveBeenCalled();
     httpMock
       .expectOne((r) => r.url.endsWith("/api/v1/certificates/7") && r.method === "DELETE")
       .flush(null);

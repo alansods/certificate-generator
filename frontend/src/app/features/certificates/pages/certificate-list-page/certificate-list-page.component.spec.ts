@@ -5,6 +5,7 @@ import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { provideRouter } from "@angular/router";
 import { of } from "rxjs";
 import { TokenStorageService } from "../../../../core/auth/token-storage.service";
+import { ConfirmDialogService } from "../../../../shared/confirm-dialog/confirm-dialog.service";
 import { CertificateListPageComponent } from "./certificate-list-page.component";
 
 function fakeJwt(payload: Record<string, unknown>): string {
@@ -18,7 +19,10 @@ function samplePage(content: unknown[] = [
     id: 1,
     code: "CERT-AAAA-BBBB",
     recipientName: "Jane Doe",
+    recipientEmail: "jane@example.edu",
     courseName: "Advanced Angular",
+    workloadHours: 40,
+    template: "CLASSIC",
     status: "ISSUED",
     issueDate: "2026-05-15",
   },
@@ -85,7 +89,7 @@ describe("CertificateListPageComponent", () => {
     await tick();
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain("No certificates found");
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain("No certificates yet");
   });
 
   it("shows the error state with a working retry on a failed request", async () => {
@@ -118,7 +122,7 @@ describe("CertificateListPageComponent", () => {
     fixture.detectChanges();
 
     const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
-      "input[placeholder='Recipient, course or code']",
+      "input[placeholder='Search by recipient, course or code']",
     );
     if (!input) {
       throw new Error("Expected to find the search input");
@@ -141,6 +145,22 @@ describe("CertificateListPageComponent", () => {
     fixture.detectChanges();
   }, 10000);
 
+  function openRowMenu(fixture: { nativeElement: unknown }): void {
+    const trigger = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      "button[aria-haspopup='menu']",
+    );
+    if (!trigger) {
+      throw new Error("Expected the row's actions trigger");
+    }
+    trigger.click();
+  }
+
+  function menuItem(fixture: { nativeElement: unknown }, label: string): HTMLElement | undefined {
+    return [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLElement>("[role='menuitem']")].find(
+      (item) => item.textContent?.trim() === label,
+    );
+  }
+
   it("hides the delete action for a non-admin role", async () => {
     const fixture = setup("USER");
     fixture.detectChanges();
@@ -148,10 +168,11 @@ describe("CertificateListPageComponent", () => {
     await tick();
     fixture.detectChanges();
 
-    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector(
-      "button[aria-label='Delete certificate']",
-    );
-    expect(deleteButton).toBeNull();
+    openRowMenu(fixture);
+    fixture.detectChanges();
+
+    expect(menuItem(fixture, "Delete")).toBeUndefined();
+    expect(menuItem(fixture, "Edit")).toBeDefined();
   });
 
   it("shows the delete action for ADMIN", async () => {
@@ -161,38 +182,31 @@ describe("CertificateListPageComponent", () => {
     await tick();
     fixture.detectChanges();
 
-    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
-      "button[aria-label='Delete certificate']",
-    );
-    expect(deleteButton).not.toBeNull();
+    openRowMenu(fixture);
+    fixture.detectChanges();
+
+    expect(menuItem(fixture, "Delete")).toBeDefined();
   });
 
-  it("clicking delete calls MatDialog, then deletes and reloads when confirmed", async () => {
-    // The dialog itself is stubbed by direct field assignment rather than a TestBed provider
-    // override — MatDialog's providedIn:'root' instance resolved by this component didn't match
-    // the one TestBed.inject(MatDialog) returned to the test in this Vitest/esbuild setup
-    // (confirmed by instrumenting both sides), so a provider override had no effect here. The
-    // click itself is real, though: this exercises the actual button binding, not just the
-    // method it calls, so a wrong/typo'd handler on the button would still be caught.
+  it("confirming delete removes the certificate and reloads the list", async () => {
     const fixture = setup("ADMIN");
     fixture.detectChanges();
     flushList(samplePage());
     await tick();
     fixture.detectChanges();
 
-    const openSpy = vi.fn().mockReturnValue({ afterClosed: () => of(true) });
-    (fixture.componentInstance as unknown as { dialog: { open: unknown } }).dialog = {
-      open: openSpy,
-    };
+    const confirmSpy = vi
+      .spyOn(TestBed.inject(ConfirmDialogService), "confirm")
+      .mockReturnValue(of(true));
 
-    const deleteButton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
-      "button[aria-label='Delete certificate']",
-    );
-    expect(deleteButton).not.toBeNull();
-    deleteButton?.click();
+    openRowMenu(fixture);
+    fixture.detectChanges();
+    menuItem(fixture, "Delete")?.click();
     fixture.detectChanges();
 
-    expect(openSpy).toHaveBeenCalled();
+    expect(confirmSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ destructive: true, confirmLabel: "Delete" }),
+    );
     httpMock
       .expectOne((r) => r.url.endsWith("/api/v1/certificates/1") && r.method === "DELETE")
       .flush(null);
@@ -204,6 +218,22 @@ describe("CertificateListPageComponent", () => {
     fixture.detectChanges();
   });
 
+  it("does not delete when the confirmation is dismissed", async () => {
+    const fixture = setup("ADMIN");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+    vi.spyOn(TestBed.inject(ConfirmDialogService), "confirm").mockReturnValue(of(false));
+
+    openRowMenu(fixture);
+    fixture.detectChanges();
+    menuItem(fixture, "Delete")?.click();
+    fixture.detectChanges();
+
+    // httpMock.verify() asserts no DELETE went out.
+  });
+
   it("the preview action links to the certificate's preview page", async () => {
     const fixture = setup("USER");
     fixture.detectChanges();
@@ -211,10 +241,164 @@ describe("CertificateListPageComponent", () => {
     await tick();
     fixture.detectChanges();
 
-    const previewLink = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
-      "a[aria-label='Preview PDF']",
-    );
+    openRowMenu(fixture);
+    fixture.detectChanges();
+    const previewLink = menuItem(fixture, "Preview") as HTMLAnchorElement | undefined;
     expect(previewLink).not.toBeNull();
     expect(previewLink?.getAttribute("href")).toBe("/certificates/1/preview");
+  });
+
+  it("closes an open row menu when another row's menu is opened", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    const [first] = samplePage().content as Record<string, unknown>[];
+    flushList(samplePage([first, { ...first, id: 2, code: "CERT-CCCC-DDDD" }]));
+    await tick();
+    fixture.detectChanges();
+
+    const triggers = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
+        "button[aria-haspopup='menu']",
+      ),
+    ];
+    triggers[0]?.click();
+    fixture.detectChanges();
+
+    expect(triggers[0]?.getAttribute("aria-expanded")).toBe("true");
+
+    triggers[1]?.click();
+    fixture.detectChanges();
+
+    // Otherwise scrolling a long list leaves panels open over rows nobody is looking at.
+    expect(triggers[0]?.getAttribute("aria-expanded")).toBe("false");
+    expect(triggers[1]?.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("closes the row menu on Escape and puts focus back on the trigger", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const trigger = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      "button[aria-haspopup='menu']",
+    );
+    trigger?.click();
+    fixture.detectChanges();
+
+    expect(trigger?.getAttribute("aria-expanded")).toBe("true");
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    fixture.detectChanges();
+
+    expect(trigger?.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it("closes the row menu on a click outside it", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const trigger = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      "button[aria-haspopup='menu']",
+    );
+    trigger?.click();
+    fixture.detectChanges();
+
+    document.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(trigger?.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("holds the table's shape while a request is in flight", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+    const placeholders = nativeElement.querySelectorAll(".skeleton");
+
+    expect(placeholders.length).toBeGreaterThan(0);
+    // Same column template as the real rows, so the layout cannot shift when they arrive.
+    const skeletonRow = placeholders[0]?.parentElement;
+    expect(skeletonRow?.getAttribute("style")).toContain("grid-template-columns");
+
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    expect(nativeElement.querySelectorAll(".skeleton")).toHaveLength(0);
+  });
+
+  it("distinguishes an empty dataset from a search that matched nothing", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage([]));
+    await tick();
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+
+    expect(nativeElement.textContent).toContain("No certificates yet");
+    expect(nativeElement.textContent).not.toContain("Clear search");
+
+    const input = nativeElement.querySelector<HTMLInputElement>("input");
+    if (!input) {
+      throw new Error("Expected the search input");
+    }
+    input.value = "nothing-matches";
+    input.dispatchEvent(new Event("input"));
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates") && r.params.get("q") === "nothing-matches")
+      .flush(samplePage([]));
+    await tick();
+    fixture.detectChanges();
+
+    expect(nativeElement.textContent).toContain("No certificates match");
+    expect(nativeElement.textContent).toContain("Clear search");
+  }, 10000);
+
+  it("offers 10, 20 and 50 rows per page and re-fetches on a change", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+    flushList(samplePage());
+    await tick();
+    fixture.detectChanges();
+
+    const select = (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>("select");
+    if (!select) {
+      throw new Error("Expected the page size control");
+    }
+
+    expect([...select.options].map((option) => option.value)).toEqual(["10", "20", "50"]);
+
+    select.value = "50";
+    select.dispatchEvent(new Event("change"));
+    fixture.detectChanges();
+
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates") && r.params.get("size") === "50")
+      .flush(samplePage());
+    await tick();
+    fixture.detectChanges();
+  });
+
+  it("sends no status filter, since the screen no longer offers one", async () => {
+    const fixture = setup("USER");
+    fixture.detectChanges();
+
+    const request = httpMock.expectOne((r) => r.url.endsWith("/api/v1/certificates"));
+
+    expect(request.request.params.has("status")).toBe(false);
+
+    request.flush(samplePage());
+    await tick();
+    fixture.detectChanges();
   });
 });

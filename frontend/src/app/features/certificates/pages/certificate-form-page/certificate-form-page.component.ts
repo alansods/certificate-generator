@@ -2,7 +2,6 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
@@ -11,7 +10,7 @@ import { ActivatedRoute, Router } from "@angular/router";
 import { finalize } from "rxjs";
 import { TokenStorageService } from "../../../../core/auth/token-storage.service";
 import { toProblemDetail } from "../../../../core/http/problem-detail";
-import { ConfirmDialogComponent } from "../../../../shared/confirm-dialog.component";
+import { ConfirmDialogService } from "../../../../shared/confirm-dialog/confirm-dialog.service";
 import { CertificateTemplate } from "../../data/certificate-page-response";
 import { CertificateRequest } from "../../data/certificate-request";
 import { CertificatesApi } from "../../data/certificates.api";
@@ -26,7 +25,6 @@ const TEMPLATES: CertificateTemplate[] = ["CLASSIC", "MODERN", "MINIMAL"];
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatDialogModule,
     MatProgressSpinnerModule,
   ],
   templateUrl: "./certificate-form-page.component.html",
@@ -38,7 +36,7 @@ export class CertificateFormPageComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly tokenStorage = inject(TokenStorageService);
-  private readonly dialog = inject(MatDialog);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly templates = TEMPLATES;
@@ -132,16 +130,15 @@ export class CertificateFormPageComponent {
     }
     const id = this.certificateId;
 
-    this.dialog
-      .open(ConfirmDialogComponent, {
-        data: {
-          title: "Delete certificate",
-          message: "Delete this certificate? This cannot be undone.",
-          confirmLabel: "Delete",
-        },
+    this.confirmDialog
+      .confirm({
+        title: "Delete certificate",
+        message: "Delete this certificate? This cannot be undone.",
+        confirmLabel: "Delete",
+        destructive: true,
       })
-      .afterClosed()
-      .subscribe((confirmed: boolean | undefined) => {
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((confirmed) => {
         if (confirmed) {
           this.certificatesApi
             .deleteById(id)

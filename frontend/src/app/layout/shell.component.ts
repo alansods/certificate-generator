@@ -2,13 +2,14 @@ import { ChangeDetectionStrategy, Component, computed, inject, OnInit } from "@a
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import { SessionService } from "../core/auth/session.service";
+import { ToastHostComponent } from "../shared/toast/toast-host.component";
 import { CERTIFICATE_CODE_LENGTH } from "../features/verification/data/certificate-code";
 
 /** Authenticated-area chrome: top bar with a quick code lookup, side navigation, and the
  * signed-in identity with sign-out pinned to the bottom. */
 @Component({
   selector: "app-shell",
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, ReactiveFormsModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ReactiveFormsModule, ToastHostComponent],
   templateUrl: "./shell.component.html",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

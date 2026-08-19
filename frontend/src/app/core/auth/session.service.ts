@@ -1,6 +1,6 @@
 import { inject, Injectable, signal } from "@angular/core";
 import { Router } from "@angular/router";
-import { catchError, finalize, of } from "rxjs";
+import { catchError, finalize, of, Subscription } from "rxjs";
 import { AuthApi } from "../../features/auth/data/auth.api";
 import { UserResponse } from "../../features/auth/data/user-response";
 import { TokenStorageService } from "./token-storage.service";
@@ -24,6 +24,7 @@ export class SessionService {
    */
   private generation = 0;
   private loading = false;
+  private inFlight: Subscription | null = null;
 
   readonly currentUser = this.currentUserSignal.asReadonly();
 
@@ -39,7 +40,7 @@ export class SessionService {
     }
     this.loading = true;
     const generation = this.generation;
-    this.authApi
+    this.inFlight = this.authApi
       .me()
       .pipe(
         catchError(() => of(null)),
@@ -74,6 +75,12 @@ export class SessionService {
     // Cleared before navigating, so even a navigation that never completes leaves a signed-out
     // state rather than an apparently-signed-in one.
     this.generation += 1;
+    // Cancelled, not merely ignored: left open, a previous session's lookup can 401 after the next
+    // user signs in on this tab, and the refresh interceptor would clear *their* tokens and bounce
+    // them to the login screen. It would also leave `loading` set, so their own lookup never runs.
+    this.inFlight?.unsubscribe();
+    this.inFlight = null;
+    this.loading = false;
     this.currentUserSignal.set(null);
     this.tokenStorage.clear();
     // A rejected navigation (a guard throwing, say) must not surface as an unhandled rejection:

@@ -183,16 +183,24 @@ describe("ShellComponent", () => {
     );
   });
 
-  it("keeps sign-out inside the navigation on the narrow layout", () => {
-    const { nativeElement } = setup();
+  it("keeps a working sign-out inside the navigation landmark", () => {
+    // Which of the two is visible is a breakpoint concern left to a visual check; what matters
+    // here is that the navigation itself carries one and that it signs the user out.
+    const { fixture, nativeElement } = setup();
     flushMe(USER);
+    fixture.detectChanges();
+    const signOutSpy = vi
+      .spyOn(TestBed.inject(SessionService), "signOut")
+      .mockImplementation(() => undefined);
 
-    // The narrow layout is Tailwind variants, so this asserts the markup that produces it: a
-    // sign-out control inside the nav that is hidden from the medium breakpoint up.
-    const navSignOut = [...(nativeElement.querySelectorAll("nav button") ?? [])].find(
-      (button) => button.textContent?.trim() === "Sign out" && button.className.includes("md:hidden"),
+    const navSignOut = [...nativeElement.querySelectorAll<HTMLButtonElement>("nav button")].find(
+      (button) => button.textContent?.trim() === "Sign out",
     );
+    if (!navSignOut) {
+      throw new Error("Expected a sign-out control inside the navigation");
+    }
+    navSignOut.click();
 
-    expect(navSignOut).toBeDefined();
+    expect(signOutSpy).toHaveBeenCalled();
   });
 });

@@ -83,8 +83,17 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public void revoke(String rawToken) {
-        refreshTokenRepository.findByTokenHash(hash(rawToken)).ifPresent(RefreshToken::revoke);
+    /** Returns whether a stored token actually matched, so the caller can tell a real sign-out
+     * from a probe without the response ever distinguishing them. */
+    public boolean revoke(String rawToken) {
+        return refreshTokenRepository
+                .findByTokenHash(hash(rawToken))
+                .map(
+                        token -> {
+                            token.revoke();
+                            return true;
+                        })
+                .orElse(false);
     }
 
     private RefreshToken findByRawTokenOrThrow(String rawToken) {

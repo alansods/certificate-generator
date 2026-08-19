@@ -8,6 +8,9 @@ import { VerificationApi } from "./verification.api";
 export type VerificationErrorKind = "not-found" | "rate-limited" | "generic";
 
 /**
+ * Must be called from an injection context — a component field initializer or constructor — since
+ * it creates an `effect`, an `rxResource` and two `toSignal`s that tear down with their injector.
+ *
  * The lookup state both verification pages need: a field kept in step with wherever the page
  * reads its code from, the shape check that keeps a typo from reaching the API, the request, and
  * the outcome. The pages differ only in where the code lives in the URL and where submitting

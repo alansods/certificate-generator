@@ -44,8 +44,8 @@ public class AuthController {
 
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void logout(@Valid @RequestBody RefreshRequest request) {
-        authService.logout(request.refreshToken());
+    public void logout(@Valid @RequestBody RefreshRequest request, HttpServletRequest httpRequest) {
+        authService.logout(request.refreshToken(), clientIpResolver.resolve(httpRequest));
     }
 
     @GetMapping("/me")

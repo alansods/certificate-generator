@@ -8,7 +8,7 @@
       autocomplete="off"
       spellcheck="false"
       [attr.aria-invalid]="invalid()"
-      [attr.aria-describedby]="invalid() ? errorId() : null"
+      [attr.aria-describedby]="invalid() ? errorId : null"
       class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm tabular-nums tracking-wide caret-accent-500 hover:border-neutral-500"
       [class.border-neutral-600]="!invalid()"
       [class.border-revoked]="invalid()"
@@ -22,7 +22,7 @@
   </button>
 </div>
 @if (invalid()) {
-  <p [id]="errorId()" class="m-0 px-1 text-xs text-revoked" role="alert">
+  <p [id]="errorId" class="m-0 px-1 text-xs text-revoked" role="alert">
     Use the format CERT-XXXX-XXXX (letters and numbers).
   </p>
 }

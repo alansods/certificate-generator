@@ -1,6 +1,6 @@
 <div class="flex min-h-dvh flex-col">
   <header
-    class="sticky top-0 z-5 flex h-(--size-toolbar) flex-none items-center gap-8 bg-surface px-7 shadow-[inset_0_-1px_0_var(--color-divider)]"
+    class="sticky top-0 z-5 flex h-(--size-toolbar) flex-none items-center gap-8 border-b border-divider bg-surface px-7"
   >
     <a routerLink="/certificates" class="rounded-md px-3 py-2 text-sm font-medium text-text no-underline hover:bg-accent-900 hover:text-accent-300 active:bg-accent-800">
       Certificate Generator
@@ -39,7 +39,7 @@
   <div class="flex min-h-0 flex-1 flex-col md:flex-row">
     <nav
       aria-label="Main"
-      class="fixed inset-x-0 bottom-0 z-5 flex flex-none gap-1 bg-surface p-4 shadow-[inset_0_1px_0_var(--color-divider)] md:static md:w-(--size-nav) md:flex-col md:shadow-[inset_-1px_0_0_var(--color-divider)]"
+      class="fixed inset-x-0 bottom-0 z-5 flex flex-none gap-1 border-t border-divider bg-surface px-4 pt-4 pb-[calc(--spacing(4)+env(safe-area-inset-bottom))] md:sticky md:top-(--size-toolbar) md:h-[calc(100dvh-var(--size-toolbar))] md:w-(--size-nav) md:flex-col md:self-start md:overflow-y-auto md:border-t-0 md:border-r md:p-4"
     >
       <p class="hidden px-4 pt-2 pb-3 text-overline tracking-wide text-subtle uppercase md:block">
         Menu
@@ -50,7 +50,7 @@
         routerLinkActive
         #certificatesActive="routerLinkActive"
         [attr.aria-current]="certificatesActive.isActive ? 'page' : null"
-        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline not-aria-[current=page]:hover:bg-neutral-900 not-aria-[current=page]:hover:text-text active:bg-neutral-800 aria-[current=page]:bg-accent-900 aria-[current=page]:text-accent-300 md:flex-none md:justify-start"
+        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline not-aria-[current=page]:hover:bg-neutral-900 not-aria-[current=page]:hover:text-text not-aria-[current=page]:active:bg-neutral-800 aria-[current=page]:bg-accent-900 aria-[current=page]:text-accent-300 aria-[current=page]:active:bg-accent-800 md:flex-none md:justify-start"
       >
         <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
           <rect x="3" y="4" width="18" height="14" rx="2" />
@@ -64,7 +64,7 @@
         routerLinkActive
         #verifyActive="routerLinkActive"
         [attr.aria-current]="verifyActive.isActive ? 'page' : null"
-        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline not-aria-[current=page]:hover:bg-neutral-900 not-aria-[current=page]:hover:text-text active:bg-neutral-800 aria-[current=page]:bg-accent-900 aria-[current=page]:text-accent-300 md:flex-none md:justify-start"
+        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline not-aria-[current=page]:hover:bg-neutral-900 not-aria-[current=page]:hover:text-text not-aria-[current=page]:active:bg-neutral-800 aria-[current=page]:bg-accent-900 aria-[current=page]:text-accent-300 aria-[current=page]:active:bg-accent-800 md:flex-none md:justify-start"
       >
         <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
           <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -110,7 +110,7 @@
     </nav>
 
     <!-- Bottom padding clears the fixed mobile bar; it collapses once the bar becomes a sidebar. -->
-    <main class="min-w-0 flex-1 pb-24 md:pb-0">
+    <main class="min-w-0 flex-1 pb-[calc(var(--size-touch-target)+--spacing(8)+env(safe-area-inset-bottom))] md:pb-0">
       <router-outlet />
     </main>
   </div>

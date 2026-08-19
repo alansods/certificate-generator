@@ -5,11 +5,7 @@
     <h1 class="text-center text-sm font-medium">Certificate Generator</h1>
 
     <form (submit)="$event.preventDefault(); submit()" class="flex flex-col gap-3 rounded-lg bg-surface p-4 shadow-e1">
-      <app-code-field
-        [control]="lookup.control"
-        [invalid]="lookup.invalid()"
-        errorId="code-format-error"
-      />
+      <app-code-field [control]="lookup.control" [invalid]="lookup.invalid()" />
     </form>
 
     <!-- One persistent live region: swapping the contents of an existing region announces far more

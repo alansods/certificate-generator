@@ -126,15 +126,27 @@ describe("SessionService", () => {
     expect(service.currentUser()).toBeNull();
   });
 
-  it("ignores a lookup that lands after the session it belonged to ended", () => {
+  it("cancels a lookup that outlives the session it belonged to", () => {
     service.load();
     const inFlight = expectMe();
 
     service.signOut();
-    // The previous session's answer arrives late; applying it would put one user's name on
-    // screen for whoever signs in next on this machine.
-    inFlight.flush(USER);
 
+    // Cancelled outright: left open it could 401 after the next user signs in on this tab, and
+    // the refresh interceptor would clear their tokens.
+    expect(inFlight.cancelled).toBe(true);
     expect(service.currentUser()).toBeNull();
+  });
+
+  it("lets the next user load their own identity after a sign-out mid-lookup", () => {
+    service.load();
+    expectMe();
+    service.signOut();
+
+    // The abandoned lookup must not have left the guard set, or this second load never runs.
+    service.load();
+    expectMe().flush({ ...USER, id: 2, fullName: "Other Person" });
+
+    expect(service.currentUser()?.fullName).toBe("Other Person");
   });
 });

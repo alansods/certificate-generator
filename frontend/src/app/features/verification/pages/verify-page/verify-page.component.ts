@@ -4,8 +4,8 @@ import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { map } from "rxjs";
 import { createVerificationLookup } from "../../data/verification-lookup";
 import { VerificationApi } from "../../data/verification.api";
-import { CodeFieldComponent } from "../../ui/code-field/code-field.component";
-import { VerificationResultComponent } from "../../ui/verification-result/verification-result.component";
+import { CodeFieldComponent } from "../../components/code-field/code-field.component";
+import { VerificationResultComponent } from "../../components/verification-result/verification-result.component";
 
 @Component({
   selector: "app-verify-page",

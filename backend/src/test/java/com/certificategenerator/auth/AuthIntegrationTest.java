@@ -126,6 +126,39 @@ class AuthIntegrationTest {
     }
 
     @Test
+    void logoutRevokesTheRefreshTokenWithoutAnAccessToken() {
+        // The refresh token in the body is the credential. Requiring a bearer as well meant an
+        // expired one sent logout through the client's silent-refresh retry, which rotates the
+        // refresh token and then revokes the superseded one, leaving the live token usable.
+        TokenPairResponse tokens = login(ADMIN_EMAIL, ADMIN_PASSWORD);
+
+        ResponseEntity<Void> logoutResponse =
+                restTemplate.postForEntity(
+                        "/api/v1/auth/logout", new RefreshRequest(tokens.refreshToken()), Void.class);
+        assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        ResponseEntity<String> refreshAfterLogout =
+                restTemplate.postForEntity(
+                        "/api/v1/auth/refresh", new RefreshRequest(tokens.refreshToken()), String.class);
+        assertThat(refreshAfterLogout.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void logoutOfAnUnknownTokenReportsSuccessAndAffectsNoSession() {
+        TokenPairResponse tokens = login(ADMIN_EMAIL, ADMIN_PASSWORD);
+
+        ResponseEntity<Void> logoutResponse =
+                restTemplate.postForEntity(
+                        "/api/v1/auth/logout", new RefreshRequest("not-a-stored-token"), Void.class);
+        assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+        ResponseEntity<String> stillValid =
+                restTemplate.postForEntity(
+                        "/api/v1/auth/refresh", new RefreshRequest(tokens.refreshToken()), String.class);
+        assertThat(stillValid.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
     void loginIsRateLimitedAfterFiveFailedAttemptsForTheSameEmail() {
         String email = "rate-limit-probe@example.com"; // isolated from the shared admin key
 

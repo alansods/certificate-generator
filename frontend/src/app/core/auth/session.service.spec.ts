@@ -16,7 +16,13 @@ describe("SessionService", () => {
   beforeEach(() => {
     localStorage.clear();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        // A real route: with an empty table the sign-out navigation rejects, which is an artifact
+        // of the test rather than of the behaviour under test.
+        provideRouter([{ path: "login", children: [] }]),
+      ],
     });
     httpMock = TestBed.inject(HttpTestingController);
     service = TestBed.inject(SessionService);
@@ -93,6 +99,41 @@ describe("SessionService", () => {
 
     service.signOut();
     expectLogout().flush(null, { status: 204, statusText: "No Content" });
+
+    expect(service.currentUser()).toBeNull();
+  });
+
+  it("loads the user once, however many times the shell asks", () => {
+    service.load();
+    expectMe().flush(USER);
+
+    service.load();
+
+    // httpMock.verify() in afterEach asserts no second request went out.
+    expect(service.currentUser()).toEqual(USER);
+  });
+
+  it("keeps the loaded user when a later lookup fails", () => {
+    service.load();
+    expectMe().flush(USER);
+
+    // Force a re-load the way a fresh session would, then fail it.
+    service.signOut();
+    expect(service.currentUser()).toBeNull();
+    service.load();
+    expectMe().flush(null, { status: 500, statusText: "Internal Server Error" });
+
+    expect(service.currentUser()).toBeNull();
+  });
+
+  it("ignores a lookup that lands after the session it belonged to ended", () => {
+    service.load();
+    const inFlight = expectMe();
+
+    service.signOut();
+    // The previous session's answer arrives late; applying it would put one user's name on
+    // screen for whoever signs in next on this machine.
+    inFlight.flush(USER);
 
     expect(service.currentUser()).toBeNull();
   });

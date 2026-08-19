@@ -8,7 +8,15 @@ export const API_BASE_URL = new InjectionToken<string>("API_BASE_URL", {
 });
 
 /** Paths that must never carry an Authorization header. */
-export const PUBLIC_API_PATHS = ["/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/public/verify/"];
+export const PUBLIC_API_PATHS = [
+  "/api/v1/auth/login",
+  "/api/v1/auth/refresh",
+  // Logout carries its credential — the refresh token — in the body. Keeping it out of the
+  // bearer path also keeps it out of the 401 retry, which would otherwise re-send the original
+  // body after a rotation and revoke a token that is already dead.
+  "/api/v1/auth/logout",
+  "/api/v1/public/verify/",
+];
 
 /**
  * Matches by URL *pathname*, not a raw substring of the whole URL — a substring check could be

@@ -272,6 +272,17 @@ describe("BatchUploadPageComponent", () => {
       .flush(new Blob(["recipient_name,recipient_email\n"]));
   });
 
+  it("shows keyboard focus on the drop area, not on the hidden input", () => {
+    const fixture = setup();
+    fixture.detectChanges();
+
+    const dropArea = el(fixture).querySelector("label[for='batch-upload-file']");
+    // The input is visually hidden, so its own ring would be drawn around a 1x1 box and a
+    // keyboard user would see nothing. The visible drop area has to carry the ring instead.
+    expect(dropArea?.className).toContain("has-[:focus-visible]:outline-accent-500");
+    expect(dropArea?.className).toContain("has-[:focus-visible]:border-accent-500");
+  });
+
   it("accepts a file dropped on the drop area", () => {
     const fixture = setup();
     fixture.detectChanges();

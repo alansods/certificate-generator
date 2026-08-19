@@ -167,4 +167,59 @@ describe("VerifyCodePageComponent", () => {
       expect.objectContaining({ queryParams: { code: "CERT-7K2M-9XQ4" } }),
     );
   });
+
+  it("shows a not-yet-issued treatment for a certificate that has not been issued", async () => {
+    const { fixture } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+    flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "DRAFT" });
+    await tick();
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? "";
+
+    expect(text).toContain("Not yet issued");
+    expect(text).not.toContain("Valid certificate");
+    expect(text).not.toContain("Certificate revoked");
+  });
+
+  it("offers a retry when the lookup fails for any other reason", async () => {
+    const { fixture } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/public/verify/CERT-AAAA-BBBB"))
+      .flush(null, { status: 500, statusText: "Internal Server Error" });
+    await tick();
+    fixture.detectChanges();
+
+    const nativeElement = fixture.nativeElement as HTMLElement;
+
+    expect(nativeElement.textContent).toContain("Something went wrong");
+    expect(nativeElement.textContent).not.toContain("No certificate found");
+
+    const retry = [...nativeElement.querySelectorAll("button")].find(
+      (button) => button.textContent?.trim() === "Retry",
+    );
+    if (!retry) {
+      throw new Error("Expected a retry action on the generic error state");
+    }
+    retry.click();
+    fixture.detectChanges();
+
+    flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "ISSUED" });
+    await tick();
+  });
+
+  it("re-runs the lookup when the code already in the URL is submitted again", async () => {
+    const { fixture } = setup("CERT-AAAA-BBBB");
+    fixture.detectChanges();
+    flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "ISSUED" });
+    await tick();
+    fixture.detectChanges();
+
+    submitForm(fixture);
+    fixture.detectChanges();
+
+    flushVerify("CERT-AAAA-BBBB", { ...VALID_RESPONSE, status: "ISSUED" });
+    await tick();
+  });
 });

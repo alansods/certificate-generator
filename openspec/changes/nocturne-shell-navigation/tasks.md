@@ -9,7 +9,7 @@
 - [x] 2.2 `shell.component.html`: 64px sticky top bar with the brand as a link to `/certificates`, and the quick-verify form at the right — bordered field, tabular numerals, submit button.
 - [x] 2.3 240px sidebar: "Menu" overline, then `Certificates` and `Verify code` as items with inline SVG icons and an accent-tinted active state driven by `routerLinkActive`.
 - [x] 2.4 Sidebar footer: divider, initials avatar on `accent-800`, name and role, then the "Sign out" item calling `SessionService.signOut()`. Render the neutral placeholder when the user is null.
-- [x] 2.5 Below the medium breakpoint the sidebar becomes a bottom-anchored horizontal bar and the quick-verify form is not rendered; touch targets stay at 44px.
+- [x] 2.5 Below the medium breakpoint the sidebar becomes a horizontal bar fixed to the bottom of the viewport (not merely last in flow, which a long list scrolls past), sign-out joins it so it stays inside the navigation landmark, the identity moves to the top bar where the quick-verify form is not rendered, and `main` carries the padding that clears the bar. Touch targets stay at 44px.
 - [x] 2.6 `shell.component.scss`: only what utilities cannot express.
 - [x] 2.7 `docs/design-spec.md` §4 already describes the sidebar and carries the reason: the correction landed with `nocturne-design-system`, which copied the specification into the repository.
 
@@ -26,6 +26,8 @@
 - [x] 4.2 `shell.component.spec.ts`: both navigation items render and the active one is marked for the current route; name and role render from the session; the placeholder renders when the user is null; sign out calls the service; the brand links to the list.
 - [x] 4.3 `verify-code-page.component.spec.ts`: idle, in-flight, valid, revoked, not-found and rate-limited states; a malformed code makes no request; the `code` query parameter triggers a lookup on load.
 - [x] 4.4 A test asserting the quick-verify form navigates to the page with the code as a query parameter.
+
+- [x] 4.5 Backend: logout revokes without a bearer, and an unknown token reports success without affecting a session.
 
 ## 5. Verification
 

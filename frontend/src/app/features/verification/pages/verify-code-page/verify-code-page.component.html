@@ -10,41 +10,18 @@
     (submit)="$event.preventDefault(); submit()"
     class="flex flex-col gap-3 rounded-md bg-surface p-6 shadow-e1"
   >
-    <div class="flex gap-3">
-      <label class="flex-1">
-        <span class="sr-only">Certificate code</span>
-        <input
-          [formControl]="control"
-          placeholder="CERT-XXXX-XXXX"
-          [maxlength]="maxLength"
-          autocomplete="off"
-          spellcheck="false"
-          [attr.aria-invalid]="showFormatError() || urlCodeMalformed()"
-          [attr.aria-describedby]="showFormatError() || urlCodeMalformed() ? 'code-format-error' : null"
-          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm tabular-nums tracking-wide caret-accent-500 hover:border-neutral-500"
-          [class.border-neutral-600]="!(showFormatError() || urlCodeMalformed())"
-          [class.border-revoked]="showFormatError() || urlCodeMalformed()"
-        />
-      </label>
-      <button
-        type="submit"
-        class="inline-flex min-h-(--size-touch-target) flex-none items-center rounded-md border border-accent-500 px-6 text-sm font-medium text-accent-500 hover:bg-accent-900 active:bg-accent-800"
-      >
-        Verify
-      </button>
-    </div>
-    @if (showFormatError() || urlCodeMalformed()) {
-      <p id="code-format-error" class="m-0 px-1 text-xs text-revoked" role="alert">
-        Use the format CERT-XXXX-XXXX (letters and numbers).
-      </p>
-    }
+    <app-code-field
+      [control]="lookup.control"
+      [invalid]="lookup.invalid()"
+      errorId="code-format-error"
+    />
   </form>
 
   <app-verification-result
-    [code]="urlCodeMalformed() ? '' : code()"
-    [loading]="isLoading()"
-    [errorKind]="errorKind()"
-    [certificate]="certificate()"
-    (retry)="retry()"
+    [code]="lookup.urlCodeMalformed() ? '' : lookup.code()"
+    [loading]="lookup.isLoading()"
+    [errorKind]="lookup.errorKind()"
+    [certificate]="lookup.certificate()"
+    (retry)="lookup.reload()"
   />
 </div>

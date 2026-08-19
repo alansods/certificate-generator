@@ -1,0 +1,28 @@
+<div class="flex gap-3">
+  <label class="flex-1">
+    <span class="sr-only">Certificate code</span>
+    <input
+      [formControl]="control()"
+      placeholder="CERT-XXXX-XXXX"
+      [maxlength]="maxLength"
+      autocomplete="off"
+      spellcheck="false"
+      [attr.aria-invalid]="invalid()"
+      [attr.aria-describedby]="invalid() ? errorId() : null"
+      class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm tabular-nums tracking-wide caret-accent-500 hover:border-neutral-500"
+      [class.border-neutral-600]="!invalid()"
+      [class.border-revoked]="invalid()"
+    />
+  </label>
+  <button
+    type="submit"
+    class="inline-flex min-h-(--size-touch-target) flex-none items-center rounded-md border border-accent-500 px-6 text-sm font-medium text-accent-500 hover:bg-accent-900 active:bg-accent-800"
+  >
+    Verify
+  </button>
+</div>
+@if (invalid()) {
+  <p [id]="errorId()" class="m-0 px-1 text-xs text-revoked" role="alert">
+    Use the format CERT-XXXX-XXXX (letters and numbers).
+  </p>
+}

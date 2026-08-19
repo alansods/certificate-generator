@@ -20,14 +20,18 @@ The mockup also puts certificate verification inside the app. Today verification
 
 ### Modified Capabilities
 - `frontend-shell` — gains requirements for the navigation chrome, the signed-in identity display, and sign out. See `specs/frontend-shell/spec.md`.
+- `auth` — "Logout" is restated: the refresh token is the credential, and an access token is not required. See `specs/auth/spec.md`.
 
 ## Impact
+
+**Backend, added during review.** `POST /api/v1/auth/logout` becomes `permitAll`. Wiring the sign-out button up made a latent hole reachable: logout required a bearer, so an expired access token sent it through the client's silent-refresh retry, which rotates the refresh token and then re-sends the *original* request body — revoking the superseded token while the freshly issued one stayed valid for its full TTL and was deleted locally. Reproduced against the running backend before the fix: the logout returned 204 and the rotated token still refreshed successfully. Possession of the refresh token is the credential being spent; requiring an access token as well bought nothing and cost that.
 
 - `frontend/src/app/layout/shell.component.*` — rewritten.
 - Adds `frontend/src/app/core/auth/session.service.ts` holding the current user as a signal, and `AuthApi.me()` / `AuthApi.logout()`.
 - Adds `frontend/src/app/features/verification/pages/verify-code-page/`.
 - `frontend/src/app/app.routes.ts` — adds `verify-code` under the authenticated shell.
-- No backend impact: `GET /api/v1/auth/me` and `POST /api/v1/auth/logout` already exist with the shape the shell needs, and the in-app lookup reuses `GET /api/v1/public/verify/{code}`.
+- `backend/.../config/SecurityConfig.java` — logout joins the permitted paths; `frontend/src/app/core/config/api.config.ts` — and the public paths, so no bearer is attached and the 401 retry cannot re-send a stale body.
+- `GET /api/v1/auth/me` is otherwise unchanged, and the in-app lookup reuses `GET /api/v1/public/verify/{code}`.
 
 ## Non-goals
 

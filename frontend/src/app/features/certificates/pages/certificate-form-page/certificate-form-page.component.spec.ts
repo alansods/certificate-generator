@@ -293,6 +293,7 @@ describe("CertificateFormPageComponent", () => {
     fixture.detectChanges();
 
     const el = fixture.nativeElement as HTMLElement;
+    // Nothing has been submitted yet, so an empty form is not yet a form with errors.
     expect(el.textContent).not.toContain("Check the highlighted fields");
 
     submitForm(fixture);

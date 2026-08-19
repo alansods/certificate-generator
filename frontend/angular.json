@@ -33,8 +33,7 @@
               "@fontsource/inter/300.css",
               "@fontsource/inter/400.css",
               "@fontsource/inter/500.css",
-              "src/styles.css",
-              "src/styles.scss"
+              "src/styles.css"
             ]
           },
           "configurations": {
@@ -42,8 +41,8 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "560kB",
+                  "maximumError": "620kB"
                 },
                 {
                   "type": "anyComponentStyle",

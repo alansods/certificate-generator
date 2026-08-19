@@ -1,6 +1,7 @@
-import { provideHttpClient } from "@angular/common/http";
+import { HttpEventType, provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
+import { BatchUploadEvent } from "./batch-import-response";
 import { CertificatePageResponse } from "./certificate-page-response";
 import { CertificatesApi } from "./certificates.api";
 
@@ -123,6 +124,32 @@ describe("CertificatesApi", () => {
     expect(req.request.body).toBeInstanceOf(FormData);
     expect((req.request.body as FormData).get("file")).toBe(file);
     req.flush({ totalRows: 1, successCount: 1, errorCount: 0, errors: [] });
+  });
+
+  it("uploadBatch reports the upload's progress before its response", () => {
+    const events: BatchUploadEvent[] = [];
+    api
+      .uploadBatch(new File(["a,b\n"], "certificates.csv", { type: "text/csv" }))
+      .subscribe((event) => events.push(event));
+
+    const req = httpMock.expectOne(
+      (r) => r.url.endsWith("/api/v1/certificates/batch") && r.method === "POST",
+    );
+    expect(req.request.reportProgress).toBe(true);
+
+    req.event({ type: HttpEventType.UploadProgress, loaded: 512, total: 2048 });
+    // A total the server did not declare must not be reported as a made-up percentage.
+    req.event({ type: HttpEventType.UploadProgress, loaded: 1024 });
+    req.flush({ totalRows: 1, successCount: 1, errorCount: 0, errors: [] });
+
+    expect(events).toEqual([
+      { kind: "progress", percent: 25 },
+      { kind: "progress", percent: null },
+      {
+        kind: "done",
+        response: { totalRows: 1, successCount: 1, errorCount: 0, errors: [] },
+      },
+    ]);
   });
 
   it("downloadTemplate requests a blob from the template URL", () => {

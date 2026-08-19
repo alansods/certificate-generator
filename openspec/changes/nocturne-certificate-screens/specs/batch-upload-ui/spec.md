@@ -15,6 +15,29 @@ The system SHALL display the batch import result without treating partial row fa
 - **WHEN** a user selects the action to view the imported certificates
 - **THEN** the application navigates to the certificate list
 
+### Requirement: CSV file selection and upload
+The system SHALL let an authenticated user pick a local CSV file, by dropping it on the upload area or through the file picker, and submit it to the batch import endpoint, reporting the upload's progress while it is in flight.
+
+#### Scenario: Selecting a file enables the upload action
+- **WHEN** a user selects a `.csv` file via the file picker
+- **THEN** the filename is shown and the upload action becomes enabled
+
+#### Scenario: Dropping a file on the upload area
+- **WHEN** a user drops a file on the upload area
+- **THEN** that file is taken as the selected file, exactly as if it had been chosen through the picker
+
+#### Scenario: Submitting the selected file
+- **WHEN** a user submits a selected file
+- **THEN** the file is sent as `multipart/form-data` to `POST /api/v1/certificates/batch` and an in-progress state is shown until the response arrives
+
+#### Scenario: Upload progress is reported
+- **WHEN** the upload is in flight and the request's total size is known
+- **THEN** the proportion already sent is shown as a progress bar carrying that value, rather than an undifferentiated wait
+
+#### Scenario: Progress is unavailable
+- **WHEN** the upload is in flight and the total size is not known
+- **THEN** an indeterminate in-progress treatment is shown, and no progress value is claimed
+
 ## ADDED Requirements
 
 ### Requirement: Error report download

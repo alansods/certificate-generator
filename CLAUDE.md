@@ -46,7 +46,7 @@ The owner does not write code. Every change goes through this loop:
 1. Write an OpenSpec change under `openspec/changes/<id>/` and run `openspec validate --strict`. No implementation code yet.
 2. Get the owner's approval on the proposal.
 3. Create a branch, implement against `tasks.md`, write tests alongside.
-4. Open a PR, run the four review agents, fix every blocker.
+4. Open a PR, run the four review agents, fix every blocker. The agents are pinned to Opus in `.claude/agents/*.md`: without that they inherit the session's model, so running the session on a smaller one would quietly downgrade the review as well as the work.
 5. Label the PR `agent-approved` so the approval workflow can approve it, then merge and run `openspec archive <id>`.
 
 Branch names and commits follow Conventional Commits: `feat/`, `fix/`, `chore/`, `docs/`, `ci/`.

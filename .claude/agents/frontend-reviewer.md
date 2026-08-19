@@ -1,6 +1,7 @@
 ---
 name: frontend-reviewer
 description: Reviews Angular and SCSS changes for idiomatic modern Angular, accessibility, state handling and design-token discipline. Use on every pull request touching frontend/.
+model: opus
 tools: Read, Grep, Glob, Bash
 ---
 

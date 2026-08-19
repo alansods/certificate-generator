@@ -1,97 +1,241 @@
-<div class="certificate-list-page">
-  <div class="certificate-list-page__filters">
-    <mat-form-field appearance="outline" class="certificate-list-page__search">
-      <mat-label>Search</mat-label>
-      <input matInput [formControl]="searchControl" placeholder="Recipient, course or code" />
-    </mat-form-field>
-
-    <mat-form-field appearance="outline">
-      <mat-label>Status</mat-label>
-      <mat-select value="" (selectionChange)="onStatusChange($event.value)">
-        <mat-option value="">All statuses</mat-option>
-        @for (statusOption of statuses; track statusOption) {
-          <mat-option [value]="statusOption">{{ statusOption }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
-
-    <a mat-flat-button color="primary" routerLink="/certificates/new" class="certificate-list-page__new">
-      New certificate
-    </a>
-    <a mat-button routerLink="/certificates/batch" class="certificate-list-page__batch">Batch upload</a>
+<div class="flex flex-col gap-7 px-9 py-9">
+  <div class="flex flex-wrap items-end justify-between gap-6">
+    <h1 class="text-xl">Certificates</h1>
+    <div class="flex gap-4">
+      <a
+        routerLink="/certificates/batch"
+        class="inline-flex min-h-(--size-touch-target) items-center gap-3 rounded-md border border-divider px-5 text-sm font-medium text-text no-underline hover:bg-neutral-900 active:bg-neutral-800"
+      >
+        Import CSV
+      </a>
+      <a
+        routerLink="/certificates/new"
+        class="inline-flex min-h-(--size-touch-target) items-center gap-3 rounded-md border border-accent-500 px-6 text-sm font-medium text-accent-500 no-underline hover:bg-accent-900 active:bg-accent-800"
+      >
+        New certificate
+      </a>
+    </div>
   </div>
 
-  @if (isLoading()) {
-    <div class="certificate-list-page__state" role="status">
-      <mat-spinner diameter="32" />
+  <div class="flex min-h-(--size-touch-target) flex-1 items-center gap-3 rounded-md border border-neutral-600 bg-surface px-4 hover:border-neutral-500">
+    <label class="sr-only" for="certificate-search">Search certificates</label>
+    <svg class="size-6 flex-none text-subtle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M16 16l4 4" />
+    </svg>
+    <input
+      id="certificate-search"
+      [formControl]="searchControl"
+      placeholder="Search by recipient, course or code"
+      class="flex-1 border-0 bg-transparent text-sm text-text placeholder:text-subtle"
+    />
+    @if (hasQuery()) {
+      <button
+        type="button"
+        (click)="clearSearch()"
+        class="grid size-(--size-touch-target) flex-none place-items-center rounded-md text-subtle hover:bg-accent-900 hover:text-accent-500 active:bg-accent-800"
+        aria-label="Clear search"
+      >
+        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    }
+  </div>
+
+  @if (loadError()) {
+    <div class="flex flex-col items-center gap-5 rounded-md bg-surface px-9 py-16 text-center shadow-e1" role="alert">
+      <h2 class="text-md">Could not load certificates</h2>
+      @if (traceId(); as trace) {
+        <p class="m-0 text-xs text-subtle">Trace ID: <span class="tabular-nums">{{ trace }}</span></p>
+      }
+      <button
+        type="button"
+        (click)="retry()"
+        class="inline-flex min-h-(--size-touch-target) items-center rounded-md border border-neutral-600 px-6 text-sm font-medium hover:bg-neutral-900 active:bg-neutral-800"
+      >
+        Retry
+      </button>
     </div>
-  } @else if (loadError()) {
-    <div class="certificate-list-page__state" role="alert">
-      <p>Could not load certificates.</p>
-      <button mat-flat-button color="primary" (click)="retry()">Retry</button>
+  } @else if (isLoading()) {
+    <!-- The table's own column template, so the placeholder cannot drift from the real rows and
+         the page does not shift when they arrive. -->
+    <div class="flex flex-col gap-6 rounded-md bg-surface p-6 shadow-e1" role="status">
+      <span class="sr-only">Loading certificates</span>
+      @for (row of skeletonRows; track row) {
+        <div class="grid grid-cols-2 items-center gap-5 md:grid-cols-(--list-columns)">
+          @for (cell of [0, 1, 2, 3, 4]; track cell) {
+            <div class="skeleton h-3"></div>
+          }
+        </div>
+      }
     </div>
-  } @else if (certificates().length === 0) {
-    <div class="certificate-list-page__state">
-      <p>No certificates found.</p>
+  } @else if (isEmpty()) {
+    <div class="flex flex-col items-center gap-5 rounded-md bg-surface px-9 py-24 text-center shadow-e1">
+      <span class="grid size-20 place-items-center rounded-lg border border-accent-800 text-accent-500" aria-hidden="true">
+        <svg class="size-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="3" y="4" width="18" height="14" rx="2" />
+          <path d="M7 9h7M7 13h4" />
+        </svg>
+      </span>
+      @if (hasQuery()) {
+        <h2 class="text-md">No certificates match “{{ query() }}”</h2>
+        <p class="m-0 max-w-measure text-sm text-subtle">
+          Nothing found for that search. Try a different term, or clear it to see every certificate.
+        </p>
+      } @else {
+        <h2 class="text-md">No certificates yet</h2>
+        <p class="m-0 max-w-measure text-sm text-subtle">
+          Issue the first one, or import a batch from a CSV file.
+        </p>
+      }
+      <div class="mt-2 flex gap-3">
+        <a
+          routerLink="/certificates/new"
+          class="inline-flex min-h-(--size-touch-target) items-center rounded-md border border-accent-500 px-6 text-sm font-medium text-accent-500 no-underline hover:bg-accent-900 active:bg-accent-800"
+        >
+          New certificate
+        </a>
+        @if (hasQuery()) {
+          <button
+            type="button"
+            (click)="clearSearch()"
+            class="inline-flex min-h-(--size-touch-target) items-center rounded-md border border-neutral-600 px-6 text-sm font-medium hover:bg-neutral-900 active:bg-neutral-800"
+          >
+            Clear search
+          </button>
+        }
+      </div>
     </div>
   } @else {
-    <table mat-table [dataSource]="certificates()" class="certificate-list-page__table">
-      <caption class="certificate-list-page__visually-hidden">Certificates</caption>
-      <ng-container matColumnDef="code">
-        <th mat-header-cell *matHeaderCellDef>Code</th>
-        <td mat-cell *matCellDef="let certificate">{{ certificate.code }}</td>
-      </ng-container>
+    <div class="rounded-md bg-surface shadow-e1">
+      <div role="table" aria-label="Certificates">
+        <div
+          role="row"
+          class="sr-only gap-4 border-b border-divider px-6 py-4 text-overline tracking-wide text-subtle uppercase md:not-sr-only md:grid md:grid-cols-(--list-columns)"
+        >
+          <span role="columnheader">Code</span>
+          <span role="columnheader">Recipient</span>
+          <span role="columnheader">Course</span>
+          <span role="columnheader">Issue date</span>
+          <span role="columnheader" class="text-right">Actions</span>
+        </div>
 
-      <ng-container matColumnDef="recipientName">
-        <th mat-header-cell *matHeaderCellDef>Recipient</th>
-        <td mat-cell *matCellDef="let certificate">{{ certificate.recipientName }}</td>
-      </ng-container>
+        @for (certificate of certificates(); track certificate.id) {
+          <div
+            role="row"
+            class="flex flex-col gap-3 border-b border-neutral-900 px-6 py-5 text-sm last:border-b-0 hover:bg-neutral-900 md:grid md:items-center md:gap-4 md:grid-cols-(--list-columns)"
+          >
+            <span role="cell" class="truncate tabular-nums text-sm text-accent-300">{{ certificate.code }}</span>
+            <span role="cell" class="flex min-w-0 flex-col">
+              <span class="truncate">{{ certificate.recipientName }}</span>
+              <span class="truncate text-xs text-subtle">{{ certificate.recipientEmail }}</span>
+            </span>
+            <span role="cell" class="flex min-w-0 flex-col">
+              <span class="truncate">{{ certificate.courseName }}</span>
+              <span class="truncate text-xs text-subtle">
+                {{ certificate.workloadHours }} h · {{ certificate.template }}
+              </span>
+            </span>
+            <span role="cell" class="tabular-nums text-sm text-subtle">{{ certificate.issueDate }}</span>
+            <span role="cell" class="flex justify-end">
+              <button
+                type="button"
+                [cdkMenuTriggerFor]="rowActions"
+                class="grid size-(--size-touch-target) place-items-center rounded-md text-subtle hover:bg-accent-900 hover:text-accent-500 active:bg-accent-800"
+                [attr.aria-label]="'Actions for ' + certificate.code"
+              >
+                <svg class="size-6" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <circle cx="12" cy="5" r="1.6" />
+                  <circle cx="12" cy="12" r="1.6" />
+                  <circle cx="12" cy="19" r="1.6" />
+                </svg>
+              </button>
 
-      <ng-container matColumnDef="courseName">
-        <th mat-header-cell *matHeaderCellDef>Course</th>
-        <td mat-cell *matCellDef="let certificate">{{ certificate.courseName }}</td>
-      </ng-container>
+              <ng-template #rowActions>
+                <div
+                  cdkMenu
+                  [attr.aria-label]="'Actions for ' + certificate.code"
+                  class="flex w-menu flex-col gap-1 rounded-md bg-surface p-2 shadow-e2"
+                >
+                  <a
+                    cdkMenuItem
+                    [routerLink]="['/certificates', certificate.id, 'edit']"
+                    class="flex min-h-(--size-touch-target) items-center rounded-md px-4 text-sm text-text no-underline hover:bg-neutral-900 active:bg-neutral-800"
+                  >
+                    Edit
+                  </a>
+                  <a
+                    cdkMenuItem
+                    [routerLink]="['/certificates', certificate.id, 'preview']"
+                    class="flex min-h-(--size-touch-target) items-center rounded-md px-4 text-sm text-text no-underline hover:bg-neutral-900 active:bg-neutral-800"
+                  >
+                    Preview
+                  </a>
+                  <button
+                    cdkMenuItem
+                    type="button"
+                    (cdkMenuItemTriggered)="downloadPdf(certificate)"
+                    class="flex min-h-(--size-touch-target) items-center rounded-md px-4 text-left text-sm text-text hover:bg-neutral-900 active:bg-neutral-800"
+                  >
+                    Download PDF
+                  </button>
+                  @if (isAdmin()) {
+                    <span class="mx-1 my-1 h-px bg-divider" aria-hidden="true"></span>
+                    <button
+                      cdkMenuItem
+                      type="button"
+                      (cdkMenuItemTriggered)="confirmDelete(certificate)"
+                      class="flex min-h-(--size-touch-target) items-center rounded-md px-4 text-left text-sm text-revoked hover:bg-revoked-bg active:bg-revoked-bg"
+                    >
+                      Delete
+                    </button>
+                  }
+                </div>
+              </ng-template>
+            </span>
+          </div>
+        }
+      </div>
 
-      <ng-container matColumnDef="status">
-        <th mat-header-cell *matHeaderCellDef>Status</th>
-        <td mat-cell *matCellDef="let certificate">{{ certificate.status }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="issueDate">
-        <th mat-header-cell *matHeaderCellDef>Issue date</th>
-        <td mat-cell *matCellDef="let certificate">{{ certificate.issueDate }}</td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Actions</th>
-        <td mat-cell *matCellDef="let certificate">
-          <a mat-icon-button aria-label="Edit certificate" [routerLink]="['/certificates', certificate.id, 'edit']">
-            <mat-icon>edit</mat-icon>
-          </a>
-          <a mat-icon-button aria-label="Preview PDF" [routerLink]="['/certificates', certificate.id, 'preview']">
-            <mat-icon>visibility</mat-icon>
-          </a>
-          <button mat-icon-button aria-label="Download PDF" (click)="downloadPdf(certificate)">
-            <mat-icon>download</mat-icon>
+      <div class="flex flex-wrap items-center justify-end gap-7 px-6 py-4 text-sm text-subtle">
+        <label class="flex items-center gap-3">
+          Rows per page:
+          <select
+            [formControl]="pageSizeControl"
+            class="min-h-(--size-touch-target) rounded-sm border border-divider bg-transparent px-3 text-sm text-text hover:bg-neutral-900 active:bg-neutral-800"
+          >
+            @for (size of pageSizes; track size) {
+              <option [value]="size" class="bg-surface">{{ size }}</option>
+            }
+          </select>
+        </label>
+        <span class="tabular-nums">{{ rangeLabel() }}</span>
+        <span class="flex gap-2">
+          <button
+            type="button"
+            (click)="previousPage()"
+            [disabled]="isFirstPage()"
+            aria-label="Previous page"
+            class="grid size-(--size-touch-target) place-items-center rounded-md hover:bg-neutral-900 active:bg-neutral-800 disabled:pointer-events-none disabled:opacity-45"
+          >
+            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M14 6l-6 6 6 6" />
+            </svg>
           </button>
-          @if (isAdmin()) {
-            <button mat-icon-button aria-label="Delete certificate" (click)="confirmDelete(certificate)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          }
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-    </table>
-
-    <mat-paginator
-      [length]="totalElements()"
-      [pageSize]="pageSize()"
-      [pageIndex]="page()"
-      [pageSizeOptions]="[10, 20, 50]"
-      (page)="onPageChange($event)"
-    />
+          <button
+            type="button"
+            (click)="nextPage()"
+            [disabled]="isLastPage()"
+            aria-label="Next page"
+            class="grid size-(--size-touch-target) place-items-center rounded-md hover:bg-neutral-900 active:bg-neutral-800 disabled:pointer-events-none disabled:opacity-45"
+          >
+            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M10 6l6 6-6 6" />
+            </svg>
+          </button>
+        </span>
+      </div>
+    </div>
   }
 </div>

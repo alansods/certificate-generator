@@ -1,0 +1,28 @@
+<!-- One persistent live region, anchored bottom-left per docs/design-spec.md section 2. -->
+<div
+  class="pointer-events-none fixed bottom-0 left-0 z-10 flex flex-col gap-3 p-7 pb-[calc(var(--size-touch-target)+--spacing(14)+env(safe-area-inset-bottom))] md:pb-7"
+  aria-live="polite"
+  aria-atomic="false"
+>
+  @for (toast of toasts(); track toast.id) {
+    <div
+      [attr.role]="toast.kind === 'error' ? 'alert' : null"
+      class="pointer-events-auto flex items-center gap-5 rounded-md border bg-neutral-900 px-6 py-4 text-sm shadow-e2"
+      [class.border-neutral-800]="toast.kind === 'success'"
+      [class.border-revoked-line]="toast.kind === 'error'"
+      [class.text-revoked]="toast.kind === 'error'"
+    >
+      <span>{{ toast.message }}</span>
+      <button
+        type="button"
+        (click)="dismiss(toast.id)"
+        class="ml-auto grid size-(--size-touch-target) flex-none place-items-center rounded-md text-subtle hover:bg-neutral-800 hover:text-text active:bg-neutral-700"
+        aria-label="Dismiss notification"
+      >
+        <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
+  }
+</div>

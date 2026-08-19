@@ -11,6 +11,18 @@ The system SHALL display certificates in a paginated table backed by `GET /api/v
 - **WHEN** a certificate is rendered as a row
 - **THEN** the row shows the code in tabular numerals, the recipient name with the recipient email beneath it, the course name with the workload and template beneath it, and the issue date
 
+#### Scenario: Narrow viewport
+- **WHEN** the table is viewed below the medium breakpoint
+- **THEN** each certificate's fields stack instead of sitting in fixed columns, and its actions remain reachable without horizontal scrolling
+
+#### Scenario: Column headers survive the narrow layout
+- **WHEN** the table is viewed below the medium breakpoint, where the header row is not drawn
+- **THEN** the column headers remain available to assistive technology, so every cell still belongs to a named column
+
+#### Scenario: Header actions
+- **WHEN** the certificate list is shown
+- **THEN** the page header offers both creating a certificate and importing a batch from CSV, each reachable as a link rather than hidden behind a menu
+
 #### Scenario: Changing page
 - **WHEN** a user selects a different page or page size
 - **THEN** the table re-fetches with the corresponding `page`/`size` query parameters
@@ -18,6 +30,17 @@ The system SHALL display certificates in a paginated table backed by `GET /api/v
 #### Scenario: Page size options
 - **WHEN** a user opens the page size control
 - **THEN** the options offered are 10, 20 and 50
+
+### Requirement: Search
+The system SHALL let a user filter the list by a search term matching recipient name, course name, or code, via the backend's `q` parameter, and SHALL offer a control inside the search field that clears the term.
+
+#### Scenario: Search narrows results
+- **WHEN** a user types a search term
+- **THEN** the request is re-issued with `q` set to that term (debounced, not on every keystroke) and the table shows only matching rows
+
+#### Scenario: Clearing the search from the field
+- **WHEN** the search field holds a term
+- **THEN** a labeled clear control is shown inside the field, and selecting it empties the term and re-runs the query unfiltered
 
 ### Requirement: Row actions
 The system SHALL offer each row's actions in a single per-row menu containing edit, preview and download, and SHALL include delete in that menu only for an ADMIN.
@@ -31,8 +54,16 @@ The system SHALL offer each row's actions in a single per-row menu containing ed
 - **THEN** the previously open menu closes
 
 #### Scenario: Dismissing the menu
-- **WHEN** a user presses Escape or clicks outside an open actions menu
+- **WHEN** a user presses Escape on an open actions menu
 - **THEN** the menu closes and focus returns to the control that opened it
+
+#### Scenario: Clicking away from the menu
+- **WHEN** a user clicks outside an open actions menu
+- **THEN** the menu closes, leaving focus wherever the user put it
+
+#### Scenario: The menu is navigable by keyboard
+- **WHEN** a user opens the actions menu from the keyboard
+- **THEN** focus moves into the menu and the arrow keys move between its items, matching what the menu role promises
 
 #### Scenario: Edit
 - **WHEN** a user selects the edit action
@@ -56,7 +87,11 @@ The system SHALL offer each row's actions in a single per-row menu containing ed
 
 #### Scenario: Delete as ADMIN
 - **WHEN** an ADMIN selects the delete action and confirms
-- **THEN** `DELETE /api/v1/certificates/{id}` is requested and, on success, the row is removed from the table
+- **THEN** `DELETE /api/v1/certificates/{id}` is requested and, on success, the row is removed from the table and a confirmation message is shown
+
+#### Scenario: An action fails
+- **WHEN** a delete or a download fails
+- **THEN** a dismissible error message naming the certificate is shown, rather than the action failing silently
 
 #### Scenario: Delete action hidden for non-admins
 - **WHEN** a non-ADMIN user opens a row's actions menu
@@ -72,6 +107,10 @@ The system SHALL distinguish an empty dataset from a search that matched nothing
 #### Scenario: Search matched nothing
 - **WHEN** a query with a search term returns zero certificates
 - **THEN** an empty state naming the search is shown, offering both the create action and an action that clears the search and re-runs the query
+
+#### Scenario: The current page emptied
+- **WHEN** the dataset shrinks under the user so that the current page number is past the end, for example after deleting the last row of the final page
+- **THEN** the list steps back to the last page that has rows instead of showing the empty state over a dataset that is not empty
 
 #### Scenario: Request fails
 - **WHEN** the list request fails

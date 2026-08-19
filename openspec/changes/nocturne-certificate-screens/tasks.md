@@ -37,7 +37,7 @@
 - [x] 5.4 Remove the Material Icons stylesheet link from `frontend/src/index.html`; every icon is inline SVG by now. The two `fonts.googleapis.com`/`fonts.gstatic.com` preconnect hints went with it — they existed only for that stylesheet, and Inter is served locally from `@fontsource`.
 - [x] 5.5 `frontend/src/styles.spec.ts`: drop the assertions about the Material mapping along with the mapping, keep the token-layer ones.
 - [x] 5.6 Confirm no `::ng-deep` was added anywhere during the migration.
-- [x] 5.7 Re-check the bundle: with Material gone the initial budget overrun in `angular.json` should have closed. Tighten the budget to the new size rather than leaving a warning nobody reads. It did not fully close — 783.03 kB to 548.86 kB, still over the old 500 kB warning. The budget is now 560 kB warning / 620 kB error, set to what the app actually is rather than to an aspiration that was warning on every build.
+- [x] 5.7 Re-check the bundle: with Material gone the initial budget overrun in `angular.json` should have closed. Tighten the budget to the new size rather than leaving a warning nobody reads. It did not fully close — 783.03 kB to 549.12 kB, still over the old 500 kB warning. The budget is now 560 kB warning / 620 kB error, set to what the app actually is rather than to an aspiration that was warning on every build.
 
 ## 6. Tests
 
@@ -60,6 +60,9 @@
 - [x] 6c.5 Roving focus finds its target by `data-template` inside the closest radiogroup rather than by index off `parentElement`, so a wrapper or a reordering cannot move selection and focus to different cards. Home/End added; modified arrow keys left to the browser.
 - [x] 6c.6 A dropped file that is not a CSV is refused locally rather than uploaded for the server to reject — specified and tested.
 - [x] 6c.7 The thumbnails' page proportions are asserted, which nothing did: the aspect ratio is also what gives the frame a definite height, and losing it is what made every bar collapse the first time.
+
+- [x] 6c.8 The error list's rows went back to real table layout. Making them `display: grid` blockified the `<tr>`, and Blink and WebKit take the row and cell roles from the layout object — so the "accessible" table exposed no rows at all, worse than the div-with-roles version it replaced. Column widths come from a `<colgroup>` now; verified in the browser as `table-row`/`table-cell` with the line column at exactly 88px.
+- [x] 6c.9 Test the null-body path, and stop reporting a server that answered with an unusable body as "could not reach the server".
 
 ## 7. Verification
 

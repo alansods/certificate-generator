@@ -139,9 +139,10 @@
        three cannot drift. Applied only from the medium breakpoint up — below it the row stacks. */
     --list-columns: 168px 1.3fr 1.5fr 128px 132px;
 
-    /* The batch import error list's columns, shared by its header and its rows so the two
-       cannot drift, on the same principle as --list-columns above. */
-    --error-list-columns: 88px 1fr;
+    /* The batch import error list's line column. Applied through a <colgroup> rather than a grid:
+       giving a <tr> `display: grid` blockifies it, and Blink and WebKit take the row and cell
+       roles from the layout object, so the rows would stop being rows to a screen reader. */
+    --error-list-line-column: 88px;
   }
 
   html {

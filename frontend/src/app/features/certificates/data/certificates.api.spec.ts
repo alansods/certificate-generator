@@ -152,6 +152,22 @@ describe("CertificatesApi", () => {
     ]);
   });
 
+  it("uploadBatch fails loudly when the import answers with no body", () => {
+    let done: BatchUploadEvent | undefined;
+    let failure: unknown;
+    api
+      .uploadBatch(new File(["a,b\n"], "certificates.csv", { type: "text/csv" }))
+      .subscribe({ next: (event) => (done = event), error: (err: unknown) => (failure = err) });
+
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates/batch") && r.method === "POST")
+      .flush(null);
+
+    // Never a `done` carrying null: the page would show neither a result nor an error.
+    expect(done).toBeUndefined();
+    expect(failure).toBeInstanceOf(Error);
+  });
+
   it("downloadTemplate requests a blob from the template URL", () => {
     let result: Blob | undefined;
     api.downloadTemplate().subscribe((blob) => (result = blob));

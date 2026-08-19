@@ -80,7 +80,13 @@ export class BatchUploadPageComponent {
         },
         error: (err: unknown) => {
           const problem = toProblemDetail(err);
-          this.error.set(problem.detail ?? "Could not upload this file. Please try again.");
+          // `toProblemDetail` reports anything that is not an HTTP failure as status 0, "Could
+          // not reach the server" — wrong for a server that answered with an unusable body.
+          const isTransportFailure = problem.status !== 0;
+          this.error.set(
+            (isTransportFailure ? problem.detail : null) ??
+              "Could not upload this file. Please try again.",
+          );
         },
       });
   }
@@ -97,7 +103,12 @@ export class BatchUploadPageComponent {
     this.isDragging.set(true);
   }
 
-  protected onDragLeave(): void {
+  protected onDragLeave(event: DragEvent): void {
+    // Crossing onto the icon or the copy inside the drop area is not leaving it.
+    const area = event.currentTarget as HTMLElement;
+    if (area.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
     this.isDragging.set(false);
   }
 

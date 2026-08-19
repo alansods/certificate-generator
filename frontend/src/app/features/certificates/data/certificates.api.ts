@@ -73,7 +73,13 @@ export class CertificatesApi {
               percent: event.total ? Math.round((event.loaded / event.total) * 100) : null,
             };
           }
-          return { kind: "done", response: (event as HttpResponse<BatchImportResponse>).body! };
+          // `HttpResponse.body` is nullable, and a `done` carrying null would put the page back
+          // to the picker with neither a result nor an error — a silent loss of a 40-row import.
+          const body = (event as HttpResponse<BatchImportResponse>).body;
+          if (!body) {
+            throw new Error("The batch import returned no body.");
+          }
+          return { kind: "done", response: body };
         }),
       );
   }

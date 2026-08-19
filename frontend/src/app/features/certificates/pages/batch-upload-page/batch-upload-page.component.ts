@@ -6,6 +6,10 @@ import { toProblemDetail } from "../../../../core/http/problem-detail";
 import { BatchImportResponse, BatchRowError } from "../../data/batch-import-response";
 import { CertificatesApi } from "../../data/certificates.api";
 
+function isCsv(file: File): boolean {
+  return file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv";
+}
+
 /** RFC 4180: quote anything holding a comma, a quote or a newline, and double the quotes. */
 function escapeCsvField(value: string): string {
   return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
@@ -101,9 +105,16 @@ export class BatchUploadPageComponent {
     event.preventDefault();
     this.isDragging.set(false);
     const file = event.dataTransfer?.files?.[0];
-    if (file) {
-      this.selectedFile.set(file);
+    if (!file) {
+      return;
     }
+    // The picker constrains to .csv; dropping has to constrain to the same thing, or a dropped
+    // PDF travels all the way to the server just to come back rejected.
+    if (!isCsv(file)) {
+      this.error.set("That file is not a CSV. Choose a .csv file exported from your spreadsheet.");
+      return;
+    }
+    this.selectedFile.set(file);
   }
 
   /**

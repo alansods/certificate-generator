@@ -34,10 +34,10 @@
 - [x] 5.1 Confirm no `Mat*` symbol is imported anywhere in `src/` — this change removes the last of them.
 - [x] 5.2 Delete `frontend/src/styles.scss` and `frontend/src/styles/_material-overrides.scss`, and drop `src/styles.scss` from `angular.json`. `_tokens.scss`, `_breakpoints.scss` and the empty `app/app.scss` went with them: nothing outside the deleted files read any of them, so the SCSS layer is gone entirely rather than reduced. The `--mat-sys-*` mapping, `mat.strong-focus-indicators`, the density setting and the token radii overrides all existed only to hold Material together during the migration.
 - [x] 5.3 `npm uninstall @angular/material`. Keep `@angular/cdk` — the confirm dialog is built on it.
-- [x] 5.4 Remove the Material Icons stylesheet link from `frontend/src/index.html`; every icon is inline SVG by now.
+- [x] 5.4 Remove the Material Icons stylesheet link from `frontend/src/index.html`; every icon is inline SVG by now. The two `fonts.googleapis.com`/`fonts.gstatic.com` preconnect hints went with it — they existed only for that stylesheet, and Inter is served locally from `@fontsource`.
 - [x] 5.5 `frontend/src/styles.spec.ts`: drop the assertions about the Material mapping along with the mapping, keep the token-layer ones.
 - [x] 5.6 Confirm no `::ng-deep` was added anywhere during the migration.
-- [x] 5.7 Re-check the bundle: with Material gone the initial budget overrun in `angular.json` should have closed. Tighten the budget to the new size rather than leaving a warning nobody reads. It did not fully close — 783.03 kB to 546.96 kB, still over the old 500 kB warning. The budget is now 560 kB warning / 620 kB error, set to what the app actually is rather than to an aspiration that was warning on every build.
+- [x] 5.7 Re-check the bundle: with Material gone the initial budget overrun in `angular.json` should have closed. Tighten the budget to the new size rather than leaving a warning nobody reads. It did not fully close — 783.03 kB to 548.86 kB, still over the old 500 kB warning. The budget is now 560 kB warning / 620 kB error, set to what the app actually is rather than to an aspiration that was warning on every build.
 
 ## 6. Tests
 
@@ -50,6 +50,16 @@
 - [x] 6b.1 Specify and test the validation summary, which the proposal described but no requirement covered.
 - [x] 6b.2 Specify and test the template cards as a single tab stop with arrow-key movement — the delta only said "activates one", which a set of three tab stops would also satisfy.
 - [x] 6b.3 Specify and test drag-and-drop onto the upload area, and upload progress in both its determinate and indeterminate forms.
+
+## 6c. Review fixes
+
+- [x] 6c.1 `uploadBatch` no longer asserts `HttpResponse.body` non-null: a 204 or an empty 200 would have emitted a `done` carrying null, putting the page back to the picker with neither a result nor an error.
+- [x] 6c.2 The error list's columns move into `--error-list-columns` and its hairline into a `row-divider` utility, so the header and the rows cannot drift; the list goes back to a real `<table>` with a caption.
+- [x] 6c.3 The progress bar treated 0% as absent, showing the indeterminate shimmer under a "0% uploaded" caption. Fixed and covered by a test that fails without the fix.
+- [x] 6c.4 The uploading panel was a live region, so every progress event re-announced the whole block. Only the opening line is spoken now; the progressbar carries the changing value.
+- [x] 6c.5 Roving focus finds its target by `data-template` inside the closest radiogroup rather than by index off `parentElement`, so a wrapper or a reordering cannot move selection and focus to different cards. Home/End added; modified arrow keys left to the browser.
+- [x] 6c.6 A dropped file that is not a CSV is refused locally rather than uploaded for the server to reject — specified and tested.
+- [x] 6c.7 The thumbnails' page proportions are asserted, which nothing did: the aspect ratio is also what gives the frame a definite height, and losing it is what made every bar collapse the first time.
 
 ## 7. Verification
 

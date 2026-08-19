@@ -2,7 +2,8 @@ import { ChangeDetectionStrategy, Component } from "@angular/core";
 import { TemplateFrameComponent } from "./template-frame.component";
 
 /**
- * CLASSIC: a gold double frame around a centered, formal setting.
+ * CLASSIC: a gold double frame (a heavier outer rule and a hairline inner one) around a
+ * centered, formal setting.
  *
  * Proportions taken from the rendered template, not from the mockup: the setting is top-weighted
  * inside the frame and the lower part of the page stays empty, which a vertically centered
@@ -13,7 +14,7 @@ import { TemplateFrameComponent } from "./template-frame.component";
   imports: [TemplateFrameComponent],
   template: `
     <app-template-frame>
-      <div class="absolute inset-[5%] border-2 border-double border-classic-gold">
+      <div class="absolute inset-[5%] border-2 border-classic-gold">
         <div class="absolute inset-[3%] border border-classic-gold">
           <div class="absolute inset-0 flex flex-col items-center gap-[2.5%] px-[9%] pt-[6%]">
             <div class="h-[2.5%] w-[40%] rounded-full bg-classic-gold"></div>
@@ -45,6 +46,7 @@ import { TemplateFrameComponent } from "./template-frame.component";
       </div>
     </app-template-frame>
   `,
+  host: { class: "block" },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClassicThumbnailComponent {}

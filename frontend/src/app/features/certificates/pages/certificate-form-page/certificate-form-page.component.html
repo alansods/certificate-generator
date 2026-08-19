@@ -213,13 +213,16 @@
       </div>
 
       <fieldset class="m-0 flex flex-col gap-5 rounded-md border-0 bg-surface p-7 shadow-e1">
-        <legend class="float-left mb-5 w-full p-0 text-xs text-muted">Template</legend>
+        <legend id="template-group-label" class="float-left mb-5 w-full p-0 text-xs text-muted">
+          Template
+        </legend>
 
-        <div class="grid gap-5 sm:grid-cols-3" role="radiogroup" aria-label="Template">
+        <div class="grid gap-5 sm:grid-cols-3" role="radiogroup" aria-labelledby="template-group-label">
           @for (option of templates; track option) {
             <button
               type="button"
               role="radio"
+              [attr.data-template]="option"
               [attr.aria-checked]="form.controls.template.value === option"
               [tabIndex]="tabIndexFor(option)"
               (click)="selectTemplate(option)"

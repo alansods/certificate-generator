@@ -230,7 +230,8 @@ describe("CertificateFormPageComponent", () => {
 
     const el = fixture.nativeElement as HTMLElement;
     const group = el.querySelector("[role='radiogroup']");
-    expect(group?.getAttribute("aria-label")).toBe("Template");
+    const labelId = group?.getAttribute("aria-labelledby");
+    expect(el.querySelector(`#${labelId}`)?.textContent?.trim()).toBe("Template");
 
     const cards = [...el.querySelectorAll("[role='radio']")].map((card) =>
       card.textContent?.trim().replace(/\s+/g, " "),
@@ -238,9 +239,14 @@ describe("CertificateFormPageComponent", () => {
     expect(cards).toEqual(["Classic", "Modern", "Minimal"]);
 
     // Each card draws its own layout, which is the point of replacing the select.
-    expect(el.querySelector("app-classic-thumbnail")).not.toBeNull();
-    expect(el.querySelector("app-modern-thumbnail")).not.toBeNull();
-    expect(el.querySelector("app-minimal-thumbnail")).not.toBeNull();
+    for (const tag of ["app-classic-thumbnail", "app-modern-thumbnail", "app-minimal-thumbnail"]) {
+      const thumbnail = el.querySelector(`${tag} [aria-hidden='true']`);
+      expect(thumbnail).not.toBeNull();
+      // A4 landscape, matching `@page { size: A4 landscape }` in the Thymeleaf templates. The
+      // ratio is also what gives the frame a definite height, without which every bar inside it
+      // collapses to zero — which is how these shipped the first time.
+      expect(thumbnail?.className).toContain("aspect-[1.414/1]");
+    }
   });
 
   it("keeps the template cards to one tab stop and moves between them with the arrows", () => {
@@ -265,6 +271,39 @@ describe("CertificateFormPageComponent", () => {
     );
     fixture.detectChanges();
     expect(templateCard(el, "Classic").getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("jumps to the first and last template with Home and End", () => {
+    const fixture = setup("USER", null);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    templateCard(el, "Classic").dispatchEvent(
+      new KeyboardEvent("keydown", { key: "End", bubbles: true }),
+    );
+    fixture.detectChanges();
+    expect(templateCard(el, "Minimal").getAttribute("aria-checked")).toBe("true");
+
+    templateCard(el, "Minimal").dispatchEvent(
+      new KeyboardEvent("keydown", { key: "Home", bubbles: true }),
+    );
+    fixture.detectChanges();
+    expect(templateCard(el, "Classic").getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("leaves modified arrow keys to the browser", () => {
+    const fixture = setup("USER", null);
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    // Ctrl/Meta + arrow is word navigation or a desktop switch, not a selection change.
+    for (const modifier of ["ctrlKey", "metaKey", "altKey"]) {
+      templateCard(el, "Classic").dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, [modifier]: true }),
+      );
+      fixture.detectChanges();
+      expect(templateCard(el, "Classic").getAttribute("aria-checked")).toBe("true");
+    }
   });
 
   it("offers the PDF preview only once there is a saved certificate to preview", async () => {

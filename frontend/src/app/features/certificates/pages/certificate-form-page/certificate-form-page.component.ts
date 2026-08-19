@@ -134,22 +134,35 @@ export class CertificateFormPageComponent {
   }
 
   protected onTemplateKeydown(event: KeyboardEvent): void {
-    const offset = TEMPLATE_KEY_OFFSETS[event.key];
-    if (offset === undefined) {
+    // Ctrl/Alt/Meta + arrow belongs to the OS and the browser, not to this group.
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+      return;
+    }
+
+    const current = this.templates.indexOf(this.form.controls.template.value);
+    const target = this.templateForKey(event.key, current);
+    if (!target) {
       return;
     }
     event.preventDefault();
+    this.selectTemplate(target);
 
-    const current = this.templates.indexOf(this.form.controls.template.value);
-    const next = (current + offset + this.templates.length) % this.templates.length;
-    const template = this.templates[next];
-    if (!template) {
-      return;
+    // Found by identity rather than by index: a wrapper added around the cards, or a reordering
+    // of `templates`, would otherwise move the selection and the focus to two different cards.
+    const group = (event.currentTarget as HTMLElement).closest("[role='radiogroup']");
+    group?.querySelector<HTMLElement>(`[data-template="${target}"]`)?.focus();
+  }
+
+  private templateForKey(key: string, current: number): CertificateTemplate | undefined {
+    const { length } = this.templates;
+    if (key === "Home") {
+      return this.templates[0];
     }
-    this.selectTemplate(template);
-
-    const group = (event.target as HTMLElement).parentElement;
-    group?.querySelectorAll<HTMLElement>("[role='radio']")[next]?.focus();
+    if (key === "End") {
+      return this.templates[length - 1];
+    }
+    const offset = TEMPLATE_KEY_OFFSETS[key];
+    return offset === undefined ? undefined : this.templates[(current + offset + length) % length];
   }
 
   protected submit(): void {

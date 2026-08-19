@@ -36,6 +36,7 @@ import { TemplateFrameComponent } from "./template-frame.component";
       </div>
     </app-template-frame>
   `,
+  host: { class: "block" },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MinimalThumbnailComponent {}

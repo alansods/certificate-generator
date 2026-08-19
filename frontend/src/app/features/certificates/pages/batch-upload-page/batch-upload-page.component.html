@@ -13,26 +13,30 @@
   </div>
 
   @if (uploading()) {
-    <div class="flex flex-col gap-5 rounded-md bg-surface p-7 shadow-e1" role="status">
-      <p class="m-0 text-sm">Uploading {{ selectedFile()?.name }}…</p>
+    <div class="flex flex-col gap-5 rounded-md bg-surface p-7 shadow-e1">
+      <!-- The panel is not a live region: it would re-announce on every progress event. The
+           progressbar's aria-valuenow carries the changing value, and only the opening line is
+           spoken. -->
+      <p class="m-0 text-sm" role="status">Uploading {{ selectedFile()?.name }}…</p>
 
+      @let percent = uploadPercent();
       <div
         class="h-2 w-full overflow-hidden rounded-full bg-neutral-900"
         role="progressbar"
         aria-label="Upload progress"
-        [attr.aria-valuenow]="uploadPercent()"
-        [attr.aria-valuemin]="uploadPercent() === null ? null : 0"
-        [attr.aria-valuemax]="uploadPercent() === null ? null : 100"
+        [attr.aria-valuenow]="percent"
+        [attr.aria-valuemin]="percent === null ? null : 0"
+        [attr.aria-valuemax]="percent === null ? null : 100"
       >
-        @if (uploadPercent(); as percent) {
+        @if (percent !== null) {
           <span class="block h-full rounded-full bg-accent-500" [style.width.%]="percent"></span>
         } @else {
           <span class="skeleton block h-full w-full rounded-full"></span>
         }
       </div>
 
-      <p class="m-0 text-xs tabular-nums text-subtle">
-        {{ uploadPercent() === null ? "Working…" : uploadPercent() + "% uploaded" }}
+      <p class="m-0 text-xs tabular-nums text-subtle" aria-hidden="true">
+        {{ percent === null ? "Working…" : percent + "% uploaded" }}
       </p>
     </div>
   } @else if (error(); as message) {
@@ -92,24 +96,25 @@
             </button>
           </div>
 
-          <div role="table" aria-label="Rows that could not be imported">
-            <div
-              role="row"
-              class="grid grid-cols-[88px_1fr] gap-5 px-6 py-3 text-overline uppercase tracking-wide text-subtle shadow-[inset_0_-1px_0_var(--color-neutral-900)]"
-            >
-              <span role="columnheader">Line</span>
-              <span role="columnheader">Reason</span>
-            </div>
-            @for (rowError of sortedErrors(); track rowError.line) {
-              <div
-                role="row"
-                class="grid grid-cols-[88px_1fr] gap-5 px-6 py-4 text-sm shadow-[inset_0_-1px_0_var(--color-neutral-900)]"
+          <table class="w-full border-collapse text-left">
+            <caption class="sr-only">Rows that could not be imported, by line number</caption>
+            <thead>
+              <tr
+                class="row-divider grid grid-cols-(--error-list-columns) gap-5 px-6 py-3 text-overline uppercase tracking-wide text-subtle"
               >
-                <span role="cell" class="tabular-nums text-revoked">{{ rowError.line }}</span>
-                <span role="cell">{{ rowError.reason }}</span>
-              </div>
-            }
-          </div>
+                <th scope="col" class="font-regular">Line</th>
+                <th scope="col" class="font-regular">Reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rowError of sortedErrors(); track rowError.line) {
+                <tr class="row-divider grid grid-cols-(--error-list-columns) gap-5 px-6 py-4 text-sm">
+                  <td class="tabular-nums text-revoked">{{ rowError.line }}</td>
+                  <td>{{ rowError.reason }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
         </div>
       } @else {
         <p

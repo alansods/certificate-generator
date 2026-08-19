@@ -23,8 +23,12 @@ The system SHALL let an authenticated user pick a local CSV file, by dropping it
 - **THEN** the filename is shown and the upload action becomes enabled
 
 #### Scenario: Dropping a file on the upload area
-- **WHEN** a user drops a file on the upload area
+- **WHEN** a user drops a CSV file on the upload area
 - **THEN** that file is taken as the selected file, exactly as if it had been chosen through the picker
+
+#### Scenario: Dropping something that is not a CSV
+- **WHEN** a user drops a file that is not a CSV on the upload area
+- **THEN** it is refused with a message, and nothing is sent — the drop area constrains what it accepts to the same thing the file picker does
 
 #### Scenario: Submitting the selected file
 - **WHEN** a user submits a selected file

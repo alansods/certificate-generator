@@ -61,6 +61,17 @@ describe("BatchUploadPageComponent", () => {
     button(fixture, "Upload")?.click();
   }
 
+  function dropFile(fixture: ComponentFixture<BatchUploadPageComponent>, file: File): void {
+    const dropArea = el(fixture).querySelector("label[for='batch-upload-file']");
+    if (!dropArea) {
+      throw new Error("Expected the drop area");
+    }
+    const drop = new Event("drop", { bubbles: true }) as DragEvent;
+    Object.defineProperty(drop, "dataTransfer", { value: { files: [file] } });
+    dropArea.dispatchEvent(drop);
+    fixture.detectChanges();
+  }
+
   function flushImport(body: object): void {
     httpMock
       .expectOne((r) => r.url.endsWith("/api/v1/certificates/batch") && r.method === "POST")
@@ -118,6 +129,25 @@ describe("BatchUploadPageComponent", () => {
     req.flush({ totalRows: 1, successCount: 1, errorCount: 0, errors: [] });
   });
 
+  it("shows a determinate bar at zero percent rather than falling back to indeterminate", () => {
+    const fixture = setup();
+    fixture.detectChanges();
+    startUpload(fixture);
+
+    const req = httpMock.expectOne(
+      (r) => r.url.endsWith("/api/v1/certificates/batch") && r.method === "POST",
+    );
+    req.event({ type: HttpEventType.UploadProgress, loaded: 0, total: 2048 });
+    fixture.detectChanges();
+
+    const bar = el(fixture).querySelector("[role='progressbar']");
+    expect(bar?.getAttribute("aria-valuenow")).toBe("0");
+    expect(el(fixture).textContent).toContain("0% uploaded");
+    expect(el(fixture).querySelector(".skeleton")).toBeNull();
+
+    req.flush({ totalRows: 1, successCount: 1, errorCount: 0, errors: [] });
+  });
+
   it("claims no progress value when the upload's total size is unknown", () => {
     const fixture = setup();
     fixture.detectChanges();
@@ -147,7 +177,7 @@ describe("BatchUploadPageComponent", () => {
     fixture.detectChanges();
 
     expect(counters(fixture)).toEqual({ "Total rows": "3", Created: "3", Failed: "0" });
-    expect(el(fixture).querySelector("[role='table']")).toBeNull();
+    expect(el(fixture).querySelector("table")).toBeNull();
     expect(el(fixture).textContent).toContain("Every row was imported.");
     expect(button(fixture, "Download error report")).toBeUndefined();
   });
@@ -170,9 +200,12 @@ describe("BatchUploadPageComponent", () => {
 
     expect(counters(fixture)).toEqual({ "Total rows": "3", Created: "1", Failed: "2" });
 
-    const rows = [...el(fixture).querySelectorAll("[role='table'] [role='row']")].slice(1);
+    expect(el(fixture).querySelector("table caption")?.textContent).toContain(
+      "Rows that could not be imported",
+    );
+    const rows = [...el(fixture).querySelectorAll("tbody tr")];
     const cells = rows.map((row) =>
-      [...row.querySelectorAll("[role='cell']")].map((cell) => cell.textContent?.trim()),
+      [...row.querySelectorAll("td")].map((cell) => cell.textContent?.trim()),
     );
     expect(cells).toEqual([
       ["2", "invalid workloadHours"],
@@ -241,7 +274,7 @@ describe("BatchUploadPageComponent", () => {
 
     expect(el(fixture).textContent).toContain("File exceeds the maximum allowed size.");
     expect(counters(fixture)).toEqual({});
-    expect(el(fixture).querySelector("[role='table']")).toBeNull();
+    expect(el(fixture).querySelector("table")).toBeNull();
   });
 
   it("returns to the picker state when starting a new upload after a result", async () => {
@@ -283,20 +316,23 @@ describe("BatchUploadPageComponent", () => {
     expect(dropArea?.className).toContain("has-[:focus-visible]:border-accent-500");
   });
 
+  it("refuses a dropped file that is not a CSV, rather than letting the server refuse it", () => {
+    const fixture = setup();
+    fixture.detectChanges();
+
+    dropFile(fixture, new File(["%PDF"], "certificate.pdf", { type: "application/pdf" }));
+
+    expect(el(fixture).textContent).toContain("That file is not a CSV");
+    expect(el(fixture).textContent).not.toContain("certificate.pdf");
+    // Nothing left for the server to reject.
+    httpMock.expectNone(() => true);
+  });
+
   it("accepts a file dropped on the drop area", () => {
     const fixture = setup();
     fixture.detectChanges();
 
-    const dropArea = el(fixture).querySelector("label[for='batch-upload-file']");
-    if (!dropArea) {
-      throw new Error("Expected the drop area");
-    }
-    const drop = new Event("drop", { bubbles: true }) as DragEvent;
-    Object.defineProperty(drop, "dataTransfer", {
-      value: { files: [new File(["a,b\n"], "dropped.csv", { type: "text/csv" })] },
-    });
-    dropArea.dispatchEvent(drop);
-    fixture.detectChanges();
+    dropFile(fixture, new File(["a,b\n"], "dropped.csv", { type: "text/csv" }));
 
     expect(el(fixture).textContent).toContain("dropped.csv");
     expect(button(fixture, "Upload")?.disabled).toBe(false);

@@ -18,6 +18,7 @@ import { ChangeDetectionStrategy, Component } from "@angular/core";
       <ng-content />
     </div>
   `,
+  host: { class: "block" },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TemplateFrameComponent {}

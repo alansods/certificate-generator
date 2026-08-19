@@ -2,9 +2,14 @@
   <header
     class="sticky top-0 z-5 flex h-(--size-toolbar) flex-none items-center gap-8 bg-surface px-7 shadow-[inset_0_-1px_0_var(--color-divider)]"
   >
-    <a routerLink="/certificates" class="text-sm font-medium text-text no-underline hover:text-text">
+    <a routerLink="/certificates" class="rounded-md px-3 py-2 text-sm font-medium text-text no-underline hover:bg-accent-900 hover:text-accent-300 active:bg-accent-800">
       Certificate Generator
     </a>
+
+    <p class="ml-auto truncate text-xs text-muted md:hidden">
+      {{ currentUser()?.fullName ?? "Signed in" }}
+      <span class="text-accent-300">{{ currentUser()?.role ?? "" }}</span>
+    </p>
 
     <!-- Hidden below the medium breakpoint: the navigation still reaches the same page. -->
     <form
@@ -19,7 +24,7 @@
           [maxlength]="maxLength"
           autocomplete="off"
           spellcheck="false"
-          class="w-40 border-0 bg-transparent text-xs tabular-nums text-text placeholder:text-neutral-600"
+          class="w-40 border-0 bg-transparent text-xs tabular-nums text-text placeholder:text-subtle"
         />
       </label>
       <button
@@ -34,7 +39,7 @@
   <div class="flex min-h-0 flex-1 flex-col md:flex-row">
     <nav
       aria-label="Main"
-      class="order-2 flex flex-none gap-1 bg-surface p-4 shadow-[inset_0_1px_0_var(--color-divider)] md:order-1 md:w-(--size-nav) md:flex-col md:shadow-[inset_-1px_0_0_var(--color-divider)]"
+      class="fixed inset-x-0 bottom-0 z-5 flex flex-none gap-1 bg-surface p-4 shadow-[inset_0_1px_0_var(--color-divider)] md:static md:w-(--size-nav) md:flex-col md:shadow-[inset_-1px_0_0_var(--color-divider)]"
     >
       <p class="hidden px-4 pt-2 pb-3 text-overline tracking-wide text-subtle uppercase md:block">
         Menu
@@ -42,8 +47,10 @@
 
       <a
         routerLink="/certificates"
-        routerLinkActive="bg-accent-900 text-accent-300"
-        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline hover:bg-neutral-900 hover:text-text active:bg-neutral-800 md:flex-none md:justify-start"
+        routerLinkActive
+        #certificatesActive="routerLinkActive"
+        [attr.aria-current]="certificatesActive.isActive ? 'page' : null"
+        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline not-aria-[current=page]:hover:bg-neutral-900 not-aria-[current=page]:hover:text-text active:bg-neutral-800 aria-[current=page]:bg-accent-900 aria-[current=page]:text-accent-300 md:flex-none md:justify-start"
       >
         <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
           <rect x="3" y="4" width="18" height="14" rx="2" />
@@ -54,8 +61,10 @@
 
       <a
         routerLink="/verify-code"
-        routerLinkActive="bg-accent-900 text-accent-300"
-        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline hover:bg-neutral-900 hover:text-text active:bg-neutral-800 md:flex-none md:justify-start"
+        routerLinkActive
+        #verifyActive="routerLinkActive"
+        [attr.aria-current]="verifyActive.isActive ? 'page' : null"
+        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline not-aria-[current=page]:hover:bg-neutral-900 not-aria-[current=page]:hover:text-text active:bg-neutral-800 aria-[current=page]:bg-accent-900 aria-[current=page]:text-accent-300 md:flex-none md:justify-start"
       >
         <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
           <rect x="3" y="4" width="18" height="16" rx="2" />
@@ -63,6 +72,14 @@
         </svg>
         Verify code
       </a>
+
+      <button
+        type="button"
+        (click)="signOut()"
+        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted hover:bg-neutral-900 hover:text-text active:bg-neutral-800 md:hidden"
+      >
+        Sign out
+      </button>
 
       <div class="hidden md:mt-auto md:flex md:flex-col md:gap-1">
         <div class="mx-1 my-2 h-px bg-divider" aria-hidden="true"></div>
@@ -92,24 +109,10 @@
       </div>
     </nav>
 
-    <main class="order-1 min-w-0 flex-1 md:order-2">
+    <!-- Bottom padding clears the fixed mobile bar; it collapses once the bar becomes a sidebar. -->
+    <main class="min-w-0 flex-1 pb-24 md:pb-0">
       <router-outlet />
     </main>
   </div>
 
-  <!-- Below the medium breakpoint the identity block has no room in the bar, so sign-out moves
-       here rather than becoming unreachable. -->
-  <div class="order-3 flex items-center justify-between gap-4 bg-surface px-7 py-3 md:hidden">
-    <span class="truncate text-xs text-muted">
-      {{ currentUser()?.fullName ?? "Signed in" }}
-      <span class="text-accent-300">{{ currentUser()?.role ?? "" }}</span>
-    </span>
-    <button
-      type="button"
-      (click)="signOut()"
-      class="inline-flex min-h-(--size-touch-target) items-center rounded-md border border-divider px-4 text-sm text-muted hover:bg-neutral-900 active:bg-neutral-800"
-    >
-      Sign out
-    </button>
-  </div>
 </div>

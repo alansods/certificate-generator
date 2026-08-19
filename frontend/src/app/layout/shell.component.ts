@@ -42,7 +42,7 @@ export class ShellComponent implements OnInit {
     if (!code) {
       return;
     }
-    void this.router.navigate(["/verify-code"], { queryParams: { code } });
+    this.router.navigate(["/verify-code"], { queryParams: { code } }).catch(() => undefined);
     this.quickCode.setValue("");
   }
 

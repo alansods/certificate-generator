@@ -14,7 +14,14 @@ describe("ShellComponent", () => {
     localStorage.clear();
     TestBed.configureTestingModule({
       imports: [ShellComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([
+          { path: "certificates", children: [] },
+          { path: "verify-code", children: [] },
+        ]),
+      ],
     });
     httpMock = TestBed.inject(HttpTestingController);
   });
@@ -132,5 +139,60 @@ describe("ShellComponent", () => {
     nativeElement.querySelector<HTMLFormElement>("header form")?.requestSubmit();
 
     expect(navigateSpy).not.toHaveBeenCalled();
+  });
+
+  it("announces the current area rather than signalling it by color alone", async () => {
+    const { fixture, nativeElement } = setup();
+    flushMe(USER);
+    await TestBed.inject(Router).navigateByUrl("/verify-code");
+    fixture.detectChanges();
+
+    const current = [...nativeElement.querySelectorAll("nav a[aria-current='page']")];
+
+    expect(current).toHaveLength(1);
+    expect(current[0]?.getAttribute("href")).toBe("/verify-code");
+  });
+
+  it("empties the quick-verify field once a code has been handed over", async () => {
+    const { fixture, nativeElement } = setup();
+    flushMe(USER);
+    fixture.detectChanges();
+
+    const input = nativeElement.querySelector<HTMLInputElement>("header input");
+    if (!input) {
+      throw new Error("Expected the quick-verify field in the top bar");
+    }
+    input.value = "CERT-7K2M-9XQ4";
+    input.dispatchEvent(new Event("input"));
+    nativeElement.querySelector<HTMLFormElement>("header form")?.requestSubmit();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(input.value).toBe("");
+  });
+
+  it("gives the chrome its landmarks and names the quick-verify field", () => {
+    const { nativeElement } = setup();
+    flushMe(USER);
+
+    expect(nativeElement.querySelector("header")).not.toBeNull();
+    expect(nativeElement.querySelector("main")).not.toBeNull();
+    expect(nativeElement.querySelector("nav")?.getAttribute("aria-label")).toBe("Main");
+    expect(nativeElement.querySelector("label span.sr-only")?.textContent?.trim()).toBe(
+      "Verify a certificate code",
+    );
+  });
+
+  it("keeps sign-out inside the navigation on the narrow layout", () => {
+    const { nativeElement } = setup();
+    flushMe(USER);
+
+    // The narrow layout is Tailwind variants, so this asserts the markup that produces it: a
+    // sign-out control inside the nav that is hidden from the medium breakpoint up.
+    const navSignOut = [...(nativeElement.querySelectorAll("nav button") ?? [])].find(
+      (button) => button.textContent?.trim() === "Sign out" && button.className.includes("md:hidden"),
+    );
+
+    expect(navSignOut).toBeDefined();
   });
 });

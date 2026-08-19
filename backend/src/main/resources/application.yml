@@ -48,5 +48,10 @@ app:
     verify:
       max-attempts: 30
       window: PT1M
+    logout:
+      # Only unmatched tokens count, so this is generous for real users and still bounds an
+      # anonymous flood against the one unauthenticated endpoint that touches the database.
+      max-attempts: 30
+      window: PT1M
   batch-import:
     max-rows: 500

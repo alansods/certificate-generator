@@ -1,0 +1,23 @@
+<div class="flex max-w-content flex-col gap-7 px-9 py-9">
+  <div class="flex flex-col gap-2">
+    <h1 class="text-xl">Verify code</h1>
+    <p class="m-0 text-sm text-subtle">
+      Check any certificate by its public code — the same lookup recipients get at /verify.
+    </p>
+  </div>
+
+  <form
+    (submit)="$event.preventDefault(); submit()"
+    class="flex flex-col gap-3 rounded-md bg-surface p-6 shadow-e1"
+  >
+    <app-code-field [control]="lookup.control" [invalid]="lookup.invalid()" />
+  </form>
+
+  <app-verification-result
+    [code]="lookup.urlCodeMalformed() ? '' : lookup.code()"
+    [loading]="lookup.isLoading()"
+    [errorKind]="lookup.errorKind()"
+    [certificate]="lookup.certificate()"
+    (retry)="lookup.reload()"
+  />
+</div>

@@ -43,6 +43,13 @@ public class SecurityConfig {
                                                 "/actuator/health",
                                                 "/api/v1/auth/login",
                                                 "/api/v1/auth/refresh",
+                                                // The refresh token in the body is the credential
+                                                // being spent. Requiring an access token as well
+                                                // means an expired one sends logout through the
+                                                // client's silent-refresh retry, which rotates the
+                                                // refresh token and then revokes the superseded
+                                                // one — leaving the live token unrevoked.
+                                                "/api/v1/auth/logout",
                                                 "/api/v1/public/verify/**")
                                         .permitAll()
                                         .requestMatchers(HttpMethod.DELETE, "/api/v1/certificates/**")

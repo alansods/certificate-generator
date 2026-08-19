@@ -17,7 +17,11 @@ The system SHALL render the authenticated area inside a fixed top bar and a pers
 
 #### Scenario: Narrow viewport
 - **WHEN** the viewport is narrower than the medium breakpoint
-- **THEN** the side navigation collapses to a horizontal bar and every navigation item remains reachable without horizontal scrolling
+- **THEN** the side navigation collapses to a horizontal bar anchored to the bottom of the viewport, every navigation item remains reachable without horizontal scrolling and without scrolling the page, and sign-out moves into that bar rather than becoming unreachable
+
+#### Scenario: The current item is announced, not just tinted
+- **WHEN** a navigation item matches the current route
+- **THEN** it carries `aria-current="page"`, so the current area is conveyed to assistive technology and not by color alone
 
 ### Requirement: Signed-in identity is visible
 The system SHALL display the signed-in user's name and role in the authenticated chrome, sourced from the current-user endpoint rather than from decoding the access token.
@@ -35,7 +39,11 @@ The system SHALL let a signed-in user end their session from the authenticated c
 
 #### Scenario: User signs out
 - **WHEN** a user selects sign out
-- **THEN** `POST /api/v1/auth/logout` is requested, the stored access and refresh tokens are cleared, and the application navigates to the login screen
+- **THEN** the stored access and refresh tokens are cleared and the application navigates to the login screen immediately, and `POST /api/v1/auth/logout` is requested to revoke the refresh token server-side — the local sign-out does not wait for that response, so a request that hangs cannot leave the user on the authenticated shell
+
+#### Scenario: There is no token left to revoke
+- **WHEN** a user signs out with no stored refresh token
+- **THEN** no revocation request is made and the application still returns to the login screen
 
 #### Scenario: Sign-out request fails
 - **WHEN** the sign-out request fails

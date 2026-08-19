@@ -67,11 +67,19 @@ The system SHALL treat presentation of an already-rotated (revoked) refresh toke
 - **THEN** the response is 401 and every other refresh token issued to that user is also revoked, forcing re-authentication on all sessions
 
 ### Requirement: Logout
-The system SHALL revoke the refresh token presented at logout.
+The system SHALL revoke the refresh token presented at logout, and SHALL treat possession of that token as the credential rather than requiring an access token as well.
 
 #### Scenario: Logout revokes the token
-- **WHEN** an authenticated client sends POST /api/v1/auth/logout with a valid refresh token
+- **WHEN** a client sends POST /api/v1/auth/logout with a valid refresh token
 - **THEN** the response is 204 and a subsequent refresh with that token returns 401
+
+#### Scenario: Logout does not require an access token
+- **WHEN** a client sends POST /api/v1/auth/logout with a valid refresh token and no bearer token, or an expired one
+- **THEN** the response is 204 and the refresh token is revoked
+
+#### Scenario: Unknown token
+- **WHEN** a client sends POST /api/v1/auth/logout with a token that matches no stored refresh token
+- **THEN** the response is 204 and no session is affected
 
 ### Requirement: Current user lookup
 The system SHALL return the authenticated user's own profile.

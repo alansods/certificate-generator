@@ -146,7 +146,7 @@ describe("CertificatePreviewPageComponent", () => {
     // would be same-origin script. The type must not come from a header we do not control.
     httpMock
       .expectOne((r) => r.url.endsWith("/api/v1/certificates/7/pdf"))
-      .flush(new Blob(["<script>alert(1)<\/script>"], { type: "text/html" }));
+      .flush(new Blob(["<script>alert(1)</script>"], { type: "text/html" }));
     await tick();
     fixture.detectChanges();
 

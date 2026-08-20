@@ -1,8 +1,8 @@
-import { HttpClient, HttpParams } from "@angular/common/http";
+import { HttpClient, HttpEventType, HttpParams, HttpResponse } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
-import { Observable } from "rxjs";
+import { filter, map, Observable } from "rxjs";
 import { API_BASE_URL } from "../../../core/config/api.config";
-import { BatchImportResponse } from "./batch-import-response";
+import { BatchImportResponse, BatchUploadEvent } from "./batch-import-response";
 import { CertificatePageResponse, CertificateResponse, CertificateStatus } from "./certificate-page-response";
 import { CertificateRequest } from "./certificate-request";
 
@@ -51,10 +51,37 @@ export class CertificatesApi {
     return this.http.get(`${this.apiBaseUrl}/api/v1/certificates/${id}/pdf`, { responseType: "blob" });
   }
 
-  uploadBatch(file: File): Observable<BatchImportResponse> {
+  uploadBatch(file: File): Observable<BatchUploadEvent> {
     const formData = new FormData();
     formData.append("file", file);
-    return this.http.post<BatchImportResponse>(`${this.apiBaseUrl}/api/v1/certificates/batch`, formData);
+    return this.http
+      .post<BatchImportResponse>(`${this.apiBaseUrl}/api/v1/certificates/batch`, formData, {
+        reportProgress: true,
+        observe: "events",
+      })
+      .pipe(
+        filter(
+          (event) =>
+            event.type === HttpEventType.UploadProgress || event.type === HttpEventType.Response,
+        ),
+        map((event): BatchUploadEvent => {
+          if (event.type === HttpEventType.UploadProgress) {
+            // `total` is absent when the body length is not known up front, which is why the
+            // percent is nullable rather than quietly reported as zero.
+            return {
+              kind: "progress",
+              percent: event.total ? Math.round((event.loaded / event.total) * 100) : null,
+            };
+          }
+          // `HttpResponse.body` is nullable, and a `done` carrying null would put the page back
+          // to the picker with neither a result nor an error — a silent loss of a 40-row import.
+          const body = (event as HttpResponse<BatchImportResponse>).body;
+          if (!body) {
+            throw new Error("The batch import returned no body.");
+          }
+          return { kind: "done", response: body };
+        }),
+      );
   }
 
   downloadTemplate(): Observable<Blob> {

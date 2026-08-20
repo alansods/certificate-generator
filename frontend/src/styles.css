@@ -60,6 +60,17 @@
   --color-info-bg: #1e2b3a;
   --color-info-line: #3f5f7d;
 
+  /* The certificate templates print on paper, so their thumbnails are the one place in the app
+     that is not dark. These are the literal colors of the Thymeleaf templates under
+     backend/src/main/resources/templates/certificates/; if one of those changes, change it here
+     too — the thumbnail is what gets corrected when the two disagree. */
+  --color-paper: #ffffff;
+  --color-paper-ink: #1a1a1a;
+  --color-paper-muted: #6b7280;
+  --color-paper-rule: #cccccc;
+  --color-classic-gold: #8a6d1f;
+  --color-modern-blue: #1f5fbf;
+
   --color-divider: color-mix(in srgb, var(--color-text) 16%, transparent);
   --color-shadow: #000000;
 
@@ -102,9 +113,9 @@
   --shadow-e3:
     0 0 0 1px var(--color-neutral-500), 0 16px 40px rgb(0 0 0 / 0.65);
 
-  /* Breakpoints, matching _tokens.scss and the `respond-to` mixin. Tailwind's own 640/768/1024
-     would otherwise make "below the medium breakpoint" mean two different widths depending on
-     whether a rule was written as a `md:` variant or in Sass. */
+  /* The application's only breakpoint definition, now that the Sass layer is gone. Tailwind's
+     own 640/768/1024 are deliberately replaced: "below the medium breakpoint" has to mean one
+     width everywhere it is written. */
   --breakpoint-sm: 600px;
   --breakpoint-md: 900px;
   --breakpoint-lg: 1200px;
@@ -127,6 +138,11 @@
     /* The certificate table's columns, shared by its header, its rows and its skeleton so the
        three cannot drift. Applied only from the medium breakpoint up — below it the row stacks. */
     --list-columns: 168px 1.3fr 1.5fr 128px 132px;
+
+    /* The batch import error list's line column. Applied through a <colgroup> rather than a grid:
+       giving a <tr> `display: grid` blockifies it, and Blink and WebKit take the row and cell
+       roles from the layout object, so the rows would stop being rows to a screen reader. */
+    --error-list-line-column: 88px;
   }
 
   html {
@@ -232,6 +248,12 @@
 
 /* Freestanding rules fade out at both ends — a Nocturne signature. Box outlines and in-control
    separators stay solid. */
+/* The hairline under a table row. Hand-rolling this inset shadow per row is how the certificate
+   list and the batch error list would drift apart. */
+@utility row-divider {
+  box-shadow: inset 0 -1px 0 var(--color-neutral-900);
+}
+
 @utility rule-fade {
   height: 1px;
   background: linear-gradient(

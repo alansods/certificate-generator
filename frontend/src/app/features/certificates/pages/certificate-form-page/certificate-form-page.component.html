@@ -1,151 +1,282 @@
-<div class="certificate-form-page">
-  <h1>{{ isEditMode ? "Edit certificate" : "New certificate" }}</h1>
+<div class="flex max-w-content flex-col gap-7 p-7">
+  <div class="flex flex-col gap-4">
+    <a
+      routerLink="/certificates"
+      class="inline-flex min-h-(--size-touch-target) w-fit items-center gap-2 rounded-md px-3 text-sm text-subtle no-underline hover:bg-accent-900 hover:text-accent-500"
+    >
+      <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M14 6l-6 6 6 6" />
+      </svg>
+      Certificates
+    </a>
+
+    <div class="flex flex-wrap items-center justify-between gap-5">
+      <h1 class="text-xl">{{ isEditMode ? "Edit certificate" : "New certificate" }}</h1>
+
+      @if (isEditMode) {
+        <div class="flex flex-wrap gap-4">
+          <a
+            [routerLink]="['/certificates', certificateId, 'preview']"
+            class="inline-flex min-h-(--size-touch-target) items-center gap-3 rounded-md border border-divider px-5 text-sm font-medium text-text no-underline hover:bg-neutral-900 active:bg-neutral-800"
+          >
+            <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z" /><circle cx="12" cy="12" r="2.6" />
+            </svg>
+            Open PDF preview
+          </a>
+
+          @if (isAdmin()) {
+            <button
+              type="button"
+              (click)="confirmDelete()"
+              class="inline-flex min-h-(--size-touch-target) items-center gap-3 rounded-md border border-revoked-line px-5 text-sm font-medium text-revoked hover:bg-revoked-bg active:bg-revoked-bg"
+            >
+              <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                <path d="M4 7h16M9 7V5h6v2M6 7l1 13h10l1-13" />
+              </svg>
+              Delete
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
 
   @if (loading()) {
-    <div class="certificate-form-page__state" role="status">
-      <mat-spinner diameter="32" />
+    <div class="flex justify-center py-14" role="status">
+      <span class="size-7 animate-spin rounded-full border-2 border-accent-800 border-t-accent-500"></span>
+      <span class="sr-only">Loading the certificate…</span>
     </div>
   } @else if (loadError()) {
-    <p class="certificate-form-page__error" role="alert">{{ loadError() }}</p>
+    <p
+      class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+      role="alert"
+    >
+      <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+      {{ loadError() }}
+    </p>
   } @else {
-    <form [formGroup]="form" (ngSubmit)="submit()" class="certificate-form-page__form">
-      <mat-form-field appearance="outline">
-        <mat-label>Recipient name</mat-label>
-        <input matInput formControlName="recipientName" />
-        @if (form.controls.recipientName.invalid && form.controls.recipientName.touched) {
-          <mat-error>
-            @if (form.controls.recipientName.errors?.['server']; as message) {
-              {{ message }}
-            } @else {
-              Recipient name is required.
-            }
-          </mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Recipient email</mat-label>
-        <input matInput type="email" formControlName="recipientEmail" />
-        @if (form.controls.recipientEmail.invalid && form.controls.recipientEmail.touched) {
-          <mat-error>
-            @if (form.controls.recipientEmail.errors?.['server']; as message) {
-              {{ message }}
-            } @else {
-              A valid email is required.
-            }
-          </mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Course name</mat-label>
-        <input matInput formControlName="courseName" />
-        @if (form.controls.courseName.invalid && form.controls.courseName.touched) {
-          <mat-error>
-            @if (form.controls.courseName.errors?.['server']; as message) {
-              {{ message }}
-            } @else {
-              Course name is required.
-            }
-          </mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Workload hours</mat-label>
-        <input matInput type="number" formControlName="workloadHours" min="1" />
-        @if (form.controls.workloadHours.invalid && form.controls.workloadHours.touched) {
-          <mat-error>
-            @if (form.controls.workloadHours.errors?.['server']; as message) {
-              {{ message }}
-            } @else {
-              Workload hours must be a positive number.
-            }
-          </mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Completion date</mat-label>
-        <input matInput type="date" formControlName="completionDate" />
-        @if (form.controls.completionDate.invalid && form.controls.completionDate.touched) {
-          <mat-error>
-            @if (form.controls.completionDate.errors?.['server']; as message) {
-              {{ message }}
-            } @else {
-              Completion date is required.
-            }
-          </mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Issue date</mat-label>
-        <input matInput type="date" formControlName="issueDate" />
-        @if (form.controls.issueDate.invalid && form.controls.issueDate.touched) {
-          <mat-error>
-            @if (form.controls.issueDate.errors?.['server']; as message) {
-              {{ message }}
-            } @else {
-              Issue date is required.
-            }
-          </mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Instructor name</mat-label>
-        <input matInput formControlName="instructorName" />
-        @if (form.controls.instructorName.invalid && form.controls.instructorName.touched) {
-          <mat-error>
-            @if (form.controls.instructorName.errors?.['server']; as message) {
-              {{ message }}
-            } @else {
-              Instructor name is required.
-            }
-          </mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Template</mat-label>
-        <mat-select formControlName="template">
-          @for (option of templates; track option) {
-            <mat-option [value]="option">{{ option }}</mat-option>
-          }
-        </mat-select>
-      </mat-form-field>
-
-      <div class="certificate-form-page__previews">
-        @for (option of templates; track option) {
-          <button
-            type="button"
-            class="certificate-form-page__preview certificate-form-page__preview--{{ option.toLowerCase() }}"
-            [class.certificate-form-page__preview--selected]="form.controls.template.value === option"
-            [attr.aria-pressed]="form.controls.template.value === option"
-            (click)="form.controls.template.setValue(option)"
+    <form [formGroup]="form" (ngSubmit)="submit()" class="flex flex-col gap-7" novalidate>
+      <div aria-live="polite" aria-atomic="false">
+        @if (showValidationSummary()) {
+          <p
+            class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+            role="alert"
           >
-            <span class="certificate-form-page__preview-title">{{ option }}</span>
-          </button>
+            <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+            Check the highlighted fields before saving.
+          </p>
+        }
+        @if (submitError(); as message) {
+          <p
+            class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+            role="alert"
+          >
+            <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+            {{ message }}
+          </p>
         }
       </div>
 
-      @if (submitError()) {
-        <p class="certificate-form-page__error" role="alert">{{ submitError() }}</p>
-      }
+      <div class="flex flex-col gap-6 rounded-md bg-surface p-7 shadow-e1">
+        <div class="grid gap-6 md:grid-cols-2">
+          <label class="flex flex-col gap-2">
+            <span class="text-xs text-muted">Recipient name</span>
+            <input
+              formControlName="recipientName"
+              autocomplete="off"
+              [attr.aria-invalid]="isInvalid('recipientName')"
+              [attr.aria-describedby]="isInvalid('recipientName') ? 'recipientName-error' : null"
+              class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+              [class.border-neutral-600]="!isInvalid('recipientName')"
+              [class.border-revoked]="isInvalid('recipientName')"
+            />
+            @if (isInvalid("recipientName")) {
+              <span id="recipientName-error" class="text-xs text-revoked">
+                {{ errorFor("recipientName", "Recipient name is required.") }}
+              </span>
+            }
+          </label>
 
-      <div class="certificate-form-page__actions">
-        <button mat-flat-button color="primary" type="submit" [disabled]="submitting()">
+          <label class="flex flex-col gap-2">
+            <span class="text-xs text-muted">Recipient email</span>
+            <input
+              type="email"
+              formControlName="recipientEmail"
+              autocomplete="off"
+              [attr.aria-invalid]="isInvalid('recipientEmail')"
+              [attr.aria-describedby]="isInvalid('recipientEmail') ? 'recipientEmail-error' : null"
+              class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+              [class.border-neutral-600]="!isInvalid('recipientEmail')"
+              [class.border-revoked]="isInvalid('recipientEmail')"
+            />
+            @if (isInvalid("recipientEmail")) {
+              <span id="recipientEmail-error" class="text-xs text-revoked">
+                {{ errorFor("recipientEmail", "A valid email is required.") }}
+              </span>
+            }
+          </label>
+        </div>
+
+        <label class="flex flex-col gap-2">
+          <span class="text-xs text-muted">Course name</span>
+          <input
+            formControlName="courseName"
+            autocomplete="off"
+            [attr.aria-invalid]="isInvalid('courseName')"
+            [attr.aria-describedby]="isInvalid('courseName') ? 'courseName-error' : null"
+            class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+            [class.border-neutral-600]="!isInvalid('courseName')"
+            [class.border-revoked]="isInvalid('courseName')"
+          />
+          @if (isInvalid("courseName")) {
+            <span id="courseName-error" class="text-xs text-revoked">
+              {{ errorFor("courseName", "Course name is required.") }}
+            </span>
+          }
+        </label>
+
+        <div class="grid gap-6 md:grid-cols-3">
+          <label class="flex flex-col gap-2">
+            <span class="text-xs text-muted">Workload hours</span>
+            <input
+              type="number"
+              min="1"
+              formControlName="workloadHours"
+              [attr.aria-invalid]="isInvalid('workloadHours')"
+              [attr.aria-describedby]="isInvalid('workloadHours') ? 'workloadHours-error' : null"
+              class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm tabular-nums caret-accent-500 hover:border-neutral-500"
+              [class.border-neutral-600]="!isInvalid('workloadHours')"
+              [class.border-revoked]="isInvalid('workloadHours')"
+            />
+            @if (isInvalid("workloadHours")) {
+              <span id="workloadHours-error" class="text-xs text-revoked">
+                {{ errorFor("workloadHours", "Workload hours must be a positive number.") }}
+              </span>
+            }
+          </label>
+
+          <label class="flex flex-col gap-2">
+            <span class="text-xs text-muted">Completion date</span>
+            <input
+              type="date"
+              formControlName="completionDate"
+              [attr.aria-invalid]="isInvalid('completionDate')"
+              [attr.aria-describedby]="isInvalid('completionDate') ? 'completionDate-error' : null"
+              class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm tabular-nums caret-accent-500 hover:border-neutral-500"
+              [class.border-neutral-600]="!isInvalid('completionDate')"
+              [class.border-revoked]="isInvalid('completionDate')"
+            />
+            @if (isInvalid("completionDate")) {
+              <span id="completionDate-error" class="text-xs text-revoked">
+                {{ errorFor("completionDate", "Completion date is required.") }}
+              </span>
+            }
+          </label>
+
+          <label class="flex flex-col gap-2">
+            <span class="text-xs text-muted">Issue date</span>
+            <input
+              type="date"
+              formControlName="issueDate"
+              [attr.aria-invalid]="isInvalid('issueDate')"
+              [attr.aria-describedby]="isInvalid('issueDate') ? 'issueDate-error' : null"
+              class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm tabular-nums caret-accent-500 hover:border-neutral-500"
+              [class.border-neutral-600]="!isInvalid('issueDate')"
+              [class.border-revoked]="isInvalid('issueDate')"
+            />
+            @if (isInvalid("issueDate")) {
+              <span id="issueDate-error" class="text-xs text-revoked">
+                {{ errorFor("issueDate", "Issue date is required.") }}
+              </span>
+            }
+          </label>
+        </div>
+
+        <label class="flex flex-col gap-2">
+          <span class="text-xs text-muted">Instructor name</span>
+          <input
+            formControlName="instructorName"
+            autocomplete="off"
+            [attr.aria-invalid]="isInvalid('instructorName')"
+            [attr.aria-describedby]="isInvalid('instructorName') ? 'instructorName-error' : null"
+            class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+            [class.border-neutral-600]="!isInvalid('instructorName')"
+            [class.border-revoked]="isInvalid('instructorName')"
+          />
+          @if (isInvalid("instructorName")) {
+            <span id="instructorName-error" class="text-xs text-revoked">
+              {{ errorFor("instructorName", "Instructor name is required.") }}
+            </span>
+          }
+        </label>
+      </div>
+
+      <fieldset class="m-0 flex flex-col gap-5 rounded-md border-0 bg-surface p-7 shadow-e1">
+        <legend id="template-group-label" class="float-left mb-5 w-full p-0 text-xs text-muted">
+          Template
+        </legend>
+
+        <div class="grid gap-5 sm:grid-cols-3" role="radiogroup" aria-labelledby="template-group-label">
+          @for (option of templates; track option) {
+            <button
+              type="button"
+              role="radio"
+              [attr.data-template]="option"
+              [attr.aria-checked]="form.controls.template.value === option"
+              [tabIndex]="tabIndexFor(option)"
+              (click)="selectTemplate(option)"
+              (keydown)="onTemplateKeydown($event)"
+              class="flex flex-col gap-4 rounded-md border p-4 text-left hover:border-accent-600"
+              [class.border-accent-500]="form.controls.template.value === option"
+              [class.bg-accent-900]="form.controls.template.value === option"
+              [class.border-neutral-700]="form.controls.template.value !== option"
+            >
+              @switch (option) {
+                @case ("CLASSIC") {
+                  <app-classic-thumbnail />
+                }
+                @case ("MODERN") {
+                  <app-modern-thumbnail />
+                }
+                @case ("MINIMAL") {
+                  <app-minimal-thumbnail />
+                }
+              }
+
+              <span class="flex items-center justify-between gap-3">
+                <span class="text-sm font-medium">{{ templateLabels[option] }}</span>
+                @if (form.controls.template.value === option) {
+                  <svg class="size-6 flex-none text-accent-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M5 12.5l4.5 4.5L19 7.5" />
+                  </svg>
+                }
+              </span>
+            </button>
+          }
+        </div>
+      </fieldset>
+
+      <div class="flex flex-wrap items-center gap-4">
+        <button
+          type="submit"
+          [disabled]="submitting()"
+          class="inline-flex min-h-(--size-touch-target) items-center gap-3 rounded-md border border-accent-500 px-6 text-sm font-medium text-accent-500 hover:bg-accent-900 active:bg-accent-800 disabled:pointer-events-none disabled:opacity-45"
+        >
           @if (submitting()) {
-            <mat-spinner diameter="20" />
+            <span class="size-6 animate-spin rounded-full border-2 border-accent-800 border-t-accent-500"></span>
+            Saving…
           } @else {
             Save
           }
         </button>
 
-        @if (isEditMode && isAdmin()) {
-          <button mat-button type="button" color="warn" (click)="confirmDelete()">Delete</button>
-        }
+        <a
+          routerLink="/certificates"
+          class="inline-flex min-h-(--size-touch-target) items-center rounded-md border border-neutral-600 px-6 text-sm font-medium text-text no-underline hover:bg-neutral-900 active:bg-neutral-800"
+        >
+          Cancel
+        </a>
       </div>
     </form>
   }

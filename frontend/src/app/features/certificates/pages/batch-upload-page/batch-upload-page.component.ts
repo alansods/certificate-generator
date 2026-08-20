@@ -1,12 +1,28 @@
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from "@angular/core";
-import { MatButtonModule } from "@angular/material/button";
-import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
-import { MatTableModule } from "@angular/material/table";
+import { RouterLink } from "@angular/router";
 import { finalize } from "rxjs";
 import { toProblemDetail } from "../../../../core/http/problem-detail";
 import { BatchImportResponse, BatchRowError } from "../../data/batch-import-response";
 import { CertificatesApi } from "../../data/certificates.api";
+
+function isCsv(file: File): boolean {
+  return file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv";
+}
+
+/**
+ * RFC 4180 quoting, plus a guard against formula injection.
+ *
+ * A reason beginning with `=`, `+`, `-`, `@`, a tab or a carriage return is evaluated as a live
+ * formula by Excel and Sheets — quoting does not prevent it, because the parser strips the quotes
+ * before deciding. The reasons are server-authored today and all three producers happen to prefix
+ * the attacker-controlled part, but that is an unstated invariant in a file this exporter does not
+ * own, one message reword away from failing.
+ */
+function escapeCsvField(value: string): string {
+  const guarded = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return /[",\r\n]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
+}
 
 function saveBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
@@ -23,19 +39,19 @@ function saveBlob(blob: Blob, filename: string): void {
 
 @Component({
   selector: "app-batch-upload-page",
-  imports: [MatButtonModule, MatProgressSpinnerModule, MatTableModule],
+  imports: [RouterLink],
   templateUrl: "./batch-upload-page.component.html",
-  styleUrl: "./batch-upload-page.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BatchUploadPageComponent {
   private readonly certificatesApi = inject(CertificatesApi);
   private readonly destroyRef = inject(DestroyRef);
 
-  protected readonly displayedColumns = ["line", "reason"];
-
   protected readonly selectedFile = signal<File | null>(null);
   protected readonly uploading = signal(false);
+  /** Null while the body length is unknown, which the bar renders as indeterminate. */
+  protected readonly uploadPercent = signal<number | null>(null);
+  protected readonly isDragging = signal(false);
   protected readonly result = signal<BatchImportResponse | null>(null);
   protected readonly error = signal<string | null>(null);
 
@@ -56,6 +72,7 @@ export class BatchUploadPageComponent {
 
     this.error.set(null);
     this.uploading.set(true);
+    this.uploadPercent.set(null);
     this.certificatesApi
       .uploadBatch(file)
       .pipe(
@@ -63,10 +80,22 @@ export class BatchUploadPageComponent {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (response) => this.result.set(response),
+        next: (event) => {
+          if (event.kind === "progress") {
+            this.uploadPercent.set(event.percent);
+          } else {
+            this.result.set(event.response);
+          }
+        },
         error: (err: unknown) => {
           const problem = toProblemDetail(err);
-          this.error.set(problem.detail ?? "Could not upload this file. Please try again.");
+          // `toProblemDetail` reports anything that is not an HTTP failure as status 0, "Could
+          // not reach the server" — wrong for a server that answered with an unusable body.
+          const hasServerResponse = problem.status !== 0;
+          this.error.set(
+            (hasServerResponse ? problem.detail : null) ??
+              "Could not upload this file. Please try again.",
+          );
         },
       });
   }
@@ -75,12 +104,60 @@ export class BatchUploadPageComponent {
     this.selectedFile.set(null);
     this.result.set(null);
     this.error.set(null);
+    this.uploadPercent.set(null);
+  }
+
+  protected onDragOver(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragging.set(true);
+  }
+
+  protected onDragLeave(event: DragEvent): void {
+    // Crossing onto the icon or the copy inside the drop area is not leaving it.
+    const area = event.currentTarget as HTMLElement;
+    if (area.contains(event.relatedTarget as Node | null)) {
+      return;
+    }
+    this.isDragging.set(false);
+  }
+
+  protected onDrop(event: DragEvent): void {
+    event.preventDefault();
+    this.isDragging.set(false);
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) {
+      return;
+    }
+    // The picker constrains to .csv; dropping has to constrain to the same thing, or a dropped
+    // PDF travels all the way to the server just to come back rejected.
+    if (!isCsv(file)) {
+      this.error.set("That file is not a CSV. Choose a .csv file exported from your spreadsheet.");
+      return;
+    }
+    this.selectedFile.set(file);
+  }
+
+  /**
+   * Built here rather than fetched: the failed rows are already in the response the page is
+   * showing, so a round trip would only be a chance for the two to disagree.
+   */
+  protected downloadErrorReport(): void {
+    const errors = this.sortedErrors();
+    if (errors.length === 0) {
+      return;
+    }
+    const rows = [["line", "reason"], ...errors.map((row) => [String(row.line), row.reason])];
+    const csv = rows.map((row) => row.map(escapeCsvField).join(",")).join("\r\n");
+    saveBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), "batch-import-errors.csv");
   }
 
   protected downloadTemplate(): void {
     this.certificatesApi
       .downloadTemplate()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((blob) => saveBlob(blob, "certificate-batch-template.csv"));
+      .subscribe({
+        next: (blob) => saveBlob(blob, "certificate-batch-template.csv"),
+        error: () => this.error.set("Could not download the sample CSV. Please try again."),
+      });
   }
 }

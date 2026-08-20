@@ -68,6 +68,17 @@ cd frontend && npm run lint && npm test
 npx -y @fission-ai/openspec@latest validate --strict
 ```
 
+## Signing in locally
+
+The `dev` profile seeds an ADMIN on first start through `AdminBootstrapRunner`, so a local
+database that has never had a user gets `admin@example.com` / `changeme123` from
+`application-dev.yml`. Local placeholder, not a secret — production reads
+`ADMIN_BOOTSTRAP_EMAIL` and `ADMIN_BOOTSTRAP_PASSWORD` from the environment instead, and the
+runner no-ops once any user exists.
+
+The agent cannot type a password, so any verification that needs a signed-in session has to
+start with the owner signing in once in the browser.
+
 ## Session hygiene
 
 Update this file and the docs in `docs/` at the end of every session when decisions change. Stale context is worse than no context.

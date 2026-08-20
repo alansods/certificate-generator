@@ -135,6 +135,25 @@ describe("CertificatePreviewPageComponent", () => {
     expect(URL.createObjectURL).toHaveBeenCalled();
   });
 
+  it("renders the document as a PDF whatever content type the response claims", async () => {
+    const fixture = setup();
+    const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:fake");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    fixture.detectChanges();
+    flushCertificate();
+
+    // A blob: URL in an iframe inherits this document's origin, so a body arriving as text/html
+    // would be same-origin script. The type must not come from a header we do not control.
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates/7/pdf"))
+      .flush(new Blob(["<script>alert(1)<\/script>"], { type: "text/html" }));
+    await tick();
+    fixture.detectChanges();
+
+    const blob = createObjectURL.mock.calls.at(-1)?.[0] as Blob;
+    expect(blob.type).toBe("application/pdf");
+  });
+
   it("names the certificate being previewed, not just its code", async () => {
     const fixture = setup();
     fixture.detectChanges();

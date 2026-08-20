@@ -1,5 +1,16 @@
 ## MODIFIED Requirements
 
+### Requirement: Sample CSV template download
+The system SHALL let a user download the sample CSV template from the batch upload page, and SHALL report a failed download rather than appearing to do nothing.
+
+#### Scenario: Downloading the template
+- **WHEN** a user selects the "Download sample CSV" action
+- **THEN** the file at `GET /api/v1/certificates/batch/template.csv` is downloaded
+
+#### Scenario: The template cannot be downloaded
+- **WHEN** the sample CSV request fails
+- **THEN** a message says so, rather than the action appearing to do nothing
+
 ### Requirement: Per-row import result display
 The system SHALL display the batch import result without treating partial row failures as an upload failure, presenting the total, created and failed counts as three distinct figures.
 

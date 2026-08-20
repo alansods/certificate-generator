@@ -346,6 +346,20 @@ describe("BatchUploadPageComponent", () => {
     expect(dropArea?.className).toContain("has-[:focus-visible]:border-accent-500");
   });
 
+  it("reports a sample CSV download that fails, rather than appearing to do nothing", () => {
+    const fixture = setup();
+    fixture.detectChanges();
+
+    button(fixture, "Download sample CSV")?.click();
+
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/certificates/batch/template.csv"))
+      .flush(null, { status: 500, statusText: "Internal Server Error" });
+    fixture.detectChanges();
+
+    expect(el(fixture).textContent).toContain("Could not download the sample CSV");
+  });
+
   it("refuses a dropped file that is not a CSV, rather than letting the server refuse it", () => {
     const fixture = setup();
     fixture.detectChanges();

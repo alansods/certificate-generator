@@ -15,6 +15,10 @@ The system SHALL identify the certificate being previewed and SHALL offer, along
 - **WHEN** a user selects the back action on the preview page
 - **THEN** the application navigates to the certificate list
 
+#### Scenario: The document is always treated as a PDF
+- **WHEN** the certificate document is rendered inline
+- **THEN** it is presented as a PDF regardless of the content type the response claims, since the inline document runs in the application's own origin
+
 #### Scenario: PDF is still being fetched
 - **WHEN** the PDF request is in flight
 - **THEN** a placeholder in the printed page's aspect ratio is shown with a message that the PDF is being generated, and the page layout does not shift when the document arrives

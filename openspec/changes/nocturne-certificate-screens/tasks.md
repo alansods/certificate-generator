@@ -66,7 +66,7 @@
 
 - [x] 6c.10 Guard the error report against CSV formula injection: a reason beginning with `=`, `+`, `-`, `@`, tab or CR is executed by Excel and Sheets, and RFC 4180 quoting does not stop it because the parser strips the quotes first. Only the backend's habit of prefixing its messages was preventing it — an unstated invariant in a file this exporter does not own. Specified and tested; the test fails without the guard.
 - [x] 6c.11 Pin the preview blob's MIME type instead of taking it from the response header. A `blob:` URL in an iframe inherits this document's origin, so a body arriving as `text/html` would be same-origin script holding a live session. The backend pins `application/pdf` today; the frontend no longer depends on that.
-- [x] 6c.12 A failed sample-CSV download now says so rather than failing silently.
+- [x] 6c.12 A failed sample-CSV download now says so rather than failing silently — specified under `Sample CSV template download` and tested, after the spec reviewer caught it shipping as unspecified, untested user-visible behavior. The pinned PDF type in 6c.11 had the same gap and got the same treatment: a scenario, and a test that flushes the document as `text/html` and asserts the blob is still `application/pdf`.
 - [ ] 6c.13 **Not taken:** a client-side file size check before upload. The server caps uploads at 2MB through `spring.servlet.multipart.max-file-size`; duplicating that number in the frontend would drift and start rejecting files the server accepts. Worth doing if the limit is ever exposed by the API.
 
 ## 7. Verification

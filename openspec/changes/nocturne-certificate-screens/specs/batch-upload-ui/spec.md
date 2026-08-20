@@ -54,3 +54,7 @@ The system SHALL let a user save the failed rows of an import as a CSV file, gen
 #### Scenario: No failures
 - **WHEN** an import result has no failed rows
 - **THEN** no error report action is offered
+
+#### Scenario: A reason a spreadsheet would execute
+- **WHEN** a failure reason begins with a character that spreadsheet software treats as the start of a formula
+- **THEN** it is written so the spreadsheet reads it as text, since the report is opened in Excel or Sheets by whoever produced the file

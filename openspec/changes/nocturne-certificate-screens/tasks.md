@@ -37,7 +37,7 @@
 - [x] 5.4 Remove the Material Icons stylesheet link from `frontend/src/index.html`; every icon is inline SVG by now. The two `fonts.googleapis.com`/`fonts.gstatic.com` preconnect hints went with it — they existed only for that stylesheet, and Inter is served locally from `@fontsource`.
 - [x] 5.5 `frontend/src/styles.spec.ts`: drop the assertions about the Material mapping along with the mapping, keep the token-layer ones.
 - [x] 5.6 Confirm no `::ng-deep` was added anywhere during the migration.
-- [x] 5.7 Re-check the bundle: with Material gone the initial budget overrun in `angular.json` should have closed. Tighten the budget to the new size rather than leaving a warning nobody reads. It did not fully close — 783.03 kB to 549.12 kB, still over the old 500 kB warning. The budget is now 560 kB warning / 620 kB error, set to what the app actually is rather than to an aspiration that was warning on every build.
+- [x] 5.7 Re-check the bundle: with Material gone the initial budget overrun in `angular.json` should have closed. Tighten the budget to the new size rather than leaving a warning nobody reads. It did not fully close — 783.03 kB to 549.28 kB, still over the old 500 kB warning. The budget is now 560 kB warning / 620 kB error, set to what the app actually is rather than to an aspiration that was warning on every build.
 
 ## 6. Tests
 
@@ -63,6 +63,11 @@
 
 - [x] 6c.8 The error list's rows went back to real table layout. Making them `display: grid` blockified the `<tr>`, and Blink and WebKit take the row and cell roles from the layout object — so the "accessible" table exposed no rows at all, worse than the div-with-roles version it replaced. Column widths come from a `<colgroup>` now; verified in the browser as `table-row`/`table-cell` with the line column at exactly 88px.
 - [x] 6c.9 Test the null-body path, and stop reporting a server that answered with an unusable body as "could not reach the server".
+
+- [x] 6c.10 Guard the error report against CSV formula injection: a reason beginning with `=`, `+`, `-`, `@`, tab or CR is executed by Excel and Sheets, and RFC 4180 quoting does not stop it because the parser strips the quotes first. Only the backend's habit of prefixing its messages was preventing it — an unstated invariant in a file this exporter does not own. Specified and tested; the test fails without the guard.
+- [x] 6c.11 Pin the preview blob's MIME type instead of taking it from the response header. A `blob:` URL in an iframe inherits this document's origin, so a body arriving as `text/html` would be same-origin script holding a live session. The backend pins `application/pdf` today; the frontend no longer depends on that.
+- [x] 6c.12 A failed sample-CSV download now says so rather than failing silently.
+- [ ] 6c.13 **Not taken:** a client-side file size check before upload. The server caps uploads at 2MB through `spring.servlet.multipart.max-file-size`; duplicating that number in the frontend would drift and start rejecting files the server accepts. Worth doing if the limit is ever exposed by the API.
 
 ## 7. Verification
 

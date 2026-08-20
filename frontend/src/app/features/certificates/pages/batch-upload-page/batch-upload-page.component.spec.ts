@@ -231,6 +231,7 @@ describe("BatchUploadPageComponent", () => {
     await tick();
     fixture.detectChanges();
 
+    createObjectURL.mockClear();
     button(fixture, "Download error report")?.click();
 
     // No second request: the report is built from the response the page is already showing.
@@ -242,6 +243,35 @@ describe("BatchUploadPageComponent", () => {
     await expect(blob.text()).resolves.toBe(
       'line,reason\r\n2,invalid workloadHours\r\n3,"reason with a comma, a ""quote"" and more"',
     );
+  });
+
+  it("neutralizes a reason that a spreadsheet would run as a formula", async () => {
+    const fixture = setup();
+    const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:fake");
+    vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    fixture.detectChanges();
+    startUpload(fixture);
+    flushImport({
+      totalRows: 2,
+      successCount: 0,
+      errorCount: 2,
+      errors: [
+        { line: 2, reason: '=HYPERLINK("http://evil.example","click")' },
+        { line: 3, reason: "+1+1" },
+      ],
+    });
+    await tick();
+    fixture.detectChanges();
+
+    createObjectURL.mockClear();
+    button(fixture, "Download error report")?.click();
+
+    const blob = createObjectURL.mock.calls[0]?.[0] as Blob;
+    const csv = await blob.text();
+    // Prefixed with an apostrophe so Excel and Sheets treat them as text. Quoting alone does not
+    // help: the parser strips the quotes before deciding whether it has a formula.
+    expect(csv).toContain(`2,"'=HYPERLINK(""http://evil.example"",""click"")"`);
+    expect(csv).toContain("3,'+1+1");
   });
 
   it("offers the list once an import has produced certificates", async () => {

@@ -55,7 +55,11 @@ export class CertificatePreviewPageComponent {
         next: ({ certificate, blob }) => {
           this.certificate.set(certificate);
           this.blob = blob;
-          this.objectUrl = URL.createObjectURL(blob);
+          // Pinned rather than taken from the response's Content-Type: a `blob:` URL in an
+          // iframe inherits this document's origin, so a body arriving as text/html would be
+          // same-origin script holding a live session. The backend pins application/pdf today;
+          // this makes the frontend stop depending on that.
+          this.objectUrl = URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
           this.pdfUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.objectUrl));
         },
         error: () => this.error.set(true),

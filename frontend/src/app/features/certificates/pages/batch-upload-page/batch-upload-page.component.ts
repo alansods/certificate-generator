@@ -10,9 +10,18 @@ function isCsv(file: File): boolean {
   return file.name.toLowerCase().endsWith(".csv") || file.type === "text/csv";
 }
 
-/** RFC 4180: quote anything holding a comma, a quote or a newline, and double the quotes. */
+/**
+ * RFC 4180 quoting, plus a guard against formula injection.
+ *
+ * A reason beginning with `=`, `+`, `-`, `@`, a tab or a carriage return is evaluated as a live
+ * formula by Excel and Sheets — quoting does not prevent it, because the parser strips the quotes
+ * before deciding. The reasons are server-authored today and all three producers happen to prefix
+ * the attacker-controlled part, but that is an unstated invariant in a file this exporter does not
+ * own, one message reword away from failing.
+ */
 function escapeCsvField(value: string): string {
-  return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  const guarded = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return /[",\r\n]/.test(guarded) ? `"${guarded.replace(/"/g, '""')}"` : guarded;
 }
 
 function saveBlob(blob: Blob, filename: string): void {
@@ -82,9 +91,9 @@ export class BatchUploadPageComponent {
           const problem = toProblemDetail(err);
           // `toProblemDetail` reports anything that is not an HTTP failure as status 0, "Could
           // not reach the server" — wrong for a server that answered with an unusable body.
-          const isTransportFailure = problem.status !== 0;
+          const hasServerResponse = problem.status !== 0;
           this.error.set(
-            (isTransportFailure ? problem.detail : null) ??
+            (hasServerResponse ? problem.detail : null) ??
               "Could not upload this file. Please try again.",
           );
         },
@@ -146,6 +155,9 @@ export class BatchUploadPageComponent {
     this.certificatesApi
       .downloadTemplate()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((blob) => saveBlob(blob, "certificate-batch-template.csv"));
+      .subscribe({
+        next: (blob) => saveBlob(blob, "certificate-batch-template.csv"),
+        error: () => this.error.set("Could not download the sample CSV. Please try again."),
+      });
   }
 }

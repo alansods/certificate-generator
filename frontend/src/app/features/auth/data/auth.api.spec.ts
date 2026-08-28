@@ -98,4 +98,23 @@ describe("AuthApi", () => {
     });
     req.flush(null, { status: 204, statusText: "No Content" });
   });
+
+  it("forgotPassword posts the email", () => {
+    let completed = false;
+    api.forgotPassword("jane@example.com").subscribe(() => (completed = true));
+
+    const req = httpMock.expectOne((r) => r.url.endsWith("/api/v1/auth/forgot-password"));
+    expect(req.request.body).toEqual({ email: "jane@example.com" });
+    req.flush(null, { status: 202, statusText: "Accepted" });
+
+    expect(completed).toBe(true);
+  });
+
+  it("resetPassword posts the token and the new password", () => {
+    api.resetPassword("raw-token", "brand-new1").subscribe();
+
+    const req = httpMock.expectOne((r) => r.url.endsWith("/api/v1/auth/reset-password"));
+    expect(req.request.body).toEqual({ token: "raw-token", newPassword: "brand-new1" });
+    req.flush(null, { status: 204, statusText: "No Content" });
+  });
 });

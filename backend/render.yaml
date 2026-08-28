@@ -33,3 +33,18 @@ services:
         sync: false
       - key: ADMIN_BOOTSTRAP_PASSWORD
         sync: false
+      # All optional: unset, password resets log the link instead of emailing it (see
+      # docs/deployment.md "Password reset email" and openspec design.md "The mail abstraction").
+      # Set APP_MAIL_PROVIDER=smtp plus the four below once an SMTP provider is chosen.
+      - key: APP_MAIL_PROVIDER
+        sync: false
+      - key: APP_MAIL_FROM
+        sync: false
+      - key: APP_MAIL_HOST
+        sync: false
+      - key: APP_MAIL_PORT
+        sync: false
+      - key: APP_MAIL_USERNAME
+        sync: false
+      - key: APP_MAIL_PASSWORD
+        sync: false

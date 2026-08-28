@@ -1,13 +1,16 @@
 package com.certificategenerator.auth;
 
 import com.certificategenerator.auth.dto.ChangePasswordRequest;
+import com.certificategenerator.auth.dto.ForgotPasswordRequest;
 import com.certificategenerator.auth.dto.LoginRequest;
 import com.certificategenerator.auth.dto.RefreshRequest;
 import com.certificategenerator.auth.dto.RegisterRequest;
 import com.certificategenerator.auth.dto.RegistrationStatusResponse;
+import com.certificategenerator.auth.dto.ResetPasswordRequest;
 import com.certificategenerator.auth.dto.TokenPairResponse;
 import com.certificategenerator.auth.dto.UpdateProfileRequest;
 import com.certificategenerator.auth.dto.UserResponse;
+import com.certificategenerator.auth.reset.PasswordResetService;
 import com.certificategenerator.web.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -26,12 +29,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
     private final UserMapper userMapper;
     private final ClientIpResolver clientIpResolver;
 
     public AuthController(
-            AuthService authService, UserMapper userMapper, ClientIpResolver clientIpResolver) {
+            AuthService authService,
+            PasswordResetService passwordResetService,
+            UserMapper userMapper,
+            ClientIpResolver clientIpResolver) {
         this.authService = authService;
+        this.passwordResetService = passwordResetService;
         this.userMapper = userMapper;
         this.clientIpResolver = clientIpResolver;
     }
@@ -50,6 +58,21 @@ public class AuthController {
     @GetMapping("/registration-enabled")
     public RegistrationStatusResponse registrationEnabled() {
         return new RegistrationStatusResponse(authService.isRegistrationEnabled());
+    }
+
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request, HttpServletRequest httpRequest) {
+        passwordResetService.requestReset(request.email(), clientIpResolver.resolve(httpRequest));
+    }
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request, HttpServletRequest httpRequest) {
+        passwordResetService.completeReset(
+                request.token(), request.newPassword(), clientIpResolver.resolve(httpRequest));
     }
 
     @PostMapping("/login")

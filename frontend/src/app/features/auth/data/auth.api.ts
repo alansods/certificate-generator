@@ -71,4 +71,14 @@ export class AuthApi {
       refreshToken,
     });
   }
+
+  /** Always resolves (202) whether or not the address has an account — see
+   * openspec/changes/password-reset/design.md "Always answering 202". */
+  forgotPassword(email: string): Observable<void> {
+    return this.http.post<void>(`${this.apiBaseUrl}/api/v1/auth/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, newPassword: string): Observable<void> {
+    return this.http.post<void>(`${this.apiBaseUrl}/api/v1/auth/reset-password`, { token, newPassword });
+  }
 }

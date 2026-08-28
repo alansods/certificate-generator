@@ -121,6 +121,16 @@ public class RefreshTokenService {
                 user, kept.getTokenHash(), Instant.now());
     }
 
+    /**
+     * Revokes every refresh token for {@code user}, with no exception — used by a completed
+     * password reset, where the person resetting is not signed in and the whole premise is that
+     * someone else might be (see openspec design.md "Revoking sessions on reset").
+     */
+    @Transactional
+    public void revokeAll(User user) {
+        refreshTokenRepository.revokeAllForUser(user, Instant.now());
+    }
+
     private RefreshToken findByRawTokenOrThrow(String rawToken) {
         return refreshTokenRepository
                 .findByTokenHash(hash(rawToken))

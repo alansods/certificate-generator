@@ -45,8 +45,8 @@
 
 ## 7. Configuration, documentation and verification
 
-- [x] 7.1 `application.yml`: the mail block and the new rate limits, with no secret committed. (A single block works for every profile — `app.mail.*` values are all environment-variable-backed with a safe `logging`/empty default, so no `application-dev.yml`/`application-prod.yml` override was needed.)
-- [x] 7.2 `docs/deployment.md`'s Render environment variable table and `backend/render.yaml`: the five `APP_MAIL_*` variables, all optional. `docs/PLAN.md`'s decision log records why this ships without a chosen provider.
+- [x] 7.1 `application.yml`: the mail block and the new rate limits, with no secret committed. `app.mail.*` values are environment-variable-backed with a safe `logging`/empty default for `dev` and tests; `application-prod.yml` overrides `app.mail.provider` to have no default at all, so the `prod` profile fails fast instead of silently inheriting the logging fallback (mirrors `app.jwt.secret`'s existing no-default pattern in the same file).
+- [x] 7.2 `docs/deployment.md`'s Render environment variable table and `backend/render.yaml`: the five `APP_MAIL_*` variables — `APP_MAIL_PROVIDER` required in production (the backend won't start without it), the four SMTP-specific ones required once it's set to `smtp`. `docs/PLAN.md`'s decision log records why this ships without a chosen provider while still requiring one to boot in production.
 - [x] 7.3 `docs/api-reference.md`: both endpoints, including the always-202 behavior and why.
 - [x] 7.4 `cd backend && ./mvnw verify` and `cd frontend && npm run build && npm run lint && npm test` all pass.
 - [x] 7.5 End to end in `dev`: requested a reset for the seeded admin through the real UI, took the link from the backend log, set a new password, confirmed the old password now fails and the new one works via `curl`, then restored the original password the same way.

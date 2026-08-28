@@ -34,8 +34,12 @@ describe("SignupPageComponent", () => {
     return element;
   }
 
-  function setup() {
+  function setup(registrationEnabled = true) {
     const fixture = TestBed.createComponent(SignupPageComponent);
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/auth/registration-enabled"))
+      .flush({ enabled: registrationEnabled });
     fixture.detectChanges();
     const nativeElement = fixture.nativeElement as HTMLElement;
     return {
@@ -105,6 +109,21 @@ describe("SignupPageComponent", () => {
     expect(navigateSpy).not.toHaveBeenCalled();
     expect(fields.emailInput.getAttribute("aria-invalid")).toBe("true");
     expect(fields.nativeElement.textContent).toContain("That email can't be used.");
+  });
+
+  it("clears the password fields but keeps the other fields on a 409", () => {
+    const fields = setup();
+
+    fillValidFormAndSubmit(fields);
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/auth/register"))
+      .flush({ status: 409, title: "Conflict" }, { status: 409, statusText: "Conflict" });
+    fields.fixture.detectChanges();
+
+    expect(fields.passwordInput.value).toBe("");
+    expect(fields.confirmPasswordInput.value).toBe("");
+    expect(fields.fullNameInput.value).toBe("Jane Doe");
+    expect(fields.emailInput.value).toBe("jane@example.com");
   });
 
   it("clears the taken-email error once the email is edited", () => {
@@ -187,6 +206,23 @@ describe("SignupPageComponent", () => {
     expect(fields.nativeElement.textContent).not.toContain("Passwords do not match.");
   });
 
+  it("updates the confirm-password message once a non-blank mismatch is typed after a blank submit", () => {
+    const fields = setup();
+    type(fields.fullNameInput, "Jane Doe");
+    type(fields.emailInput, "jane@example.com");
+    type(fields.passwordInput, "correct-horse1");
+
+    fields.form.dispatchEvent(new Event("submit"));
+    fields.fixture.detectChanges();
+    expect(fields.nativeElement.textContent).toContain("Confirm your password.");
+
+    type(fields.confirmPasswordInput, "different-horse2");
+    fields.fixture.detectChanges();
+
+    expect(fields.nativeElement.textContent).toContain("Passwords do not match.");
+    expect(fields.nativeElement.textContent).not.toContain("Confirm your password.");
+  });
+
   it("reports a filled but different confirmation as a mismatch", () => {
     const fields = setup();
     type(fields.fullNameInput, "Jane Doe");
@@ -237,5 +273,31 @@ describe("SignupPageComponent", () => {
     httpMock
       .expectOne((r) => r.url.endsWith("/api/v1/auth/register"))
       .flush({ accessToken: "a", refreshToken: "r", expiresIn: 900 });
+  });
+
+  it("shows the disabled notice instead of the form when registration is disabled", () => {
+    const fixture = TestBed.createComponent(SignupPageComponent);
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/auth/registration-enabled"))
+      .flush({ enabled: false });
+    fixture.detectChanges();
+    const nativeElement = fixture.nativeElement as HTMLElement;
+
+    expect(nativeElement.querySelector("form")).toBeNull();
+    expect(nativeElement.textContent).toContain("Self-registration is currently disabled.");
+    // The sign-in link must still show either way.
+    expect(nativeElement.querySelector("a[href='/login']")).not.toBeNull();
+  });
+
+  it("still shows the form if the registration-enabled lookup fails", () => {
+    const fixture = TestBed.createComponent(SignupPageComponent);
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/auth/registration-enabled"))
+      .flush(null, { status: 500, statusText: "Internal Server Error" });
+    fixture.detectChanges();
+
+    expect(requireElement<HTMLFormElement>(fixture.nativeElement, "form")).toBeTruthy();
   });
 });

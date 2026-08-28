@@ -18,7 +18,7 @@
 ## 3. Frontend
 
 - [x] 3.1 `AuthApi.register()` storing the returned tokens, and `AuthApi.registrationEnabled()`.
-- [x] 3.2 `features/auth/pages/signup-page/`: the form from the mockup — full name, work email, password and confirmation in a two-column row, the policy hint, the USER-role note, and the link back to sign in.
+- [x] 3.2 `features/auth/pages/signup-page/`: the form from the mockup — full name, work email, password and confirmation stacked single-column (matching login-page's rhythm), the policy hint, the USER-role note, and the link back to sign in.
 - [x] 3.3 Client-side validation mirroring the policy, plus the confirmation match; 409 and 429 handled as their own states.
 - [x] 3.4 `app.routes.ts`: public `signup` route.
 - [x] 3.5 Login screen: the "No account? Create one" link, hidden when registration is disabled.
@@ -35,3 +35,5 @@
 - [x] 5.3 `cd backend && ./mvnw verify` and `cd frontend && npm run build && npm run lint && npm test` all pass.
 - [x] 5.4 End to end against the running stack: signed up through the real UI, landed on the certificate list signed in as the new `USER` account, confirmed the sidebar shows the new name and role. Confirmed the duplicate-email 409 marks the email field in the real browser too. The disabled-flag behavior (404 on submit, link hidden) is covered by `RegistrationDisabledIntegrationTest` and `login-page.component.spec.ts` instead of a manual restart-with-different-config pass — same reasoning as `user-profile`'s verification.
 - [x] 5.5 `npx -y @fission-ai/openspec@latest validate user-signup --type change --strict` passes.
+
+A second review pass fixed real bugs (register rate-limit bypass, BCrypt 72-byte crash, missing case-insensitive email migration, stuck confirm-password message) and closed several spec gaps.

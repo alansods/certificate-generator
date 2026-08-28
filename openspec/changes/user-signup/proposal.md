@@ -21,6 +21,7 @@ The redesign adds a sign-up screen, and the owner confirmed it is in scope. New 
 
 ### Modified Capabilities
 - `auth` — gains self-registration, its password policy, its rate limit and its configuration flag. See `specs/auth/spec.md`.
+- `login-page` — gains the "No account? Create one" link, shown only while self-registration is enabled. See `specs/login-page/spec.md`.
 
 ## Impact
 

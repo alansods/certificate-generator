@@ -107,7 +107,13 @@ public class AuthService {
      * Rate limited per client IP (unauthenticated, like login) rather than per email: an
      * unauthenticated caller can supply any email, so keying on it would let an attacker reset
      * their own bucket by rotating the address on every probe. See design.md "Account-existence
-     * disclosure" for why a duplicate email is reported as 409 rather than hidden.
+     * disclosure" for why a duplicate email is reported as 409 rather than hidden. Unlike
+     * login/refresh/password-change/profile-update, this bucket counts EVERY attempt, including
+     * success: a successful registration proves nothing about a probed email the way a successful
+     * login proves the credential presented was real, so clearing the bucket on success would let
+     * an attacker probe a candidate email, register a fresh throwaway account to reset the
+     * counter, and repeat indefinitely — defeating both the rate limit and the 409-email-oracle
+     * mitigation it exists to bound.
      */
     @Transactional
     public TokenPairResponse register(String fullName, String email, String password, String clientIp) {
@@ -118,23 +124,22 @@ public class AuthService {
         if (rateLimiter.isBlocked(rateLimitKey, registerMaxAttempts, registerWindow)) {
             throw new RateLimitExceededException("Too many registration attempts, try again later");
         }
+        rateLimiter.recordFailure(rateLimitKey, registerWindow);
 
         String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
         if (userRepository.findByEmail(normalizedEmail).isPresent()) {
-            rateLimiter.recordFailure(rateLimitKey, registerWindow);
             throw new EmailAlreadyRegisteredException("Email is already registered to another account");
         }
 
-        User user = new User(normalizedEmail, passwordEncoder.encode(password), fullName, Role.USER);
+        User user = new User(normalizedEmail, passwordEncoder.encode(password), fullName.trim(), Role.USER);
+        User saved;
         try {
-            User saved = userRepository.saveAndFlush(user);
-            rateLimiter.clear(rateLimitKey);
-            return issueTokenPair(saved);
+            saved = userRepository.saveAndFlush(user);
         } catch (DataIntegrityViolationException e) {
             // Same TOCTOU as updateProfile: the check above and this insert aren't atomic.
-            rateLimiter.recordFailure(rateLimitKey, registerWindow);
             throw new EmailAlreadyRegisteredException("Email is already registered to another account");
         }
+        return issueTokenPair(saved);
     }
 
     public TokenPairResponse refresh(String rawRefreshToken, String clientIp) {

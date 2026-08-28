@@ -137,6 +137,65 @@ class AuthServiceRegisterTest {
     }
 
     @Test
+    void nSuccessfulRegistrationsFromTheSameIpEventuallyTripTheRateLimit() {
+        AuthService authService = newAuthService(true);
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+
+        for (int i = 0; i < 10; i++) {
+            authService.register("Jane Doe", "jane" + i + "@example.com", "correct-horse1", CLIENT_IP);
+        }
+
+        assertThatThrownBy(
+                        () ->
+                                authService.register(
+                                        "Jane Doe", "jane-overflow@example.com", "correct-horse1", CLIENT_IP))
+                .isInstanceOf(RateLimitExceededException.class);
+    }
+
+    @Test
+    void aSuccessfulRegistrationDoesNotResetAPartiallySpentBucket() {
+        AuthService authService = newAuthService(true);
+        when(userRepository.findByEmail("jane0@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("jane1@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("jane2@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmail("taken@example.com"))
+                .thenReturn(Optional.of(new User("taken@example.com", "hash", "Existing", Role.USER)));
+
+        // Three successful registrations from distinct emails.
+        authService.register("Jane Doe", "jane0@example.com", "correct-horse1", CLIENT_IP);
+        authService.register("Jane Doe", "jane1@example.com", "correct-horse1", CLIENT_IP);
+        authService.register("Jane Doe", "jane2@example.com", "correct-horse1", CLIENT_IP);
+
+        // If success had cleared the bucket, exhausting the remaining budget would take another
+        // 10 duplicate-email failures. It should instead take only 7 (10 - 3 already spent) before
+        // the 8th call is blocked.
+        for (int i = 0; i < 7; i++) {
+            assertThatThrownBy(
+                            () ->
+                                    authService.register(
+                                            "Jane Doe", "taken@example.com", "correct-horse1", CLIENT_IP))
+                    .isInstanceOf(EmailAlreadyRegisteredException.class);
+        }
+
+        assertThatThrownBy(
+                        () ->
+                                authService.register(
+                                        "Jane Doe", "taken@example.com", "correct-horse1", CLIENT_IP))
+                .isInstanceOf(RateLimitExceededException.class);
+    }
+
+    @Test
+    void aDataIntegrityViolationFromIssuingTheRefreshTokenPropagatesAsIsRatherThanAsAConflict() {
+        AuthService authService = newAuthService(true);
+        when(userRepository.findByEmail("jane@example.com")).thenReturn(Optional.empty());
+        when(refreshTokenService.issue(any())).thenThrow(new DataIntegrityViolationException("token collision"));
+
+        assertThatThrownBy(
+                        () -> authService.register("Jane Doe", "jane@example.com", "correct-horse1", CLIENT_IP))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     void registerWhenDisabledThrowsWithoutTouchingTheRateLimiterOrRepository() {
         AuthService authService = newAuthService(false);
 

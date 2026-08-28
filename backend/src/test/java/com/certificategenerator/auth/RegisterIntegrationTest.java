@@ -7,6 +7,7 @@ import com.certificategenerator.auth.dto.RefreshRequest;
 import com.certificategenerator.auth.dto.RegisterRequest;
 import com.certificategenerator.auth.dto.RegistrationStatusResponse;
 import com.certificategenerator.auth.dto.TokenPairResponse;
+import com.certificategenerator.auth.dto.LoginRequest;
 import com.certificategenerator.auth.dto.UserResponse;
 import java.util.Locale;
 import java.util.Map;
@@ -23,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 /** Exercises POST /api/v1/auth/register and GET /api/v1/auth/registration-enabled end to end. */
 @Import(TestcontainersConfiguration.class)
@@ -34,6 +36,7 @@ class RegisterIntegrationTest {
 
     @Autowired private TestRestTemplate restTemplate;
     @Autowired private UserRepository userRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
 
     @Test
     void validRegistrationReturns201AndATokenPairAndStoresAUserRoleAccount() {
@@ -189,6 +192,38 @@ class RegisterIntegrationTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody().enabled()).isTrue();
+    }
+
+    @Test
+    void anAlreadyAuthenticatedCallerCanStillRegisterAndCheckTheRegistrationFlag() {
+        String callerEmail = "signup-caller-" + COUNTER.incrementAndGet() + "@example.com";
+        User caller = new User(callerEmail, passwordEncoder.encode("correct-horse1"), "Caller", Role.USER);
+        userRepository.save(caller);
+        TokenPairResponse callerTokens =
+                restTemplate
+                        .postForEntity(
+                                "/api/v1/auth/login",
+                                new LoginRequest(callerEmail, "correct-horse1"),
+                                TokenPairResponse.class)
+                        .getBody();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(callerTokens.accessToken());
+
+        ResponseEntity<TokenPairResponse> registerResponse =
+                restTemplate.exchange(
+                        "/api/v1/auth/register",
+                        HttpMethod.POST,
+                        new HttpEntity<>(new RegisterRequest("New User", nextEmail(), "correct-horse1"), headers),
+                        TokenPairResponse.class);
+        assertThat(registerResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        ResponseEntity<RegistrationStatusResponse> statusResponse =
+                restTemplate.exchange(
+                        "/api/v1/auth/registration-enabled",
+                        HttpMethod.GET,
+                        new HttpEntity<>(headers),
+                        RegistrationStatusResponse.class);
+        assertThat(statusResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
     }
 
     private static String nextEmail() {

@@ -7,7 +7,7 @@ import { AbstractControl, ValidationErrors } from "@angular/forms";
  * page's password change and the sign-up form — both enforce the same server-side rule.
  */
 export function passwordPolicyValidator(control: AbstractControl): ValidationErrors | null {
-  const value = control.value as string;
+  const value = typeof control.value === "string" ? control.value : "";
   if (!value) {
     return null;
   }

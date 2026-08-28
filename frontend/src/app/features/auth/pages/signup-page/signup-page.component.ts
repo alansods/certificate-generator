@@ -67,6 +67,13 @@ export class SignupPageComponent {
     return this.form.controls.password.invalid && this.form.controls.password.touched;
   });
 
+  protected readonly passwordErrorMessage = computed(() => {
+    this.formState();
+    return this.form.controls.password.hasError("required")
+      ? "A password is required."
+      : "At least 8 characters, including a digit.";
+  });
+
   /** Blank is reported as "required", not "mismatch" — see passwordsMatchValidator. */
   protected readonly confirmPasswordInvalid = computed(() => {
     this.formState();
@@ -78,11 +85,15 @@ export class SignupPageComponent {
   });
 
   protected readonly confirmPasswordErrorMessage = computed(() => {
-    if (this.form.controls.confirmPassword.hasError("required")) {
-      return "Confirm your password.";
-    }
-    return "Passwords do not match.";
+    this.formState();
+    return this.form.controls.confirmPassword.hasError("required")
+      ? "Confirm your password."
+      : "Passwords do not match.";
   });
+
+  // Optimistic default: showing the form and having submission fail is a smaller cost than
+  // blocking a real signup while this lookup is in flight. Mirrors login-page's own reasoning.
+  protected readonly registrationEnabled = signal(true);
 
   constructor() {
     // `statusChanges` does not emit when a control merely becomes touched, so a field blurred
@@ -90,6 +101,15 @@ export class SignupPageComponent {
     this.form.events
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.formState.update((tick) => tick + 1));
+
+    this.authApi
+      .registrationEnabled()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (enabled) => this.registrationEnabled.set(enabled),
+        // A failed lookup keeps the optimistic default rather than hiding the form.
+        error: () => undefined,
+      });
 
     // The 409 is a server-side fact about the value at submit time, not a client validator — it
     // has to be cleared explicitly once the user edits the field, or it would outlive the value
@@ -140,6 +160,8 @@ export class SignupPageComponent {
     if (problem.status === 409) {
       this.errorKind.set("email-taken");
       this.form.controls.email.markAsTouched();
+      this.form.controls.password.reset("");
+      this.form.controls.confirmPassword.reset("");
       this.formState.update((tick) => tick + 1);
       return;
     }

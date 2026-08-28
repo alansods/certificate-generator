@@ -19,6 +19,10 @@ The system SHALL let an unauthenticated client create a user account with the `U
 - **WHEN** a client uses the refresh token returned by registration
 - **THEN** it rotates under the same rules as a refresh token issued by login
 
+#### Scenario: Email differing only by case is the same address
+- **WHEN** a client sends POST /api/v1/auth/register with an email that differs only by letter case from one already registered
+- **THEN** the response is 409, treating the two addresses as the same account, and no second user is created
+
 ### Requirement: Password policy
 The system SHALL require every password it accepts to be at least 8 characters long and to contain at least one digit, and SHALL apply the same rule wherever a password is set.
 
@@ -47,3 +51,28 @@ The system SHALL expose a configuration flag that disables self-registration, an
 #### Scenario: Registration enabled
 - **WHEN** self-registration is enabled by configuration
 - **THEN** POST /api/v1/auth/register behaves as specified above
+
+#### Scenario: Reporting the flag when enabled
+- **WHEN** a client sends GET /api/v1/auth/registration-enabled while self-registration is enabled
+- **THEN** the response is 200 with `enabled` true
+
+#### Scenario: Reporting the flag when disabled
+- **WHEN** a client sends GET /api/v1/auth/registration-enabled while self-registration is disabled
+- **THEN** the response is 200 with `enabled` false
+
+## MODIFIED Requirements
+
+### Requirement: User login
+The system SHALL authenticate a user by email and password and, on success, issue an access token and a refresh token. Email matching SHALL be case-insensitive.
+
+#### Scenario: Valid credentials
+- **WHEN** a client sends POST /api/v1/auth/login with a registered email and the matching password
+- **THEN** the response is 200 with `accessToken`, `refreshToken` and `expiresIn`
+
+#### Scenario: Invalid credentials
+- **WHEN** a client sends POST /api/v1/auth/login with a wrong password or an unknown email
+- **THEN** the response is 401 and does not reveal whether the email or the password was wrong
+
+#### Scenario: Email differing only by case logs in the same account
+- **WHEN** a client sends POST /api/v1/auth/login with an email that differs only by letter case from the one the account was registered with, and the matching password
+- **THEN** the response is 200, treating the two addresses as the same account

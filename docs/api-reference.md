@@ -6,6 +6,8 @@ Base path `/api/v1`. JSON only. Errors follow RFC 7807 (`application/problem+jso
 
 | Method | Path | Access | Notes |
 |---|---|---|---|
+| POST | `/auth/register` | public | body `{fullName, email, password}` → `{accessToken, refreshToken, expiresIn}` (201). New accounts are always role `USER`. 409 if the email is already registered. Rate limited per client IP. 404 when self-registration is disabled. |
+| GET | `/auth/registration-enabled` | public | `{enabled}` — lets the client hide the sign-up links when self-registration is off. |
 | POST | `/auth/login` | public | body `{email, password}` → `{accessToken, refreshToken, expiresIn}`. Rate limited. |
 | POST | `/auth/refresh` | public | body `{refreshToken}` → new pair. Old token is revoked (rotation). |
 | POST | `/auth/logout` | bearer | revokes the presented refresh token |

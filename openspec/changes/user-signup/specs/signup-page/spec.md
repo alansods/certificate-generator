@@ -15,6 +15,25 @@ The system SHALL offer a public sign-up screen that creates an account and lands
 - **WHEN** the registration request returns 429
 - **THEN** a rate-limit notice distinct from a generic error asks the visitor to wait
 
+#### Scenario: Screen gates itself proactively when registration is disabled
+- **WHEN** the sign-up screen loads and its lookup of the registration-enabled flag returns false
+- **THEN** the screen shows a disabled notice instead of the form
+
+#### Scenario: Registration is disabled between the lookup and submission
+- **WHEN** the sign-up screen's lookup reported registration enabled but the registration request itself returns 404
+- **THEN** the screen shows the same disabled notice as a race-condition backstop
+
+### Requirement: Cold-start state on a slow sign-up response
+The system SHALL show an explicit "waking the server" state instead of a silent spinner when a sign-up submission takes longer than a configured threshold, reflecting Render free tier's ~50 second cold start.
+
+#### Scenario: Slow response
+- **WHEN** a sign-up submission has not resolved after the configured threshold
+- **THEN** the UI shows a message explaining the server is waking up, not a bare spinner
+
+#### Scenario: Fast response
+- **WHEN** a sign-up submission resolves before the configured threshold
+- **THEN** no cold-start message is ever shown
+
 ### Requirement: Sign-up validation mirrors the backend policy
 The system SHALL validate the sign-up form client-side against the same rules the backend enforces, before making a request.
 
@@ -31,15 +50,15 @@ The system SHALL validate the sign-up form client-side against the same rules th
 - **THEN** inline messages mark the offending fields and no request is made
 
 ### Requirement: Sign-up is reachable and escapable from login
-The system SHALL link the login screen to the sign-up screen and the sign-up screen back to login, and SHALL hide both links when self-registration is disabled.
+The system SHALL offer a link from the sign-up screen back to the login screen, at all times, and the login screen SHALL offer a link to the sign-up screen when self-registration is enabled.
 
-#### Scenario: Visitor moves between the two screens
-- **WHEN** a visitor selects the create-account link on the login screen, and then the sign-in link on the sign-up screen
-- **THEN** the application navigates to the sign-up screen and back to the login screen
+#### Scenario: Screens offer links to each other
+- **WHEN** a visitor views the login screen with self-registration enabled, and separately views the sign-up screen
+- **THEN** the login screen offers a link to create an account, and the sign-up screen offers a link back to the login screen
 
 #### Scenario: Registration is disabled
-- **WHEN** self-registration is disabled in the running deployment
-- **THEN** the login screen does not offer a create-account link
+- **WHEN** self-registration is disabled in the running deployment and a visitor reaches the sign-up screen anyway (a stale tab, a direct navigation)
+- **THEN** the sign-up screen shows the disabled notice instead of the form, while still offering its link back to login
 
 ### Requirement: New accounts are told their role
 The system SHALL state on the sign-up screen that new accounts are created with the `USER` role.

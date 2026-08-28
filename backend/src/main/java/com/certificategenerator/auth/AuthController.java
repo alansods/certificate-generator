@@ -3,6 +3,8 @@ package com.certificategenerator.auth;
 import com.certificategenerator.auth.dto.ChangePasswordRequest;
 import com.certificategenerator.auth.dto.LoginRequest;
 import com.certificategenerator.auth.dto.RefreshRequest;
+import com.certificategenerator.auth.dto.RegisterRequest;
+import com.certificategenerator.auth.dto.RegistrationStatusResponse;
 import com.certificategenerator.auth.dto.TokenPairResponse;
 import com.certificategenerator.auth.dto.UpdateProfileRequest;
 import com.certificategenerator.auth.dto.UserResponse;
@@ -32,6 +34,22 @@ public class AuthController {
         this.authService = authService;
         this.userMapper = userMapper;
         this.clientIpResolver = clientIpResolver;
+    }
+
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public TokenPairResponse register(
+            @Valid @RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
+        return authService.register(
+                request.fullName(),
+                request.email(),
+                request.password(),
+                clientIpResolver.resolve(httpRequest));
+    }
+
+    @GetMapping("/registration-enabled")
+    public RegistrationStatusResponse registrationEnabled() {
+        return new RegistrationStatusResponse(authService.isRegistrationEnabled());
     }
 
     @PostMapping("/login")

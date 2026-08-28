@@ -50,7 +50,10 @@ class AuthServiceProfileTest {
                         5,
                         Duration.ofMinutes(15),
                         20,
-                        Duration.ofMinutes(15));
+                        Duration.ofMinutes(15),
+                        10,
+                        Duration.ofMinutes(15),
+                        true);
 
         user = new User("jane@example.com", "old-hash", "Jane Doe", Role.USER);
         setId(user, 1L);

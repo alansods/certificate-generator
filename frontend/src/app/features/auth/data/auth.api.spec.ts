@@ -34,6 +34,33 @@ describe("AuthApi", () => {
     expect(tokenStorage.refreshToken).toBe("refresh-1");
   });
 
+  it("register stores the returned tokens", () => {
+    let completed = false;
+    api.register("Jane Doe", "jane@example.com", "correct-horse1").subscribe(() => (completed = true));
+
+    const req = httpMock.expectOne((r) => r.url.endsWith("/api/v1/auth/register"));
+    expect(req.request.body).toEqual({
+      fullName: "Jane Doe",
+      email: "jane@example.com",
+      password: "correct-horse1",
+    });
+    req.flush({ accessToken: "access-1", refreshToken: "refresh-1", expiresIn: 900 });
+
+    expect(completed).toBe(true);
+    expect(tokenStorage.accessToken()).toBe("access-1");
+    expect(tokenStorage.refreshToken).toBe("refresh-1");
+  });
+
+  it("registrationEnabled reports the flag from the response body", () => {
+    let result: boolean | undefined;
+    api.registrationEnabled().subscribe((enabled) => (result = enabled));
+
+    const req = httpMock.expectOne((r) => r.url.endsWith("/api/v1/auth/registration-enabled"));
+    req.flush({ enabled: false });
+
+    expect(result).toBe(false);
+  });
+
   it("refresh sends the stored refresh token and stores the new pair", () => {
     tokenStorage.setTokens("stale-access", "refresh-1");
 

@@ -34,6 +34,10 @@ export class LoginPageComponent {
   protected readonly errorKind = signal<LoginErrorKind | null>(null);
   protected readonly errorMessage = signal<string | null>(null);
 
+  // Optimistic default: showing the link and having it 404 on a disabled deployment is a smaller
+  // cost than hiding a real link for everyone while this request is in flight.
+  protected readonly registrationEnabled = signal(true);
+
   private readonly formState = signal(0);
 
   protected readonly emailInvalid = computed(() => {
@@ -52,6 +56,15 @@ export class LoginPageComponent {
     this.form.events
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => this.formState.update((tick) => tick + 1));
+
+    this.authApi
+      .registrationEnabled()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (enabled) => this.registrationEnabled.set(enabled),
+        // A failed lookup keeps the optimistic default rather than hiding the link.
+        error: () => undefined,
+      });
   }
 
   protected submit(): void {

@@ -38,6 +38,10 @@ The system SHALL let a user change their full name and email from the profile sc
 - **WHEN** the save fails without a field-level error, such as a network failure or a server error
 - **THEN** a form-level message is shown and the entered values are kept
 
+#### Scenario: Save is in flight
+- **WHEN** a user has submitted the profile card and the request has not yet resolved
+- **THEN** the save button shows a progress state and is disabled, preventing a second submission of the same change
+
 ### Requirement: Changing the password
 The system SHALL let a user change their password from the profile screen, requiring the current password and a confirmed new one.
 
@@ -64,6 +68,10 @@ The system SHALL let a user change their password from the profile screen, requi
 #### Scenario: Change fails for a reason other than a field error
 - **WHEN** the change fails without a field-level error, such as a network failure or a server error
 - **THEN** a form-level message is shown
+
+#### Scenario: Change is in flight
+- **WHEN** a user has submitted the password card and the request has not yet resolved
+- **THEN** the submit button shows a progress state and is disabled, preventing a second submission of the same change
 
 #### Scenario: The two forms submit independently
 - **WHEN** a user saves the profile card while the password fields are empty, or submits the password card without touching the profile card

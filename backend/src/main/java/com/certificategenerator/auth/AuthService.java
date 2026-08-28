@@ -1,6 +1,7 @@
 package com.certificategenerator.auth;
 
 import com.certificategenerator.auth.dto.TokenPairResponse;
+import com.certificategenerator.auth.dto.UserResponse;
 import java.time.Duration;
 import java.util.Locale;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +17,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
+    private final UserMapper userMapper;
     private final RateLimiter rateLimiter;
     private final int loginMaxAttempts;
     private final Duration loginWindow;
@@ -34,6 +36,7 @@ public class AuthService {
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             RefreshTokenService refreshTokenService,
+            UserMapper userMapper,
             RateLimiter rateLimiter,
             @Value("${app.rate-limit.login.max-attempts}") int loginMaxAttempts,
             @Value("${app.rate-limit.login.window}") Duration loginWindow,
@@ -49,6 +52,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
+        this.userMapper = userMapper;
         this.rateLimiter = rateLimiter;
         this.loginMaxAttempts = loginMaxAttempts;
         this.loginWindow = loginWindow;
@@ -121,6 +125,7 @@ public class AuthService {
         }
     }
 
+    @Transactional(readOnly = true)
     public User requireById(Long userId) {
         return userRepository
                 .findById(userId)
@@ -129,10 +134,14 @@ public class AuthService {
 
     /**
      * Rate limited per user: an authenticated caller could otherwise use the 409-vs-200 response
-     * as an unbounded email-enumeration oracle, resetting their own email between probes.
+     * as an unbounded email-enumeration oracle, resetting their own email between probes. Unlike
+     * the login/refresh/password-change buckets, success here does NOT clear the counter: a
+     * successful update with the caller's own real email proves nothing about a probed email, so
+     * clearing on success would let an attacker interleave a legitimate request with a probe to
+     * reset the counter indefinitely.
      */
     @Transactional
-    public User updateProfile(Long userId, String fullName, String email) {
+    public UserResponse updateProfile(Long userId, String fullName, String email) {
         String rateLimitKey = "profile-update:" + userId;
         if (rateLimiter.isBlocked(rateLimitKey, profileUpdateMaxAttempts, profileUpdateWindow)) {
             throw new RateLimitExceededException("Too many profile update attempts, try again later");
@@ -148,13 +157,15 @@ public class AuthService {
         User user = requireById(userId);
         user.updateProfile(fullName, normalizedEmail);
         try {
-            User saved = userRepository.save(user);
-            rateLimiter.clear(rateLimitKey);
-            return saved;
+            User saved = userRepository.saveAndFlush(user);
+            return userMapper.toResponse(saved);
         } catch (DataIntegrityViolationException e) {
             // The uniqueness check above and this save aren't atomic; a concurrent update
             // claiming the same email can slip through both. The unique index is the real
             // guard — this just turns its violation into the same 409 the checked path returns.
+            // saveAndFlush (rather than save) is what makes this catch reachable at all: save()
+            // on an already-managed entity is a no-op merge, so the constraint violation would
+            // otherwise surface at commit time, outside this try block.
             rateLimiter.recordFailure(rateLimitKey, profileUpdateWindow);
             throw new EmailAlreadyRegisteredException("Email is already registered to another account");
         }
@@ -181,13 +192,25 @@ public class AuthService {
             throw new InvalidCurrentPasswordException("Current password is incorrect");
         }
         if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
-            throw new InvalidCurrentPasswordException("New password must be different from the current one");
+            throw new NewPasswordSameAsCurrentException("New password must be different from the current one");
         }
 
-        rateLimiter.clear(rateLimitKey);
         user.changePassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-        refreshTokenService.revokeAllExcept(user, rawRefreshToken);
+        try {
+            refreshTokenService.revokeAllExcept(user, rawRefreshToken);
+        } catch (InvalidRefreshTokenException e) {
+            // The caller's access token is perfectly valid here — only the refresh token supplied
+            // alongside it is bad (unknown, revoked, or belongs to someone else). Rethrown as a
+            // 400 field error rather than letting InvalidRefreshTokenException's usual 401 mapping
+            // through, which would make the frontend's refresh-and-retry interceptor loop
+            // pointlessly on a token that was never the access credential for this request.
+            throw new InvalidRefreshTokenForPasswordChangeException(e.getMessage());
+        }
+        // Cleared only after every step succeeds: this counter is in-memory, not transactional,
+        // so clearing it earlier would survive a rollback triggered by the refresh-token check
+        // above.
+        rateLimiter.clear(rateLimitKey);
     }
 
     private TokenPairResponse issueTokenPair(User user) {

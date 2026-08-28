@@ -33,6 +33,7 @@ class AuthServiceRateLimitTest {
                         passwordEncoder,
                         jwtService,
                         refreshTokenService,
+                        new UserMapper(),
                         new RateLimiter(),
                         5,
                         Duration.ofMinutes(15),

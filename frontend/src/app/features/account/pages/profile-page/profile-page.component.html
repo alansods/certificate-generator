@@ -29,7 +29,7 @@
       <button
         type="button"
         (click)="retryLoad()"
-        class="inline-flex min-h-(--size-touch-target) items-center rounded-md border border-revoked-line px-5 text-sm font-medium text-revoked hover:bg-revoked-bg"
+        class="inline-flex min-h-(--size-touch-target) items-center rounded-md border border-revoked-line px-5 text-sm font-medium text-revoked hover:bg-revoked-bg active:bg-revoked-bg"
       >
         Retry
       </button>
@@ -47,7 +47,6 @@
       @if (showProfileValidationSummary()) {
         <p
           class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
-          role="alert"
         >
           <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
           Check the highlighted fields before saving.
@@ -56,7 +55,6 @@
       @if (profileSubmitError(); as message) {
         <p
           class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
-          role="alert"
         >
           <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
           {{ message }}
@@ -131,7 +129,6 @@
       @if (showPasswordValidationSummary()) {
         <p
           class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
-          role="alert"
         >
           <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
           Check the highlighted fields before saving.
@@ -140,7 +137,6 @@
       @if (passwordSubmitError(); as message) {
         <p
           class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
-          role="alert"
         >
           <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
           {{ message }}

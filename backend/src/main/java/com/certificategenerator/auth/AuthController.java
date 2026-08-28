@@ -60,8 +60,7 @@ public class AuthController {
     public UserResponse updateProfile(
             @Valid @RequestBody UpdateProfileRequest request,
             @AuthenticationPrincipal AuthenticatedPrincipal principal) {
-        return userMapper.toResponse(
-                authService.updateProfile(principal.userId(), request.fullName(), request.email()));
+        return authService.updateProfile(principal.userId(), request.fullName(), request.email());
     }
 
     @PostMapping("/me/password")

@@ -142,6 +142,25 @@ class ProfileIntegrationTest {
     }
 
     @Test
+    void aFullNameOver255CharactersReturns400WithAFieldError() {
+        Session session = newUser();
+        String tooLong = "a".repeat(256);
+
+        ResponseEntity<Map> response =
+                exchange(
+                        HttpMethod.PUT,
+                        "/api/v1/auth/me",
+                        new UpdateProfileRequest(tooLong, session.email),
+                        session.accessToken,
+                        Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fieldErrors = (Map<String, Object>) response.getBody().get("fieldErrors");
+        assertThat(fieldErrors).containsKey("fullName");
+    }
+
+    @Test
     void anEmailDifferingOnlyByCaseIsTreatedAsTheSameAddress() {
         Session first = newUser();
         Session second = newUser();
@@ -253,6 +272,22 @@ class ProfileIntegrationTest {
     }
 
     @Test
+    void newPasswordOver128CharactersReturns400() {
+        Session session = newUser();
+        String tooLong = "a1".repeat(65);
+
+        ResponseEntity<Map> response =
+                exchange(
+                        HttpMethod.POST,
+                        "/api/v1/auth/me/password",
+                        new ChangePasswordRequest(PASSWORD, tooLong, session.refreshToken),
+                        session.accessToken,
+                        Map.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
     void newPasswordSameAsCurrentIsRejected() {
         Session session = newUser();
 
@@ -265,6 +300,8 @@ class ProfileIntegrationTest {
                         Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().get("fieldErrors"))
+                .isEqualTo(Map.of("newPassword", "New password must be different from the current one"));
     }
 
     @Test
@@ -273,15 +310,18 @@ class ProfileIntegrationTest {
         Session other = newUser();
         String hashBefore = userRepository.findById(session.userId).orElseThrow().getPasswordHash();
 
-        ResponseEntity<String> response =
+        ResponseEntity<Map> response =
                 exchange(
                         HttpMethod.POST,
                         "/api/v1/auth/me/password",
                         new ChangePasswordRequest(PASSWORD, "brand-new1", other.refreshToken),
                         session.accessToken,
-                        String.class);
+                        Map.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> fieldErrors = (Map<String, Object>) response.getBody().get("fieldErrors");
+        assertThat(fieldErrors).containsKey("refreshToken");
         assertThat(userRepository.findById(session.userId).orElseThrow().getPasswordHash())
                 .isEqualTo(hashBefore);
     }

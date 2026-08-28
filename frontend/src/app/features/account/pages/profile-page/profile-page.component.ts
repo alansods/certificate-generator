@@ -123,6 +123,19 @@ export class ProfilePageComponent {
         this.profileForm.setValue({ fullName: user.fullName, email: user.email });
       }
     });
+
+    // Clears the "check the highlighted fields" banner once the user has actually fixed the
+    // fields, rather than leaving it shown until the next submit attempt.
+    this.profileForm.statusChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.profileForm.valid) {
+        this.showProfileValidationSummary.set(false);
+      }
+    });
+    this.passwordForm.statusChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      if (this.passwordForm.valid) {
+        this.showPasswordValidationSummary.set(false);
+      }
+    });
   }
 
   protected isInvalid(form: FormGroup, field: string): boolean {
@@ -157,6 +170,9 @@ export class ProfilePageComponent {
   }
 
   protected submitProfile(): void {
+    if (this.profileSubmitting()) {
+      return;
+    }
     if (this.profileForm.invalid) {
       this.profileForm.markAllAsTouched();
       this.showProfileValidationSummary.set(true);
@@ -187,6 +203,9 @@ export class ProfilePageComponent {
   }
 
   protected submitPassword(): void {
+    if (this.passwordSubmitting()) {
+      return;
+    }
     if (this.passwordForm.invalid) {
       this.passwordForm.markAllAsTouched();
       this.showPasswordValidationSummary.set(true);
@@ -220,12 +239,22 @@ export class ProfilePageComponent {
   ): void {
     const problem = toProblemDetail(error);
     if (problem.fieldErrors) {
+      let appliedToAControl = false;
       for (const [field, message] of Object.entries(problem.fieldErrors)) {
         const control = form.get(field);
-        control?.setErrors({ ...(control.errors ?? {}), server: message });
-        control?.markAsTouched();
+        if (!control) {
+          continue;
+        }
+        control.setErrors({ ...(control.errors ?? {}), server: message });
+        control.markAsTouched();
+        appliedToAControl = true;
       }
-      return;
+      if (appliedToAControl) {
+        return;
+      }
+      // fieldErrors was present but didn't name any control on this form (e.g. empty, or an
+      // unexpected key) — fall through to the generic message instead of leaving the spinner
+      // cleared with nothing shown to the user.
     }
     submitError.set(problem.detail ?? "Something went wrong. Please try again.");
   }

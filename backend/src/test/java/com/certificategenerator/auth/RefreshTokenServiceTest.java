@@ -144,6 +144,17 @@ class RefreshTokenServiceTest {
         verify(repository, never()).revokeAllForUserExceptTokenHash(any(), any(), any());
     }
 
+    @Test
+    void revokeAllExceptThrowsWhenTheKeptTokenIsExpired() {
+        RefreshToken expired = new RefreshToken(user, "some-hash", Instant.now().minusSeconds(1));
+        when(repository.findByTokenHash(any())).thenReturn(Optional.of(expired));
+
+        assertThatThrownBy(() -> service.revokeAllExcept(user, "expired-token"))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+
+        verify(repository, never()).revokeAllForUserExceptTokenHash(any(), any(), any());
+    }
+
     private RefreshToken issueAndCapture() {
         service.issue(user);
         ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);

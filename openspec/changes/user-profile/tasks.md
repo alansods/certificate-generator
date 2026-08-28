@@ -56,3 +56,25 @@ The four review agents (backend, frontend, security, spec) each found real issue
 - [x] 7.12 Frontend: reverted the sidebar identity block from a second `/profile` link back to non-interactive — the nav item already covers the route, and a second active link would have needed its own `aria-current` bookkeeping for no real benefit.
 - [x] 7.13 Frontend: added a persistent password-policy hint (previously only shown after a failed submit), an `h1` of "My profile" instead of the user's own name, and tests for the generic (non-field) error banner and the in-flight disabled-button state on both forms.
 - [x] 7.14 Specs: added scenarios for the loading/failed-load states, the blank-confirmation-is-not-a-mismatch case, and the generic-failure case on both forms — all had tests but no scenario.
+
+## 8. Second review pass fixes
+
+The four review agents each found real issues in the second pass, against the diff this branch had already pushed as a PR. Fixed:
+
+- [x] 8.1 Backend: `updateProfile`'s catch of `DataIntegrityViolationException` never actually ran — `save()` on an already-managed entity is a no-op merge, so the constraint violation surfaced at commit, outside the try. Changed to `saveAndFlush`.
+- [x] 8.2 Backend: `UpdateProfileRequest.fullName`/`email` had no upper bound, unlike the VARCHAR(255) columns backing them. Added `@Size(max = 255)`.
+- [x] 8.3 Backend: `ChangePasswordRequest.currentPassword`/`newPassword` had no upper bound before reaching BCrypt. Added `@Size(max = 128)`.
+- [x] 8.4 Backend: a new password identical to the current one threw `InvalidCurrentPasswordException`, which maps to `fieldErrors.currentPassword` — wrong field, since the message is about the new password. New `NewPasswordSameAsCurrentException` maps to `fieldErrors.newPassword`.
+- [x] 8.5 Backend: an unknown/revoked/foreign refresh token during `changePassword` propagated `InvalidRefreshTokenException`, which maps to 401 — but the caller's access token was valid, so the frontend's refresh-and-retry interceptor would loop pointlessly. New `InvalidRefreshTokenForPasswordChangeException` maps to 400 with `fieldErrors.refreshToken`, without touching the 401 mapping the actual `/auth/refresh` endpoint still needs.
+- [x] 8.6 Backend: `updateProfile` returned the `User` entity to the controller, which mapped it to `UserResponse` there — entities must not cross the controller boundary per the style guide. The mapping now happens inside `AuthService.updateProfile`.
+- [x] 8.7 Backend: `requireById` is now `@Transactional(readOnly = true)`, matching that it's a pure lookup; self-invocation from the two write methods keeps their own transaction demarcation unchanged.
+- [x] 8.8 Backend: `changePassword` cleared the rate-limit counter before calling `revokeAllExcept`, so a rollback triggered by that call left the in-memory (non-transactional) counter cleared anyway. Moved the `clear()` to the last statement.
+- [x] 8.9 Backend: `revokeAllExcept`'s lookup of the kept token checked ownership and revocation but not expiry. Added an expiry check.
+- [x] 8.10 Backend: `updateProfile` cleared its rate-limit counter on every successful save, which let an attacker interleave a legitimate same-email update with a probe of a taken email to reset the counter indefinitely. Removed the clear-on-success for this bucket only; the login/refresh/password-change buckets are unaffected.
+- [x] 8.11 Frontend: `handleSubmitError` returned early whenever `problem.fieldErrors` was present, even if none of the keys matched a real control — leaving the spinner cleared and nothing shown. Now falls through to the generic message when no field error actually applied.
+- [x] 8.12 Frontend: the `aria-live="polite"` error wrappers had an inner `role="alert"` (implicitly `assertive`), producing two competing announcements per error. Removed the inner `role="alert"`.
+- [x] 8.13 Frontend: the failed-session-load Retry button had `hover:` but no `active:` state, unlike the rest of the page's buttons. Added `active:bg-revoked-bg`, matching the existing revoked-button pattern used elsewhere (e.g. the confirm dialog).
+- [x] 8.14 Frontend: the "check the highlighted fields" validation summary stayed shown after the user fixed the fields, until the next submit attempt. Now cleared reactively via `statusChanges` once the form becomes valid.
+- [x] 8.15 Frontend: `submitProfile`/`submitPassword` had no defensive guard against re-entrant calls beyond the disabled button. Added an early return on `profileSubmitting()`/`passwordSubmitting()`.
+- [x] 8.16 Frontend tests: switched from dispatching a synthetic `submit` `Event` on the form to clicking the actual submit button, so the tests exercise the real interaction path, including the disabled-button double-submit guard.
+- [x] 8.17 Specs: added `Profile write rate limiting`, and scenarios for the same-as-current password rejection, the case-insensitive email duplicate, the bad-refresh-token rollback, and the in-flight/disabled-submit state on both profile-page forms — all implemented and tested but previously unspecified.

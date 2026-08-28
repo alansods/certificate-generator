@@ -30,11 +30,17 @@ describe("ProfilePageComponent", () => {
   }
 
   function submitProfileForm(nativeElement: HTMLElement): void {
-    nativeElement.querySelectorAll("form")[0]?.dispatchEvent(new Event("submit"));
+    nativeElement
+      .querySelectorAll("form")[0]
+      ?.querySelector<HTMLButtonElement>('button[type="submit"]')
+      ?.click();
   }
 
   function submitPasswordForm(nativeElement: HTMLElement): void {
-    nativeElement.querySelectorAll("form")[1]?.dispatchEvent(new Event("submit"));
+    nativeElement
+      .querySelectorAll("form")[1]
+      ?.querySelector<HTMLButtonElement>('button[type="submit"]')
+      ?.click();
   }
 
   function input(nativeElement: HTMLElement, name: string): HTMLInputElement {
@@ -94,7 +100,6 @@ describe("ProfilePageComponent", () => {
 
   it("saves a valid profile change and updates the session", () => {
     const { fixture, nativeElement } = setup();
-    const toasts = renderToastHost();
 
     setInputValue(input(nativeElement, "fullName"), "Marina Silva");
     setInputValue(input(nativeElement, "email"), "marina.silva@escola.br");
@@ -106,6 +111,7 @@ describe("ProfilePageComponent", () => {
     fixture.detectChanges();
 
     expect(TestBed.inject(SessionService).currentUser()?.fullName).toBe("Marina Silva");
+    const toasts = renderToastHost();
     expect(toasts.text()).toContain("Profile updated");
   });
 
@@ -137,6 +143,20 @@ describe("ProfilePageComponent", () => {
     // httpMock.verify() asserts no request went out.
   });
 
+  it("clears the validation summary once the fields are fixed, without a new submit", () => {
+    const { fixture, nativeElement } = setup();
+
+    setInputValue(input(nativeElement, "fullName"), "");
+    submitProfileForm(nativeElement);
+    fixture.detectChanges();
+    expect(nativeElement.textContent).toContain("Check the highlighted fields before saving.");
+
+    setInputValue(input(nativeElement, "fullName"), "Marina Silva");
+    fixture.detectChanges();
+
+    expect(nativeElement.textContent).not.toContain("Check the highlighted fields before saving.");
+  });
+
   it("blocks the profile save on a malformed email without a request", () => {
     const { fixture, nativeElement } = setup();
 
@@ -149,7 +169,6 @@ describe("ProfilePageComponent", () => {
 
   it("changes the password, clears the fields and shows a confirmation", () => {
     const { fixture, nativeElement } = setup();
-    const toasts = renderToastHost();
     TestBed.inject(TokenStorageService).setTokens("access", "refresh-1");
 
     setInputValue(input(nativeElement, "currentPassword"), "current-pw1");
@@ -169,6 +188,7 @@ describe("ProfilePageComponent", () => {
     expect(input(nativeElement, "currentPassword").value).toBe("");
     expect(input(nativeElement, "newPassword").value).toBe("");
     expect(input(nativeElement, "confirmPassword").value).toBe("");
+    const toasts = renderToastHost();
     expect(toasts.text()).toContain("Password changed");
     expect(toasts.text()).toContain("Other devices have been signed out");
   });
@@ -276,6 +296,21 @@ describe("ProfilePageComponent", () => {
 
     expect(nativeElement.textContent).toContain("Confirm your new password.");
     expect(nativeElement.textContent).not.toContain("Passwords do not match.");
+  });
+
+  it("falls back to the generic message when fieldErrors names no control on the form", () => {
+    const { fixture, nativeElement } = setup();
+
+    submitProfileForm(nativeElement);
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/auth/me") && r.method === "PUT")
+      .flush(
+        { status: 400, detail: "Could not reach the server.", fieldErrors: { unrelatedField: "x" } },
+        { status: 400, statusText: "Bad Request" },
+      );
+    fixture.detectChanges();
+
+    expect(nativeElement.textContent).toContain("Could not reach the server.");
   });
 
   it("shows a form-level message when the profile save fails without field errors", () => {

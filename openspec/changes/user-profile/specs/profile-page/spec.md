@@ -11,6 +11,14 @@ The system SHALL offer a profile screen inside the authenticated shell showing t
 - **WHEN** a signed-in user selects the profile item in the navigation
 - **THEN** the application navigates to the profile screen and marks that item active
 
+#### Scenario: Session still loading
+- **WHEN** the profile screen is opened before the session's own lookup of the signed-in account has resolved
+- **THEN** a loading state is shown in place of the forms, and the forms appear once the account is known, whether that happens before or after the screen is created
+
+#### Scenario: Session failed to load
+- **WHEN** the session's lookup of the signed-in account fails and no account is yet known
+- **THEN** an error message and a retry action are shown in place of the forms
+
 ### Requirement: Editing name and email
 The system SHALL let a user change their full name and email from the profile screen, independently of any password change.
 
@@ -25,6 +33,14 @@ The system SHALL let a user change their full name and email from the profile sc
 #### Scenario: Invalid input
 - **WHEN** a user saves with a blank name or a malformed email
 - **THEN** inline messages mark the offending fields and no request is made
+
+#### Scenario: Save fails for a reason other than a field error
+- **WHEN** the save fails without a field-level error, such as a network failure or a server error
+- **THEN** a form-level message is shown and the entered values are kept
+
+#### Scenario: Save is in flight
+- **WHEN** a user has submitted the profile card and the request has not yet resolved
+- **THEN** the save button shows a progress state and is disabled, preventing a second submission of the same change
 
 ### Requirement: Changing the password
 The system SHALL let a user change their password from the profile screen, requiring the current password and a confirmed new one.
@@ -44,6 +60,18 @@ The system SHALL let a user change their password from the profile screen, requi
 #### Scenario: Confirmation does not match
 - **WHEN** the confirmation differs from the new password
 - **THEN** an inline message on the confirmation field states so and no request is made
+
+#### Scenario: Confirmation is blank
+- **WHEN** a user submits with the confirmation field empty
+- **THEN** the confirmation field is marked as required rather than as mismatched
+
+#### Scenario: Change fails for a reason other than a field error
+- **WHEN** the change fails without a field-level error, such as a network failure or a server error
+- **THEN** a form-level message is shown
+
+#### Scenario: Change is in flight
+- **WHEN** a user has submitted the password card and the request has not yet resolved
+- **THEN** the submit button shows a progress state and is disabled, preventing a second submission of the same change
 
 #### Scenario: The two forms submit independently
 - **WHEN** a user saves the profile card while the password fields are empty, or submits the password card without touching the profile card

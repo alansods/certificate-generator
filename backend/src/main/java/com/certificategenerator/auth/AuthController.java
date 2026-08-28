@@ -1,8 +1,10 @@
 package com.certificategenerator.auth;
 
+import com.certificategenerator.auth.dto.ChangePasswordRequest;
 import com.certificategenerator.auth.dto.LoginRequest;
 import com.certificategenerator.auth.dto.RefreshRequest;
 import com.certificategenerator.auth.dto.TokenPairResponse;
+import com.certificategenerator.auth.dto.UpdateProfileRequest;
 import com.certificategenerator.auth.dto.UserResponse;
 import com.certificategenerator.web.ClientIpResolver;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -51,5 +54,24 @@ public class AuthController {
     @GetMapping("/me")
     public UserResponse me(@AuthenticationPrincipal AuthenticatedPrincipal principal) {
         return userMapper.toResponse(authService.requireById(principal.userId()));
+    }
+
+    @PutMapping("/me")
+    public UserResponse updateProfile(
+            @Valid @RequestBody UpdateProfileRequest request,
+            @AuthenticationPrincipal AuthenticatedPrincipal principal) {
+        return authService.updateProfile(principal.userId(), request.fullName(), request.email());
+    }
+
+    @PostMapping("/me/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal AuthenticatedPrincipal principal) {
+        authService.changePassword(
+                principal.userId(),
+                request.currentPassword(),
+                request.newPassword(),
+                request.refreshToken());
     }
 }

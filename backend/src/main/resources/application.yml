@@ -53,5 +53,14 @@ app:
       # anonymous flood against the one unauthenticated endpoint that touches the database.
       max-attempts: 30
       window: PT1M
+    password-change:
+      # Bounds brute-forcing currentPassword with a stolen (but still valid) access token — the
+      # same threat model as login's bucket, just authenticated instead of anonymous.
+      max-attempts: 5
+      window: PT15M
+    profile-update:
+      # Bounds using the 409-vs-200 response as an email-enumeration oracle.
+      max-attempts: 20
+      window: PT15M
   batch-import:
     max-rows: 500

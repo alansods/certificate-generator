@@ -96,6 +96,31 @@ public class RefreshTokenService {
                 .orElse(false);
     }
 
+    /**
+     * Revokes every refresh token for {@code user} except the one the caller is currently using,
+     * so a password change actually ends other sessions rather than only appearing to (see
+     * design.md "Why the password change revokes other sessions").
+     *
+     * <p>Looks the kept token up first and requires it to be a live, unrevoked, unexpired token
+     * belonging to {@code user}: without this, a stale or mismatched token would silently match
+     * nothing in the bulk update below, and "except" would revoke every session, including the
+     * caller's own.
+     */
+    @Transactional
+    public void revokeAllExcept(User user, String rawTokenToKeep) {
+        RefreshToken kept =
+                refreshTokenRepository
+                        .findByTokenHash(hash(rawTokenToKeep))
+                        .filter(
+                                token ->
+                                        token.getUser().getId().equals(user.getId())
+                                                && !token.isRevoked()
+                                                && token.getExpiresAt().isAfter(Instant.now()))
+                        .orElseThrow(() -> new InvalidRefreshTokenException("Refresh token not found"));
+        refreshTokenRepository.revokeAllForUserExceptTokenHash(
+                user, kept.getTokenHash(), Instant.now());
+    }
+
     private RefreshToken findByRawTokenOrThrow(String rawToken) {
         return refreshTokenRepository
                 .findByTokenHash(hash(rawToken))

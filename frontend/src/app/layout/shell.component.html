@@ -73,6 +73,20 @@
         Verify code
       </a>
 
+      <a
+        routerLink="/profile"
+        routerLinkActive
+        #profileActive="routerLinkActive"
+        [attr.aria-current]="profileActive.isActive ? 'page' : null"
+        class="flex min-h-(--size-touch-target) flex-1 items-center justify-center gap-3 rounded-md px-4 text-sm text-muted no-underline not-aria-[current=page]:hover:bg-neutral-900 not-aria-[current=page]:hover:text-text not-aria-[current=page]:active:bg-neutral-800 aria-[current=page]:bg-accent-900 aria-[current=page]:text-accent-300 aria-[current=page]:active:bg-accent-800 md:flex-none md:justify-start"
+      >
+        <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M5 20c1.5-4 4.5-6 7-6s5.5 2 7 6" />
+        </svg>
+        My profile
+      </a>
+
       <button
         type="button"
         (click)="signOut()"

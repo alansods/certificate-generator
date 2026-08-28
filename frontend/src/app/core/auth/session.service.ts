@@ -23,10 +23,20 @@ export class SessionService {
    * next person to sign in on the same machine.
    */
   private generation = 0;
-  private loading = false;
+  private readonly loadingSignal = signal(false);
+  private readonly loadFailedSignal = signal(false);
   private inFlight: Subscription | null = null;
 
   readonly currentUser = this.currentUserSignal.asReadonly();
+
+  /** Whether the initial `/me` lookup is in flight — lets a page gate its own rendering instead
+   * of showing an empty state while the identity is still loading. */
+  readonly loading = this.loadingSignal.asReadonly();
+
+  /** Whether the initial `/me` lookup has failed. The shell itself still renders regardless (see
+   * `load()`'s doc), but a page that depends on the fetched values — the profile screen's own
+   * form fields — needs to tell "still loading" apart from "never going to arrive". */
+  readonly loadFailed = this.loadFailedSignal.asReadonly();
 
   /**
    * A failed lookup must not block the shell: the navigation still renders and sign-out stays
@@ -35,22 +45,34 @@ export class SessionService {
   load(): void {
     // Once per session, not once per shell construction: re-entering the shell must not re-fetch,
     // and a failed re-fetch must never blank out an identity that is already on screen.
-    if (this.loading || this.currentUserSignal() !== null) {
+    if (this.loadingSignal() || this.currentUserSignal() !== null) {
       return;
     }
-    this.loading = true;
+    this.loadingSignal.set(true);
+    this.loadFailedSignal.set(false);
     const generation = this.generation;
     this.inFlight = this.authApi
       .me()
       .pipe(
         catchError(() => of(null)),
-        finalize(() => (this.loading = false)),
+        finalize(() => this.loadingSignal.set(false)),
       )
       .subscribe((user) => {
-        if (generation === this.generation && user !== null) {
+        if (generation !== this.generation) {
+          return;
+        }
+        if (user !== null) {
           this.currentUserSignal.set(user);
+        } else {
+          this.loadFailedSignal.set(true);
         }
       });
+  }
+
+  /** Called after a successful profile save so the navigation reflects the new name/email
+   * immediately, without waiting on a re-fetch of /me. */
+  updateCurrentUser(user: UserResponse): void {
+    this.currentUserSignal.set(user);
   }
 
   /**
@@ -80,7 +102,8 @@ export class SessionService {
     // them to the login screen. It would also leave `loading` set, so their own lookup never runs.
     this.inFlight?.unsubscribe();
     this.inFlight = null;
-    this.loading = false;
+    this.loadingSignal.set(false);
+    this.loadFailedSignal.set(false);
     this.currentUserSignal.set(null);
     this.tokenStorage.clear();
     // A rejected navigation (a guard throwing, say) must not surface as an unhandled rejection:

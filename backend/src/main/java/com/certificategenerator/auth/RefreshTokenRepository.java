@@ -11,9 +11,18 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 
     Optional<RefreshToken> findByTokenHash(String tokenHash);
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
             "UPDATE RefreshToken t SET t.revokedAt = :now WHERE t.user = :user AND t.revokedAt IS"
                     + " NULL")
     void revokeAllForUser(@Param("user") User user, @Param("now") Instant now);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+            "UPDATE RefreshToken t SET t.revokedAt = :now WHERE t.user = :user AND t.tokenHash <>"
+                    + " :keptTokenHash AND t.revokedAt IS NULL")
+    void revokeAllForUserExceptTokenHash(
+            @Param("user") User user,
+            @Param("keptTokenHash") String keptTokenHash,
+            @Param("now") Instant now);
 }

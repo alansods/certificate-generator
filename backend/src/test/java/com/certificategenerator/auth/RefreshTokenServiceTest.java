@@ -96,6 +96,65 @@ class RefreshTokenServiceTest {
         assertThat(existing.isRevoked()).isTrue();
     }
 
+    @Test
+    void revokeAllExceptRevokesEveryOtherTokenButKeepsTheGivenOne() {
+        RefreshToken kept = issueAndCapture();
+        when(repository.findByTokenHash(any())).thenReturn(Optional.of(kept));
+
+        service.revokeAllExcept(user, "kept-raw-token");
+
+        ArgumentCaptor<String> keptHashCaptor = ArgumentCaptor.forClass(String.class);
+        verify(repository)
+                .revokeAllForUserExceptTokenHash(eq(user), keptHashCaptor.capture(), any(Instant.class));
+        assertThat(keptHashCaptor.getValue()).isEqualTo(kept.getTokenHash());
+    }
+
+    @Test
+    void revokeAllExceptThrowsWhenTheKeptTokenIsUnknown() {
+        when(repository.findByTokenHash(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.revokeAllExcept(user, "does-not-exist"))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+
+        verify(repository, never()).revokeAllForUserExceptTokenHash(any(), any(), any());
+    }
+
+    @Test
+    void revokeAllExceptThrowsWhenTheKeptTokenBelongsToSomeoneElse() {
+        User otherUser = new User("other@example.com", "hash", "Other", Role.USER);
+        setId(otherUser, 2L);
+        RefreshToken foreignToken = new RefreshToken(otherUser, "some-hash", Instant.now().plusSeconds(60));
+        when(repository.findByTokenHash(any())).thenReturn(Optional.of(foreignToken));
+
+        assertThatThrownBy(() -> service.revokeAllExcept(user, "someone-elses-token"))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+
+        verify(repository, never()).revokeAllForUserExceptTokenHash(any(), any(), any());
+    }
+
+    @Test
+    void revokeAllExceptThrowsWhenTheKeptTokenIsAlreadyRevoked() {
+        RefreshToken revoked = issueAndCapture();
+        revoked.revoke();
+        when(repository.findByTokenHash(any())).thenReturn(Optional.of(revoked));
+
+        assertThatThrownBy(() -> service.revokeAllExcept(user, "already-revoked"))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+
+        verify(repository, never()).revokeAllForUserExceptTokenHash(any(), any(), any());
+    }
+
+    @Test
+    void revokeAllExceptThrowsWhenTheKeptTokenIsExpired() {
+        RefreshToken expired = new RefreshToken(user, "some-hash", Instant.now().minusSeconds(1));
+        when(repository.findByTokenHash(any())).thenReturn(Optional.of(expired));
+
+        assertThatThrownBy(() -> service.revokeAllExcept(user, "expired-token"))
+                .isInstanceOf(InvalidRefreshTokenException.class);
+
+        verify(repository, never()).revokeAllForUserExceptTokenHash(any(), any(), any());
+    }
+
     private RefreshToken issueAndCapture() {
         service.issue(user);
         ArgumentCaptor<RefreshToken> captor = ArgumentCaptor.forClass(RefreshToken.class);

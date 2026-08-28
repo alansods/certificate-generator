@@ -20,6 +20,7 @@ describe("ShellComponent", () => {
         provideRouter([
           { path: "certificates", children: [] },
           { path: "verify-code", children: [] },
+          { path: "profile", children: [] },
         ]),
       ],
     });
@@ -51,6 +52,19 @@ describe("ShellComponent", () => {
 
     expect(links).toContain("/certificates");
     expect(links).toContain("/verify-code");
+    expect(links).toContain("/profile");
+  });
+
+  it("marks the profile item active on the profile route", async () => {
+    const { fixture, nativeElement } = setup();
+    flushMe(USER);
+    await TestBed.inject(Router).navigateByUrl("/profile");
+    fixture.detectChanges();
+
+    const current = [...nativeElement.querySelectorAll("nav a[aria-current='page']")];
+
+    expect(current).toHaveLength(1);
+    expect(current[0]?.getAttribute("href")).toBe("/profile");
   });
 
   it("hosts the notifications exactly once, since every feature reports through it", () => {

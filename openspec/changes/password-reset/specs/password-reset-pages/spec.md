@@ -19,6 +19,10 @@ The system SHALL offer a public screen that requests a password reset link for a
 - **WHEN** the request returns 429
 - **THEN** a rate-limit notice distinct from a generic error asks the visitor to wait
 
+#### Scenario: Request fails for a reason other than a field error or rate limiting
+- **WHEN** the request fails with neither a 429 nor a field error
+- **THEN** a generic error banner is shown, distinct from the rate-limit notice
+
 #### Scenario: Reachable from login
 - **WHEN** a visitor selects the forgot-password link on the login screen
 - **THEN** the application navigates to this screen
@@ -45,6 +49,10 @@ The system SHALL offer a public screen that completes a reset using the token ca
 #### Scenario: Confirmation does not match
 - **WHEN** the confirmation differs from the new password
 - **THEN** an inline message on the confirmation field states so and no request is made
+
+#### Scenario: Change fails for a reason other than a field error or an invalid token
+- **WHEN** the request fails with neither a 429, a field error, nor a 400 for an invalid token
+- **THEN** a generic error banner is shown, distinct from the rate-limit and invalid-token states
 
 ### Requirement: The token is removed from the browser URL
 The system SHALL strip the reset token from the visible URL once the screen has read it.

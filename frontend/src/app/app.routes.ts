@@ -1,7 +1,9 @@
 import { Routes } from "@angular/router";
 import { ProfilePageComponent } from "./features/account/pages/profile-page/profile-page.component";
 import { authGuard } from "./features/auth/auth-guard";
+import { ForgotPasswordPageComponent } from "./features/auth/pages/forgot-password-page/forgot-password-page.component";
 import { LoginPageComponent } from "./features/auth/pages/login-page/login-page.component";
+import { ResetPasswordPageComponent } from "./features/auth/pages/reset-password-page/reset-password-page.component";
 import { SignupPageComponent } from "./features/auth/pages/signup-page/signup-page.component";
 import { BatchUploadPageComponent } from "./features/certificates/pages/batch-upload-page/batch-upload-page.component";
 import { CertificateFormPageComponent } from "./features/certificates/pages/certificate-form-page/certificate-form-page.component";
@@ -17,6 +19,8 @@ export const routes: Routes = [
   { path: "verify/:code", component: VerifyPageComponent },
   { path: "login", component: LoginPageComponent },
   { path: "signup", component: SignupPageComponent },
+  { path: "forgot-password", component: ForgotPasswordPageComponent },
+  { path: "reset-password", component: ResetPasswordPageComponent },
 
   // Authenticated shell, guarded — see design.md ("Auth guard") for why the guard has to
   // silently refresh rather than just checking for an access token.

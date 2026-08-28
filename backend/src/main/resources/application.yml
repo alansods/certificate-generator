@@ -42,6 +42,16 @@ app:
     # Escape hatch: a deployment can turn self-registration off without a code change. Off means
     # POST /auth/register answers 404, not 403, so a disabled deployment doesn't advertise it.
     registration-enabled: true
+  mail:
+    # "logging" writes the reset link to the log instead of sending it — the only implementation
+    # active in dev and in tests, so the flow works without an SMTP account. Set to "smtp" (and
+    # the four properties below) once a provider is chosen; see docs/PLAN.md's deploy section.
+    provider: ${APP_MAIL_PROVIDER:logging}
+    from: ${APP_MAIL_FROM:}
+    host: ${APP_MAIL_HOST:}
+    port: ${APP_MAIL_PORT:0}
+    username: ${APP_MAIL_USERNAME:}
+    password: ${APP_MAIL_PASSWORD:}
   rate-limit:
     login:
       max-attempts: 5
@@ -68,6 +78,17 @@ app:
       window: PT15M
     register:
       # Unauthenticated and per client IP, like login — bounds scripting the registration table.
+      max-attempts: 10
+      window: PT15M
+    password-reset-request-ip:
+      # Bounds a script walking a list of addresses.
+      max-attempts: 10
+      window: PT15M
+    password-reset-request-email:
+      # Bounds mailbombing one known address with reset emails.
+      max-attempts: 3
+      window: PT15M
+    password-reset-complete:
       max-attempts: 10
       window: PT15M
   batch-import:

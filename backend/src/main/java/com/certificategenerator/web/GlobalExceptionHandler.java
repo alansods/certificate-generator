@@ -8,6 +8,7 @@ import com.certificategenerator.auth.InvalidRefreshTokenForPasswordChangeExcepti
 import com.certificategenerator.auth.NewPasswordSameAsCurrentException;
 import com.certificategenerator.auth.RateLimitExceededException;
 import com.certificategenerator.auth.RegistrationDisabledException;
+import com.certificategenerator.auth.reset.InvalidPasswordResetTokenException;
 import com.certificategenerator.certificate.CertificateNotFoundException;
 import com.certificategenerator.certificate.batch.BatchInvalidHeaderException;
 import com.certificategenerator.certificate.batch.BatchTooManyRowsException;
@@ -143,6 +144,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setTitle("Not found");
         withTraceId(problemDetail);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
+    }
+
+    @ExceptionHandler(InvalidPasswordResetTokenException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidPasswordResetToken(
+            InvalidPasswordResetTokenException ex) {
+        ProblemDetail problemDetail =
+                ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setTitle("Invalid reset token");
+        withTraceId(problemDetail);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
     @ExceptionHandler(CertificateNotFoundException.class)

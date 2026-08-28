@@ -146,6 +146,14 @@ describe("LoginPageComponent", () => {
     }
   });
 
+  it("offers a link to reset a forgotten password", () => {
+    const { nativeElement } = setup();
+
+    const link = requireElement<HTMLAnchorElement>(nativeElement, "a[href='/forgot-password']");
+
+    expect(link.textContent?.trim()).toBe("Forgot your password?");
+  });
+
   it("renders a create-account link when registration is enabled", () => {
     const { nativeElement } = setup(true);
 

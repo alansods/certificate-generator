@@ -27,6 +27,12 @@ app:
   jwt:
     # No default — app fails fast at startup if unset (see JwtService), never falls back to a weak key.
     secret: ${JWT_SECRET}
+  mail:
+    # No default — same reasoning as app.jwt.secret above: production must not silently fall
+    # back to logging live reset tokens instead of sending them. Set to "smtp" once a provider
+    # is chosen (see docs/deployment.md "Password reset email"); the four APP_MAIL_* SMTP
+    # properties still come from application.yml and are validated by SmtpMailSender itself.
+    provider: ${APP_MAIL_PROVIDER}
   admin-bootstrap:
     # Both optional; the bootstrap runner no-ops once any user exists, so it's safe to leave set.
     email: ${ADMIN_BOOTSTRAP_EMAIL:}

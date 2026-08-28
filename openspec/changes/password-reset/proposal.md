@@ -8,7 +8,7 @@ This is also the first thing in the product that sends email. That is the expens
 
 - `POST /api/v1/auth/forgot-password` — public. Takes an email. Always responds 202 regardless of whether the address has an account, so the endpoint cannot be used to enumerate users. When it does match a user, a single-use reset token valid for 30 minutes is created and a link is emailed.
 - `POST /api/v1/auth/reset-password` — public. Takes the token and a new password. Validates the token (exists, unused, unexpired), applies the password policy, sets the new hash, marks the token used, and revokes every refresh token for that user. Returns 400 for an invalid or expired token.
-- A new `password_reset_tokens` table (Flyway `V5`), storing only a hash of the token, its user, its expiry and its used-at timestamp — the same treatment refresh tokens already get.
+- A new `password_reset_tokens` table (Flyway `V6` — `V5` was already taken by `user-signup`'s email-normalization migration by the time this shipped), storing only a hash of the token, its user, its expiry and its used-at timestamp — the same treatment refresh tokens already get.
 - Both endpoints are rate limited: the request endpoint per IP and per email, the reset endpoint per IP.
 - Email is sent through a small `MailSender` abstraction over `spring-boot-starter-mail`, configured by environment variables. In development and in tests the default implementation logs the link instead of sending, so the flow is exercisable without an SMTP account.
 - Two public pages: `/forgot-password` — email field, then the "check your inbox" confirmation that names the address and offers "use another email" — and `/reset-password?token=…` — new password and confirmation, with distinct states for an invalid or expired token and a confirmation that links to sign-in.
@@ -24,7 +24,7 @@ This is also the first thing in the product that sends email. That is the expens
 
 ## Impact
 
-- Backend: `spring-boot-starter-mail` added to `pom.xml`; new `auth/reset/` package with the entity, repository, service and DTOs; two controller methods; `SecurityConfig` permitting both paths; `V5__password_reset_tokens.sql`; a `MailSender` interface with a logging implementation and an SMTP implementation selected by configuration; a Thymeleaf email template.
+- Backend: `spring-boot-starter-mail` added to `pom.xml`; new `auth/reset/` package with the entity, repository, service and DTOs; two controller methods; `SecurityConfig` permitting both paths; `V6__password_reset_tokens.sql` (`V5` was already taken by `user-signup`'s email-normalization migration by the time this shipped); a `MailSender` interface with a logging implementation and an SMTP implementation selected by configuration; a Thymeleaf email template.
 - New configuration and secrets: `app.mail.*` (from, provider, SMTP host/port/username/password) and `app.frontend-base-url` for building the link. The SMTP password is an environment variable and never committed.
 - Render deployment: the new environment variables have to be set before this ships, and `docs/PLAN.md`'s deploy section needs them.
 - Frontend: `features/auth/pages/forgot-password-page/` and `reset-password-page/`, two `AuthApi` methods, two public routes, and the login link.

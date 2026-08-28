@@ -1,7 +1,7 @@
 # internal-verify-page Specification
 
 ## Purpose
-TBD - created by archiving change nocturne-shell-navigation. Update Purpose after archive.
+Lets a signed-in user look up a certificate by its code from inside the authenticated shell, either from a dedicated page or the quick-verify field in the top bar, without leaving their session.
 
 ## Requirements
 

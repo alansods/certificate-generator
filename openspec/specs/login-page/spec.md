@@ -1,7 +1,7 @@
 # login-page Specification
 
 ## Purpose
-TBD - created by archiving change login-page. Update Purpose after archive.
+Authenticates a user into the application: the login form itself, the guard that keeps the authenticated shell closed to anyone without a valid session, session recovery across a hard reload, and the distinct feedback for a rate limit versus a plain credential error.
 
 ## Requirements
 

@@ -1,0 +1,158 @@
+<div class="relative flex min-h-dvh items-center justify-center px-7 py-14">
+  <div class="accent-glow pointer-events-none absolute inset-0" aria-hidden="true"></div>
+
+  <div class="relative flex w-full max-w-login flex-col gap-7">
+    <div class="flex flex-col gap-3">
+      <h1 class="text-lg">Create an account</h1>
+      <p class="m-0 text-sm text-subtle">
+        New accounts start with the <span class="text-accent-300">USER</span> role — full access to
+        issue and manage certificates, without admin controls.
+      </p>
+    </div>
+
+    <form
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+      class="flex flex-col gap-5 rounded-lg bg-surface p-7 shadow-e1"
+    >
+      <label class="flex flex-col gap-2">
+        <span class="text-xs text-muted">Full name</span>
+        <input
+          type="text"
+          formControlName="fullName"
+          autocomplete="name"
+          placeholder="Jane Doe"
+          [attr.aria-invalid]="fullNameInvalid()"
+          [attr.aria-describedby]="fullNameInvalid() ? 'full-name-error' : null"
+          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+          [class.border-neutral-600]="!fullNameInvalid()"
+          [class.border-revoked]="fullNameInvalid()"
+        />
+        @if (fullNameInvalid()) {
+          <span id="full-name-error" class="text-xs text-revoked">Your name is required.</span>
+        }
+      </label>
+
+      <label class="flex flex-col gap-2">
+        <span class="text-xs text-muted">Work email</span>
+        <input
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          placeholder="you@example.com"
+          [attr.aria-invalid]="emailInvalid()"
+          [attr.aria-describedby]="emailInvalid() ? 'email-error' : null"
+          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+          [class.border-neutral-600]="!emailInvalid()"
+          [class.border-revoked]="emailInvalid()"
+        />
+        @if (emailInvalid()) {
+          <span id="email-error" class="text-xs text-revoked">{{ emailErrorMessage() }}</span>
+        }
+      </label>
+
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <label class="flex flex-col gap-2">
+          <span class="text-xs text-muted">Password</span>
+          <input
+            type="password"
+            formControlName="password"
+            autocomplete="new-password"
+            placeholder="••••••••"
+            [attr.aria-invalid]="passwordInvalid()"
+            [attr.aria-describedby]="passwordInvalid() ? 'password-error' : 'password-hint'"
+            class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+            [class.border-neutral-600]="!passwordInvalid()"
+            [class.border-revoked]="passwordInvalid()"
+          />
+          @if (passwordInvalid()) {
+            <span id="password-error" class="text-xs text-revoked">
+              At least 8 characters, including a digit.
+            </span>
+          } @else {
+            <span id="password-hint" class="text-xs text-subtle">
+              At least 8 characters, including a digit.
+            </span>
+          }
+        </label>
+
+        <label class="flex flex-col gap-2">
+          <span class="text-xs text-muted">Confirm password</span>
+          <input
+            type="password"
+            formControlName="confirmPassword"
+            autocomplete="new-password"
+            placeholder="••••••••"
+            [attr.aria-invalid]="confirmPasswordInvalid()"
+            [attr.aria-describedby]="confirmPasswordInvalid() ? 'confirm-password-error' : null"
+            class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+            [class.border-neutral-600]="!confirmPasswordInvalid()"
+            [class.border-revoked]="confirmPasswordInvalid()"
+          />
+          @if (confirmPasswordInvalid()) {
+            <span id="confirm-password-error" class="text-xs text-revoked">
+              {{ confirmPasswordErrorMessage() }}
+            </span>
+          }
+        </label>
+      </div>
+
+      <div aria-live="polite" aria-atomic="false">
+        @if (errorKind() === "rate-limited") {
+          <p
+            class="m-0 flex items-start gap-4 rounded-md border border-pending-line bg-pending-bg px-4 py-3 text-sm text-pending"
+            role="alert"
+          >
+            <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+            Too many attempts. Try again in a few minutes.
+          </p>
+        } @else if (errorKind() === "disabled") {
+          <p
+            class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+            role="alert"
+          >
+            <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+            Self-registration is currently disabled.
+          </p>
+        } @else if (errorMessage(); as message) {
+          <p
+            class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+            role="alert"
+          >
+            <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+            {{ message }}
+          </p>
+        }
+
+        @if (showColdStart()) {
+          <p
+            class="m-0 flex items-start gap-4 rounded-md border border-info-line bg-info-bg px-4 py-3 text-sm text-info"
+            role="status"
+          >
+            <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+            The server is waking up — this can take up to a minute on the first request.
+          </p>
+        }
+      </div>
+
+      <button
+        type="submit"
+        [attr.aria-disabled]="submitting()"
+        class="mt-1 inline-flex min-h-(--size-touch-target) items-center justify-center gap-3 rounded-md border border-accent-500 px-6 py-3 text-sm font-medium text-accent-500 hover:bg-accent-900 active:bg-accent-800 aria-disabled:pointer-events-none aria-disabled:opacity-45"
+      >
+        @if (submitting()) {
+          <span
+            class="size-5 flex-none animate-spin rounded-full border-2 border-accent-800 border-t-accent-500"
+            aria-hidden="true"
+          ></span>
+        }
+        {{ submitting() ? "Creating account…" : "Create account" }}
+      </button>
+    </form>
+
+    <p class="m-0 text-center text-xs text-subtle">
+      Already have an account?
+      <a routerLink="/login" class="text-accent-300 hover:underline">Sign in</a>
+    </p>
+  </div>
+</div>

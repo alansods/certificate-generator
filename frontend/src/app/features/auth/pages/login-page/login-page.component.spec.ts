@@ -34,8 +34,12 @@ describe("LoginPageComponent", () => {
     return element;
   }
 
-  function setup() {
+  function setup(registrationEnabled = true) {
     const fixture = TestBed.createComponent(LoginPageComponent);
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/auth/registration-enabled"))
+      .flush({ enabled: registrationEnabled });
     fixture.detectChanges();
     const nativeElement = fixture.nativeElement as HTMLElement;
     const emailInput = requireElement<HTMLInputElement>(nativeElement, "input[formControlName='email']");
@@ -140,6 +144,32 @@ describe("LoginPageComponent", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("renders a create-account link when registration is enabled", () => {
+    const { nativeElement } = setup(true);
+
+    const link = requireElement<HTMLAnchorElement>(nativeElement, "a[href='/signup']");
+
+    expect(link.textContent?.trim()).toBe("Create one");
+  });
+
+  it("hides the create-account link when registration is disabled", () => {
+    const { nativeElement } = setup(false);
+
+    expect(nativeElement.querySelector("a[href='/signup']")).toBeNull();
+  });
+
+  it("keeps the create-account link showing if the flag lookup fails", () => {
+    const fixture = TestBed.createComponent(LoginPageComponent);
+    fixture.detectChanges();
+    httpMock
+      .expectOne((r) => r.url.endsWith("/api/v1/auth/registration-enabled"))
+      .flush(null, { status: 500, statusText: "Internal Server Error" });
+    fixture.detectChanges();
+
+    const link = requireElement<HTMLAnchorElement>(fixture.nativeElement, "a[href='/signup']");
+    expect(link).toBeTruthy();
   });
 
   it("offers a link to public verification for someone without an account", () => {

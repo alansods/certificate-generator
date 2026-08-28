@@ -7,6 +7,7 @@ import com.certificategenerator.auth.InvalidRefreshTokenException;
 import com.certificategenerator.auth.InvalidRefreshTokenForPasswordChangeException;
 import com.certificategenerator.auth.NewPasswordSameAsCurrentException;
 import com.certificategenerator.auth.RateLimitExceededException;
+import com.certificategenerator.auth.RegistrationDisabledException;
 import com.certificategenerator.certificate.CertificateNotFoundException;
 import com.certificategenerator.certificate.batch.BatchInvalidHeaderException;
 import com.certificategenerator.certificate.batch.BatchTooManyRowsException;
@@ -132,6 +133,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setProperty("fieldErrors", Map.of("refreshToken", ex.getMessage()));
         withTraceId(problemDetail);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    @ExceptionHandler(RegistrationDisabledException.class)
+    public ResponseEntity<ProblemDetail> handleRegistrationDisabled(RegistrationDisabledException ex) {
+        // 404 rather than 403: a disabled deployment should not advertise that the feature exists.
+        ProblemDetail problemDetail =
+                ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problemDetail.setTitle("Not found");
+        withTraceId(problemDetail);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail);
     }
 
     @ExceptionHandler(CertificateNotFoundException.class)

@@ -8,48 +8,12 @@ import {
   inject,
   signal,
 } from "@angular/core";
-import {
-  AbstractControl,
-  FormControl,
-  FormGroup,
-  ReactiveFormsModule,
-  ValidationErrors,
-  Validators,
-} from "@angular/forms";
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { SessionService } from "../../../../core/auth/session.service";
 import { toProblemDetail } from "../../../../core/http/problem-detail";
+import { passwordPolicyValidator, passwordsMatchValidator } from "../../../../shared/forms/password-validators";
 import { ToastService } from "../../../../shared/toast/toast.service";
 import { AuthApi } from "../../../auth/data/auth.api";
-
-/**
- * Not a built-in Validators option: the rule has to match backend/.../validation/PasswordPolicy
- * exactly, since a client-side pass that's looser than the server's just means the request goes
- * out and comes back with a field error instead of failing locally.
- */
-function passwordPolicyValidator(control: AbstractControl): ValidationErrors | null {
-  const value = control.value as string;
-  if (!value) {
-    return null;
-  }
-  const meetsPolicy = value.length >= 8 && /\d/.test(value);
-  return meetsPolicy ? null : { policy: true };
-}
-
-/**
- * Set on the group, not on confirmPassword's own errors: a validator that reaches over and calls
- * a sibling control's setErrors() fights that control's own validation run — concretely, an empty
- * confirmPassword ended up with both `required` and `mismatch`, and `errorFor` reported the wrong
- * one. Read via `form.errors?.["mismatch"]` in isInvalid/errorFor's confirmPassword branch instead.
- * Skipped while confirmPassword is empty so the plain "required" message wins there.
- */
-function passwordsMatchValidator(group: AbstractControl): ValidationErrors | null {
-  const newPassword = group.get("newPassword")?.value;
-  const confirmPassword = group.get("confirmPassword")?.value;
-  if (!confirmPassword) {
-    return null;
-  }
-  return newPassword === confirmPassword ? null : { mismatch: true };
-}
 
 @Component({
   selector: "app-profile-page",
@@ -101,7 +65,7 @@ export class ProfilePageComponent {
         validators: [Validators.required],
       }),
     },
-    { validators: [passwordsMatchValidator] },
+    { validators: [passwordsMatchValidator("newPassword", "confirmPassword")] },
   );
 
   protected readonly profileSubmitting = signal(false);

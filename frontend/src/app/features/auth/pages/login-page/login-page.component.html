@@ -105,5 +105,12 @@
       Holding a certificate?
       <a routerLink="/verify" class="text-accent-300 hover:underline">Verify a code</a>
     </p>
+
+    @if (registrationEnabled()) {
+      <p class="m-0 text-center text-xs text-subtle">
+        No account?
+        <a routerLink="/signup" class="text-accent-300 hover:underline">Create one</a>
+      </p>
+    }
   </div>
 </div>

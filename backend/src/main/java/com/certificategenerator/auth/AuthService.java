@@ -29,6 +29,9 @@ public class AuthService {
     private final Duration passwordChangeWindow;
     private final int profileUpdateMaxAttempts;
     private final Duration profileUpdateWindow;
+    private final int registerMaxAttempts;
+    private final Duration registerWindow;
+    private final boolean registrationEnabled;
     private final String dummyPasswordHash;
 
     public AuthService(
@@ -47,7 +50,10 @@ public class AuthService {
             @Value("${app.rate-limit.password-change.max-attempts}") int passwordChangeMaxAttempts,
             @Value("${app.rate-limit.password-change.window}") Duration passwordChangeWindow,
             @Value("${app.rate-limit.profile-update.max-attempts}") int profileUpdateMaxAttempts,
-            @Value("${app.rate-limit.profile-update.window}") Duration profileUpdateWindow) {
+            @Value("${app.rate-limit.profile-update.window}") Duration profileUpdateWindow,
+            @Value("${app.rate-limit.register.max-attempts}") int registerMaxAttempts,
+            @Value("${app.rate-limit.register.window}") Duration registerWindow,
+            @Value("${app.auth.registration-enabled}") boolean registrationEnabled) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -64,6 +70,9 @@ public class AuthService {
         this.passwordChangeWindow = passwordChangeWindow;
         this.profileUpdateMaxAttempts = profileUpdateMaxAttempts;
         this.profileUpdateWindow = profileUpdateWindow;
+        this.registerMaxAttempts = registerMaxAttempts;
+        this.registerWindow = registerWindow;
+        this.registrationEnabled = registrationEnabled;
         // Encoded once so login() below always pays the same BCrypt cost whether or not the
         // email exists, closing the timing side-channel a short-circuited check would otherwise
         // create (matches() only running for real users would let response time reveal which
@@ -72,12 +81,13 @@ public class AuthService {
     }
 
     public TokenPairResponse login(String email, String password, String clientIp) {
-        String rateLimitKey = "login:" + email + ":" + clientIp;
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        String rateLimitKey = "login:" + normalizedEmail + ":" + clientIp;
         if (rateLimiter.isBlocked(rateLimitKey, loginMaxAttempts, loginWindow)) {
             throw new RateLimitExceededException("Too many login attempts, try again later");
         }
 
-        User user = userRepository.findByEmail(email).orElse(null);
+        User user = userRepository.findByEmail(normalizedEmail).orElse(null);
         String hashToCheck = user != null ? user.getPasswordHash() : dummyPasswordHash;
         boolean passwordMatches = passwordEncoder.matches(password, hashToCheck);
         if (user == null || !user.isEnabled() || !passwordMatches) {
@@ -87,6 +97,44 @@ public class AuthService {
 
         rateLimiter.clear(rateLimitKey);
         return issueTokenPair(user);
+    }
+
+    public boolean isRegistrationEnabled() {
+        return registrationEnabled;
+    }
+
+    /**
+     * Rate limited per client IP (unauthenticated, like login) rather than per email: an
+     * unauthenticated caller can supply any email, so keying on it would let an attacker reset
+     * their own bucket by rotating the address on every probe. See design.md "Account-existence
+     * disclosure" for why a duplicate email is reported as 409 rather than hidden.
+     */
+    @Transactional
+    public TokenPairResponse register(String fullName, String email, String password, String clientIp) {
+        if (!registrationEnabled) {
+            throw new RegistrationDisabledException("Self-registration is disabled");
+        }
+        String rateLimitKey = "register:" + clientIp;
+        if (rateLimiter.isBlocked(rateLimitKey, registerMaxAttempts, registerWindow)) {
+            throw new RateLimitExceededException("Too many registration attempts, try again later");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        if (userRepository.findByEmail(normalizedEmail).isPresent()) {
+            rateLimiter.recordFailure(rateLimitKey, registerWindow);
+            throw new EmailAlreadyRegisteredException("Email is already registered to another account");
+        }
+
+        User user = new User(normalizedEmail, passwordEncoder.encode(password), fullName, Role.USER);
+        try {
+            User saved = userRepository.saveAndFlush(user);
+            rateLimiter.clear(rateLimitKey);
+            return issueTokenPair(saved);
+        } catch (DataIntegrityViolationException e) {
+            // Same TOCTOU as updateProfile: the check above and this insert aren't atomic.
+            rateLimiter.recordFailure(rateLimitKey, registerWindow);
+            throw new EmailAlreadyRegisteredException("Email is already registered to another account");
+        }
     }
 
     public TokenPairResponse refresh(String rawRefreshToken, String clientIp) {

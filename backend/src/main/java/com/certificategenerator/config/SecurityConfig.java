@@ -41,6 +41,8 @@ public class SecurityConfig {
                                 authorize
                                         .requestMatchers(
                                                 "/actuator/health",
+                                                "/api/v1/auth/register",
+                                                "/api/v1/auth/registration-enabled",
                                                 "/api/v1/auth/login",
                                                 "/api/v1/auth/refresh",
                                                 // The refresh token in the body is the credential

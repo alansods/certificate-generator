@@ -23,6 +23,23 @@ export class AuthApi {
       );
   }
 
+  /** Signing up returns the same token pair login does, so a new account is signed in immediately. */
+  register(fullName: string, email: string, password: string): Observable<void> {
+    return this.http
+      .post<TokenPairResponse>(`${this.apiBaseUrl}/api/v1/auth/register`, { fullName, email, password })
+      .pipe(
+        tap((response) => this.tokenStorage.setTokens(response.accessToken, response.refreshToken)),
+        map(() => undefined),
+      );
+  }
+
+  /** Lets the login and sign-up screens hide the create-account link when self-registration is off. */
+  registrationEnabled(): Observable<boolean> {
+    return this.http
+      .get<{ enabled: boolean }>(`${this.apiBaseUrl}/api/v1/auth/registration-enabled`)
+      .pipe(map((response) => response.enabled));
+  }
+
   /** The signed-in user's own profile. The role also rides on the access token, but that claim is
    * a detail of the auth change; this is the typed endpoint for it. */
   me(): Observable<UserResponse> {

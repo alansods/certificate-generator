@@ -38,6 +38,10 @@ app:
     access-token-ttl: PT15M
   refresh-token:
     ttl: P7D
+  auth:
+    # Escape hatch: a deployment can turn self-registration off without a code change. Off means
+    # POST /auth/register answers 404, not 403, so a disabled deployment doesn't advertise it.
+    registration-enabled: true
   rate-limit:
     login:
       max-attempts: 5
@@ -61,6 +65,10 @@ app:
     profile-update:
       # Bounds using the 409-vs-200 response as an email-enumeration oracle.
       max-attempts: 20
+      window: PT15M
+    register:
+      # Unauthenticated and per client IP, like login — bounds scripting the registration table.
+      max-attempts: 10
       window: PT15M
   batch-import:
     max-rows: 500

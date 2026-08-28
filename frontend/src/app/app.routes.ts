@@ -1,4 +1,5 @@
 import { Routes } from "@angular/router";
+import { ProfilePageComponent } from "./features/account/pages/profile-page/profile-page.component";
 import { authGuard } from "./features/auth/auth-guard";
 import { LoginPageComponent } from "./features/auth/pages/login-page/login-page.component";
 import { BatchUploadPageComponent } from "./features/certificates/pages/batch-upload-page/batch-upload-page.component";
@@ -29,6 +30,7 @@ export const routes: Routes = [
       { path: "certificates/batch", component: BatchUploadPageComponent },
       { path: "certificates/:id/edit", component: CertificateFormPageComponent },
       { path: "certificates/:id/preview", component: CertificatePreviewPageComponent },
+      { path: "profile", component: ProfilePageComponent },
     ],
   },
 ];

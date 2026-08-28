@@ -1,6 +1,8 @@
 package com.certificategenerator.web;
 
+import com.certificategenerator.auth.EmailAlreadyRegisteredException;
 import com.certificategenerator.auth.InvalidCredentialsException;
+import com.certificategenerator.auth.InvalidCurrentPasswordException;
 import com.certificategenerator.auth.InvalidRefreshTokenException;
 import com.certificategenerator.auth.RateLimitExceededException;
 import com.certificategenerator.certificate.CertificateNotFoundException;
@@ -84,6 +86,28 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setTitle("Too many requests");
         withTraceId(problemDetail);
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(problemDetail);
+    }
+
+    @ExceptionHandler(EmailAlreadyRegisteredException.class)
+    public ResponseEntity<ProblemDetail> handleEmailAlreadyRegistered(
+            EmailAlreadyRegisteredException ex) {
+        ProblemDetail problemDetail =
+                ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problemDetail.setTitle("Email already registered");
+        problemDetail.setProperty("fieldErrors", Map.of("email", ex.getMessage()));
+        withTraceId(problemDetail);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(problemDetail);
+    }
+
+    @ExceptionHandler(InvalidCurrentPasswordException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidCurrentPassword(
+            InvalidCurrentPasswordException ex) {
+        ProblemDetail problemDetail =
+                ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problemDetail.setTitle("Invalid current password");
+        problemDetail.setProperty("fieldErrors", Map.of("currentPassword", ex.getMessage()));
+        withTraceId(problemDetail);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
 
     @ExceptionHandler(CertificateNotFoundException.class)

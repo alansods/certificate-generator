@@ -46,4 +46,29 @@ describe("AuthApi", () => {
     expect(tokenStorage.accessToken()).toBe("access-2");
     expect(tokenStorage.refreshToken).toBe("refresh-2");
   });
+
+  it("updateProfile PUTs the new name and email", () => {
+    let result: unknown;
+    api.updateProfile("Jane Doe", "jane@example.com").subscribe((response) => (result = response));
+
+    const req = httpMock.expectOne((r) => r.url.endsWith("/api/v1/auth/me") && r.method === "PUT");
+    expect(req.request.body).toEqual({ fullName: "Jane Doe", email: "jane@example.com" });
+    req.flush({ id: 1, fullName: "Jane Doe", email: "jane@example.com", role: "USER" });
+
+    expect(result).toEqual({ id: 1, fullName: "Jane Doe", email: "jane@example.com", role: "USER" });
+  });
+
+  it("changePassword sends the stored refresh token alongside the new password", () => {
+    tokenStorage.setTokens("access-1", "refresh-1");
+
+    api.changePassword("old-pw1", "new-pw1").subscribe();
+
+    const req = httpMock.expectOne((r) => r.url.endsWith("/api/v1/auth/me/password"));
+    expect(req.request.body).toEqual({
+      currentPassword: "old-pw1",
+      newPassword: "new-pw1",
+      refreshToken: "refresh-1",
+    });
+    req.flush(null, { status: 204, statusText: "No Content" });
+  });
 });

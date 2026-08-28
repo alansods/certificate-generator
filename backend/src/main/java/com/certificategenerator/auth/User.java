@@ -73,4 +73,14 @@ public class User {
     public Instant getCreatedAt() {
         return createdAt;
     }
+
+    /** The role is never part of this call — it is not accepted from the profile-update payload. */
+    public void updateProfile(String fullName, String email) {
+        this.fullName = fullName;
+        this.email = email;
+    }
+
+    public void changePassword(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+    }
 }

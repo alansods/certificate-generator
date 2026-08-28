@@ -39,4 +39,19 @@ export class AuthApi {
   refresh(): Observable<void> {
     return this.tokenRefresh.refresh().pipe(map(() => undefined));
   }
+
+  updateProfile(fullName: string, email: string): Observable<UserResponse> {
+    return this.http.put<UserResponse>(`${this.apiBaseUrl}/api/v1/auth/me`, { fullName, email });
+  }
+
+  /** Carries the caller's own refresh token so the server knows which session to keep alive when
+   * it revokes the rest (see openspec/changes/user-profile/design.md). */
+  changePassword(currentPassword: string, newPassword: string): Observable<void> {
+    const refreshToken = this.tokenStorage.refreshToken;
+    return this.http.post<void>(`${this.apiBaseUrl}/api/v1/auth/me/password`, {
+      currentPassword,
+      newPassword,
+      refreshToken,
+    });
+  }
 }

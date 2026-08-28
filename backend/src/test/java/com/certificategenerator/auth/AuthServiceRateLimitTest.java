@@ -39,7 +39,11 @@ class AuthServiceRateLimitTest {
                         maxAttempts,
                         Duration.ofMinutes(15),
                         30,
-                        Duration.ofMinutes(1));
+                        Duration.ofMinutes(1),
+                        5,
+                        Duration.ofMinutes(15),
+                        20,
+                        Duration.ofMinutes(15));
 
         String clientIp = "203.0.113.1";
         for (int i = 0; i < maxAttempts; i++) {

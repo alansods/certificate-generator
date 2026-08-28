@@ -10,6 +10,8 @@ Base path `/api/v1`. JSON only. Errors follow RFC 7807 (`application/problem+jso
 | POST | `/auth/refresh` | public | body `{refreshToken}` → new pair. Old token is revoked (rotation). |
 | POST | `/auth/logout` | bearer | revokes the presented refresh token |
 | GET | `/auth/me` | bearer | `{id, email, fullName, role}` |
+| PUT | `/auth/me` | bearer | body `{fullName, email}` → `{id, email, fullName, role}`. No role field — the role cannot be changed here. 409 if the email belongs to another user. |
+| POST | `/auth/me/password` | bearer | body `{currentPassword, newPassword, refreshToken}` → 204. `refreshToken` is the caller's own token: a password change revokes every other refresh token for the user, and the server needs to know which one to keep. 400 with a field error on `currentPassword` if it doesn't match. `newPassword` must satisfy the password policy (8+ characters, at least one digit). |
 
 Access token lifetime 15 minutes, refresh token 7 days, stored hashed.
 

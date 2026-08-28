@@ -1,0 +1,227 @@
+<div class="flex max-w-content flex-col gap-7 p-7">
+  <div class="flex items-center gap-4">
+    <span
+      class="grid size-14 flex-none place-items-center rounded-full bg-accent-800 text-lg font-medium text-accent-100"
+      aria-hidden="true"
+    >
+      {{ initials() ?? "—" }}
+    </span>
+    <div class="flex min-w-0 flex-col">
+      <h1 class="truncate text-xl">My profile</h1>
+      @if (currentUser(); as user) {
+        <p class="m-0 truncate text-sm text-muted">{{ user.fullName }} · {{ user.email }}</p>
+        <p class="m-0 text-overline tracking-wide text-accent-300">{{ user.role }}</p>
+      }
+    </div>
+  </div>
+
+  @if (sessionLoading() && !currentUser()) {
+    <div class="flex justify-center py-14" role="status">
+      <span class="size-7 animate-spin rounded-full border-2 border-accent-800 border-t-accent-500"></span>
+      <span class="sr-only">Loading your profile…</span>
+    </div>
+  } @else if (sessionLoadFailed() && !currentUser()) {
+    <div class="flex flex-col items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked" role="alert">
+      <p class="m-0 flex items-start gap-4">
+        <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+        Could not load your profile. Please try again.
+      </p>
+      <button
+        type="button"
+        (click)="retryLoad()"
+        class="inline-flex min-h-(--size-touch-target) items-center rounded-md border border-revoked-line px-5 text-sm font-medium text-revoked hover:bg-revoked-bg"
+      >
+        Retry
+      </button>
+    </div>
+  } @else {
+  <form
+    [formGroup]="profileForm"
+    (ngSubmit)="submitProfile()"
+    class="flex flex-col gap-6 rounded-md bg-surface p-7 shadow-e1"
+    novalidate
+  >
+    <h2 class="m-0 text-sm font-medium">Profile</h2>
+
+    <div aria-live="polite" aria-atomic="false">
+      @if (showProfileValidationSummary()) {
+        <p
+          class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+          role="alert"
+        >
+          <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+          Check the highlighted fields before saving.
+        </p>
+      }
+      @if (profileSubmitError(); as message) {
+        <p
+          class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+          role="alert"
+        >
+          <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+          {{ message }}
+        </p>
+      }
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2">
+      <label class="flex flex-col gap-2">
+        <span class="text-xs text-muted">Full name</span>
+        <input
+          formControlName="fullName"
+          autocomplete="name"
+          [attr.aria-invalid]="isInvalid(profileForm, 'fullName')"
+          [attr.aria-describedby]="isInvalid(profileForm, 'fullName') ? 'fullName-error' : null"
+          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+          [class.border-neutral-600]="!isInvalid(profileForm, 'fullName')"
+          [class.border-revoked]="isInvalid(profileForm, 'fullName')"
+        />
+        @if (isInvalid(profileForm, "fullName")) {
+          <span id="fullName-error" class="text-xs text-revoked">
+            {{ errorFor(profileForm, "fullName", "Full name is required.") }}
+          </span>
+        }
+      </label>
+
+      <label class="flex flex-col gap-2">
+        <span class="text-xs text-muted">Email</span>
+        <input
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          [attr.aria-invalid]="isInvalid(profileForm, 'email')"
+          [attr.aria-describedby]="isInvalid(profileForm, 'email') ? 'email-error' : null"
+          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+          [class.border-neutral-600]="!isInvalid(profileForm, 'email')"
+          [class.border-revoked]="isInvalid(profileForm, 'email')"
+        />
+        @if (isInvalid(profileForm, "email")) {
+          <span id="email-error" class="text-xs text-revoked">
+            {{ errorFor(profileForm, "email", "A valid email is required.") }}
+          </span>
+        }
+      </label>
+    </div>
+
+    <div>
+      <button
+        type="submit"
+        [disabled]="profileSubmitting()"
+        class="inline-flex min-h-(--size-touch-target) items-center gap-3 rounded-md border border-accent-500 px-6 text-sm font-medium text-accent-500 hover:bg-accent-900 active:bg-accent-800 disabled:pointer-events-none disabled:opacity-45"
+      >
+        @if (profileSubmitting()) {
+          <span class="size-6 animate-spin rounded-full border-2 border-accent-800 border-t-accent-500"></span>
+          Saving…
+        } @else {
+          Save profile
+        }
+      </button>
+    </div>
+  </form>
+
+  <form
+    [formGroup]="passwordForm"
+    (ngSubmit)="submitPassword()"
+    class="flex flex-col gap-6 rounded-md bg-surface p-7 shadow-e1"
+    novalidate
+  >
+    <h2 class="m-0 text-sm font-medium">Change password</h2>
+
+    <div aria-live="polite" aria-atomic="false">
+      @if (showPasswordValidationSummary()) {
+        <p
+          class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+          role="alert"
+        >
+          <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+          Check the highlighted fields before saving.
+        </p>
+      }
+      @if (passwordSubmitError(); as message) {
+        <p
+          class="m-0 flex items-start gap-4 rounded-md border border-revoked-line bg-revoked-bg px-4 py-3 text-sm text-revoked"
+          role="alert"
+        >
+          <svg class="size-6 flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v5m0 3v.4" /></svg>
+          {{ message }}
+        </p>
+      }
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-3">
+      <label class="flex flex-col gap-2">
+        <span class="text-xs text-muted">Current password</span>
+        <input
+          type="password"
+          formControlName="currentPassword"
+          autocomplete="current-password"
+          [attr.aria-invalid]="isInvalid(passwordForm, 'currentPassword')"
+          [attr.aria-describedby]="isInvalid(passwordForm, 'currentPassword') ? 'currentPassword-error' : null"
+          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+          [class.border-neutral-600]="!isInvalid(passwordForm, 'currentPassword')"
+          [class.border-revoked]="isInvalid(passwordForm, 'currentPassword')"
+        />
+        @if (isInvalid(passwordForm, "currentPassword")) {
+          <span id="currentPassword-error" class="text-xs text-revoked">
+            {{ errorFor(passwordForm, "currentPassword", "Current password is required.") }}
+          </span>
+        }
+      </label>
+
+      <label class="flex flex-col gap-2">
+        <span class="text-xs text-muted">New password</span>
+        <input
+          type="password"
+          formControlName="newPassword"
+          autocomplete="new-password"
+          [attr.aria-invalid]="isInvalid(passwordForm, 'newPassword')"
+          [attr.aria-describedby]="isInvalid(passwordForm, 'newPassword') ? 'newPassword-error newPassword-hint' : 'newPassword-hint'"
+          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+          [class.border-neutral-600]="!isInvalid(passwordForm, 'newPassword')"
+          [class.border-revoked]="isInvalid(passwordForm, 'newPassword')"
+        />
+        <span id="newPassword-hint" class="text-xs text-subtle">At least 8 characters, including a digit.</span>
+        @if (isInvalid(passwordForm, "newPassword")) {
+          <span id="newPassword-error" class="text-xs text-revoked">
+            {{ errorFor(passwordForm, "newPassword", "At least 8 characters, including a digit.") }}
+          </span>
+        }
+      </label>
+
+      <label class="flex flex-col gap-2">
+        <span class="text-xs text-muted">Confirm new password</span>
+        <input
+          type="password"
+          formControlName="confirmPassword"
+          autocomplete="new-password"
+          [attr.aria-invalid]="isInvalid(passwordForm, 'confirmPassword')"
+          [attr.aria-describedby]="isInvalid(passwordForm, 'confirmPassword') ? 'confirmPassword-error' : null"
+          class="min-h-(--size-touch-target) w-full rounded-md border bg-bg px-4 py-3 text-sm caret-accent-500 hover:border-neutral-500"
+          [class.border-neutral-600]="!isInvalid(passwordForm, 'confirmPassword')"
+          [class.border-revoked]="isInvalid(passwordForm, 'confirmPassword')"
+        />
+        @if (isInvalid(passwordForm, "confirmPassword")) {
+          <span id="confirmPassword-error" class="text-xs text-revoked">
+            {{ errorFor(passwordForm, "confirmPassword", "Confirm your new password.") }}
+          </span>
+        }
+      </label>
+    </div>
+
+    <div>
+      <button
+        type="submit"
+        [disabled]="passwordSubmitting()"
+        class="inline-flex min-h-(--size-touch-target) items-center gap-3 rounded-md border border-accent-500 px-6 text-sm font-medium text-accent-500 hover:bg-accent-900 active:bg-accent-800 disabled:pointer-events-none disabled:opacity-45"
+      >
+        @if (passwordSubmitting()) {
+          <span class="size-6 animate-spin rounded-full border-2 border-accent-800 border-t-accent-500"></span>
+          Changing…
+        } @else {
+          Change password
+        }
+      </button>
+    </div>
+  </form>
+  }
+</div>

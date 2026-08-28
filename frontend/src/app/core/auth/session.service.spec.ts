@@ -56,6 +56,45 @@ describe("SessionService", () => {
     expect(service.currentUser()).toBeNull();
   });
 
+  it("reports loading while the lookup is in flight, and not once it settles", () => {
+    expect(service.loading()).toBe(false);
+    service.load();
+    expect(service.loading()).toBe(true);
+
+    expectMe().flush(USER);
+
+    expect(service.loading()).toBe(false);
+  });
+
+  it("reports loadFailed only once the lookup has actually failed", () => {
+    expect(service.loadFailed()).toBe(false);
+    service.load();
+    expect(service.loadFailed()).toBe(false);
+
+    expectMe().flush(null, { status: 500, statusText: "Internal Server Error" });
+
+    expect(service.loadFailed()).toBe(true);
+  });
+
+  it("does not report loadFailed once the lookup succeeds", () => {
+    service.load();
+    expectMe().flush(USER);
+
+    expect(service.loadFailed()).toBe(false);
+  });
+
+  it("retries after a failed lookup when load() is called again", () => {
+    service.load();
+    expectMe().flush(null, { status: 500, statusText: "Internal Server Error" });
+    expect(service.loadFailed()).toBe(true);
+
+    service.load();
+
+    expect(service.loadFailed()).toBe(false);
+    expectMe().flush(USER);
+    expect(service.currentUser()).toEqual(USER);
+  });
+
   it("revokes the refresh token, clears storage and returns to login on sign-out", () => {
     tokenStorage.setTokens("access", "refresh");
     const navigateSpy = vi.spyOn(router, "navigateByUrl");
@@ -136,6 +175,16 @@ describe("SessionService", () => {
     // the refresh interceptor would clear their tokens.
     expect(inFlight.cancelled).toBe(true);
     expect(service.currentUser()).toBeNull();
+  });
+
+  it("reflects a profile save immediately, without a re-fetch of /me", () => {
+    service.load();
+    expectMe().flush(USER);
+
+    service.updateCurrentUser({ ...USER, fullName: "Marina Silva" });
+
+    expect(service.currentUser()?.fullName).toBe("Marina Silva");
+    // httpMock.verify() in afterEach asserts no request went out for this.
   });
 
   it("lets the next user load their own identity after a sign-out mid-lookup", () => {

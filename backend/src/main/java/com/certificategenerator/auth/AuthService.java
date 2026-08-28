@@ -2,9 +2,12 @@ package com.certificategenerator.auth;
 
 import com.certificategenerator.auth.dto.TokenPairResponse;
 import java.time.Duration;
+import java.util.Locale;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
@@ -20,6 +23,10 @@ public class AuthService {
     private final Duration refreshWindow;
     private final int logoutMaxAttempts;
     private final Duration logoutWindow;
+    private final int passwordChangeMaxAttempts;
+    private final Duration passwordChangeWindow;
+    private final int profileUpdateMaxAttempts;
+    private final Duration profileUpdateWindow;
     private final String dummyPasswordHash;
 
     public AuthService(
@@ -33,7 +40,11 @@ public class AuthService {
             @Value("${app.rate-limit.refresh.max-attempts}") int refreshMaxAttempts,
             @Value("${app.rate-limit.refresh.window}") Duration refreshWindow,
             @Value("${app.rate-limit.logout.max-attempts}") int logoutMaxAttempts,
-            @Value("${app.rate-limit.logout.window}") Duration logoutWindow) {
+            @Value("${app.rate-limit.logout.window}") Duration logoutWindow,
+            @Value("${app.rate-limit.password-change.max-attempts}") int passwordChangeMaxAttempts,
+            @Value("${app.rate-limit.password-change.window}") Duration passwordChangeWindow,
+            @Value("${app.rate-limit.profile-update.max-attempts}") int profileUpdateMaxAttempts,
+            @Value("${app.rate-limit.profile-update.window}") Duration profileUpdateWindow) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -45,6 +56,10 @@ public class AuthService {
         this.refreshWindow = refreshWindow;
         this.logoutMaxAttempts = logoutMaxAttempts;
         this.logoutWindow = logoutWindow;
+        this.passwordChangeMaxAttempts = passwordChangeMaxAttempts;
+        this.passwordChangeWindow = passwordChangeWindow;
+        this.profileUpdateMaxAttempts = profileUpdateMaxAttempts;
+        this.profileUpdateWindow = profileUpdateWindow;
         // Encoded once so login() below always pays the same BCrypt cost whether or not the
         // email exists, closing the timing side-channel a short-circuited check would otherwise
         // create (matches() only running for real users would let response time reveal which
@@ -110,6 +125,69 @@ public class AuthService {
         return userRepository
                 .findById(userId)
                 .orElseThrow(() -> new InvalidCredentialsException("User no longer exists"));
+    }
+
+    /**
+     * Rate limited per user: an authenticated caller could otherwise use the 409-vs-200 response
+     * as an unbounded email-enumeration oracle, resetting their own email between probes.
+     */
+    @Transactional
+    public User updateProfile(Long userId, String fullName, String email) {
+        String rateLimitKey = "profile-update:" + userId;
+        if (rateLimiter.isBlocked(rateLimitKey, profileUpdateMaxAttempts, profileUpdateWindow)) {
+            throw new RateLimitExceededException("Too many profile update attempts, try again later");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase(Locale.ROOT);
+        if (userRepository.findByEmailAndIdNot(normalizedEmail, userId).isPresent()) {
+            // The 409 itself is spec'd; what's bounded here is repeatedly hitting it, which is
+            // exactly the signal an email-enumeration probe produces.
+            rateLimiter.recordFailure(rateLimitKey, profileUpdateWindow);
+            throw new EmailAlreadyRegisteredException("Email is already registered to another account");
+        }
+        User user = requireById(userId);
+        user.updateProfile(fullName, normalizedEmail);
+        try {
+            User saved = userRepository.save(user);
+            rateLimiter.clear(rateLimitKey);
+            return saved;
+        } catch (DataIntegrityViolationException e) {
+            // The uniqueness check above and this save aren't atomic; a concurrent update
+            // claiming the same email can slip through both. The unique index is the real
+            // guard — this just turns its violation into the same 409 the checked path returns.
+            rateLimiter.recordFailure(rateLimitKey, profileUpdateWindow);
+            throw new EmailAlreadyRegisteredException("Email is already registered to another account");
+        }
+    }
+
+    /**
+     * Requires the current password even though the caller is already authenticated — see
+     * design.md "Requiring the current password". Revokes every other refresh token for the
+     * user, keeping only the one the caller presented (design.md "Why the password change
+     * revokes other sessions"). Rate limited per user: unlike login, a stolen access token would
+     * otherwise let an attacker brute-force currentPassword at an unbounded rate.
+     */
+    @Transactional
+    public void changePassword(
+            Long userId, String currentPassword, String newPassword, String rawRefreshToken) {
+        String rateLimitKey = "password-change:" + userId;
+        if (rateLimiter.isBlocked(rateLimitKey, passwordChangeMaxAttempts, passwordChangeWindow)) {
+            throw new RateLimitExceededException("Too many password change attempts, try again later");
+        }
+
+        User user = requireById(userId);
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            rateLimiter.recordFailure(rateLimitKey, passwordChangeWindow);
+            throw new InvalidCurrentPasswordException("Current password is incorrect");
+        }
+        if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+            throw new InvalidCurrentPasswordException("New password must be different from the current one");
+        }
+
+        rateLimiter.clear(rateLimitKey);
+        user.changePassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        refreshTokenService.revokeAllExcept(user, rawRefreshToken);
     }
 
     private TokenPairResponse issueTokenPair(User user) {

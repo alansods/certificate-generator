@@ -1,7 +1,7 @@
 # batch-upload-ui Specification
 
 ## Purpose
-TBD - created by archiving change batch-upload-ui. Update Purpose after archive.
+Lets an authenticated user import many certificates at once from a CSV file, showing a per-row result so a partial success is never mistaken for a full one.
 
 ## Requirements
 

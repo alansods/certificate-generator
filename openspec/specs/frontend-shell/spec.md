@@ -1,7 +1,7 @@
 # frontend-shell Specification
 
 ## Purpose
-TBD - created by archiving change frontend-shell. Update Purpose after archive.
+Provides the application shell every other frontend capability builds on: bearer-token requests with silent session recovery, uniform API error handling, the Nocturne design tokens, the authenticated navigation chrome, and the accessibility baseline (focus visibility, touch targets, contrast) the rest of the UI relies on.
 
 ## Requirements
 

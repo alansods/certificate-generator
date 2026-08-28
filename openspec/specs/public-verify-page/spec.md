@@ -1,7 +1,7 @@
 # public-verify-page Specification
 
 ## Purpose
-TBD - created by archiving change public-verify-page. Update Purpose after archive.
+Lets anyone, signed in or not, verify a certificate by its code from a public page, showing a valid, revoked, not-yet-issued, unknown or rate-limited result as clearly distinct outcomes rather than collapsing them into a single pass/fail.
 
 ## Requirements
 

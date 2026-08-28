@@ -5,7 +5,6 @@ import com.certificategenerator.auth.RateLimiter;
 import com.certificategenerator.auth.RefreshTokenService;
 import com.certificategenerator.auth.User;
 import com.certificategenerator.auth.UserRepository;
-import com.certificategenerator.mail.MailSender;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -15,12 +14,12 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
 
 /**
  * Requests and completes password resets. Kept separate from {@link
@@ -30,6 +29,7 @@ import org.thymeleaf.context.Context;
 @Service
 public class PasswordResetService {
 
+    private static final Logger log = LoggerFactory.getLogger(PasswordResetService.class);
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int TOKEN_BYTES = 32; // 256 bits
     private static final Duration TOKEN_TTL = Duration.ofMinutes(30);
@@ -38,8 +38,7 @@ public class PasswordResetService {
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
-    private final MailSender mailSender;
-    private final TemplateEngine templateEngine;
+    private final PasswordResetMailDispatcher passwordResetMailDispatcher;
     private final RateLimiter rateLimiter;
     private final String frontendBaseUrl;
     private final int requestMaxAttemptsPerIp;
@@ -54,8 +53,7 @@ public class PasswordResetService {
             PasswordResetTokenRepository tokenRepository,
             PasswordEncoder passwordEncoder,
             RefreshTokenService refreshTokenService,
-            MailSender mailSender,
-            TemplateEngine templateEngine,
+            PasswordResetMailDispatcher passwordResetMailDispatcher,
             RateLimiter rateLimiter,
             @Value("${app.frontend-base-url:}") String frontendBaseUrl,
             @Value("${app.rate-limit.password-reset-request-ip.max-attempts}") int requestMaxAttemptsPerIp,
@@ -69,8 +67,7 @@ public class PasswordResetService {
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
-        this.mailSender = mailSender;
-        this.templateEngine = templateEngine;
+        this.passwordResetMailDispatcher = passwordResetMailDispatcher;
         this.rateLimiter = rateLimiter;
         this.frontendBaseUrl = frontendBaseUrl;
         this.requestMaxAttemptsPerIp = requestMaxAttemptsPerIp;
@@ -86,6 +83,15 @@ public class PasswordResetService {
      * "Always answering 202". Both rate-limit buckets record every attempt (not just failures):
      * unlike a login, a "success" here proves nothing about the address, so counting only
      * failures would let an attacker rotate through candidate addresses at full speed.
+     *
+     * <p>Still {@code @Transactional}: {@link PasswordResetTokenRepository#deleteUnusedForUser}
+     * is a {@code @Modifying} query, which requires an active transaction to execute at all — that
+     * is a hard JPA requirement, not a choice about atomicity. This does not reopen the
+     * timing/content oracle fix 5 addresses: what used to turn a mail-provider outage into a `500`
+     * (and add a synchronous network round trip to the matching branch's latency) was the inline
+     * SMTP send, not the transaction around two fast local writes. The mail send itself is now
+     * dispatched asynchronously, below, so it happens after this transaction commits and can never
+     * affect the response.
      */
     @Transactional
     public void requestReset(String email, String clientIp) {
@@ -111,7 +117,18 @@ public class PasswordResetService {
         String rawToken = generateRawToken();
         tokenRepository.save(new PasswordResetToken(user.get(), hash(rawToken), Instant.now().plus(TOKEN_TTL)));
 
-        sendResetEmail(normalizedEmail, rawToken);
+        // Built only from configuration, never from the request's Host header — see design.md
+        // "Building the link", the single most important line in this change to get right.
+        String resetLink = frontendBaseUrl + "/reset-password?token=" + rawToken;
+        try {
+            passwordResetMailDispatcher.dispatch(normalizedEmail, resetLink);
+        } catch (Exception e) {
+            // Belt and suspenders: @Async means this call normally returns before the send even
+            // starts, so an exception here would mean async dispatch itself isn't wired up (e.g.
+            // @EnableAsync missing) rather than a mail failure (PasswordResetMailDispatcher
+            // already catches those). Either way, the caller must still get its 202.
+            log.warn("Failed to dispatch password reset email", e);
+        }
     }
 
     /**
@@ -121,7 +138,7 @@ public class PasswordResetService {
      */
     @Transactional
     public void completeReset(String rawToken, String newPassword, String clientIp) {
-        String ipKey = "password-reset-complete:" + clientIp;
+        String ipKey = "password-reset-complete:ip:" + clientIp;
         if (rateLimiter.isBlocked(ipKey, completeMaxAttemptsPerIp, completeWindowPerIp)) {
             throw new RateLimitExceededException("Too many password reset attempts, try again later");
         }
@@ -137,21 +154,26 @@ public class PasswordResetService {
                                                 "This reset link is invalid or has expired"));
 
         User user = token.getUser();
+        // Defense-in-depth, mirroring requestReset's own isEnabled filter: a token issued before
+        // an account was disabled must not still be able to reset that account's password. There
+        // is currently no way to disable a user through the public API (same limitation noted on
+        // the user-profile change), so this branch is untested for the same reason requestReset's
+        // filter is untested.
+        if (!user.isEnabled()) {
+            throw new InvalidPasswordResetTokenException("This reset link is invalid or has expired");
+        }
+
+        // Claim the token atomically before touching the user, so a losing concurrent request
+        // (same token, raced) changes nothing — see the Javadoc on
+        // PasswordResetTokenRepository#markUsedIfUnused.
+        int updated = tokenRepository.markUsedIfUnused(token.getId(), Instant.now());
+        if (updated == 0) {
+            throw new InvalidPasswordResetTokenException("This reset link is invalid or has expired");
+        }
+
         user.changePassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
-        token.markUsed();
-        tokenRepository.save(token);
         refreshTokenService.revokeAll(user);
-    }
-
-    private void sendResetEmail(String email, String rawToken) {
-        // Built only from configuration, never from the request's Host header — see design.md
-        // "Building the link", the single most important line in this change to get right.
-        String resetLink = frontendBaseUrl + "/reset-password?token=" + rawToken;
-        Context context = new Context();
-        context.setVariable("resetLink", resetLink);
-        String htmlBody = templateEngine.process("mail/password-reset", context);
-        mailSender.send(email, "Reset your Certificate Generator password", htmlBody);
     }
 
     // Package-private (not private) so PasswordResetIntegrationTest, in this same package, can

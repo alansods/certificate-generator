@@ -120,6 +120,48 @@ describe("ResetPasswordPageComponent", () => {
     expect(nativeElement.textContent).toContain("Too many attempts");
   });
 
+  it("shows the cold-start message only once the request has run past the threshold", () => {
+    vi.useFakeTimers();
+    try {
+      const { fixture, nativeElement } = setup("raw-reset-token");
+
+      fillValidFormAndSubmit(nativeElement);
+      fixture.detectChanges();
+      expect(nativeElement.textContent).not.toContain("waking up");
+
+      vi.advanceTimersByTime(5000);
+      fixture.detectChanges();
+      expect(nativeElement.textContent).toContain("waking up");
+
+      httpMock
+        .expectOne((r) => r.url.endsWith("/api/v1/auth/reset-password"))
+        .flush(null, { status: 204, statusText: "No Content" });
+      fixture.detectChanges();
+      expect(nativeElement.textContent).not.toContain("waking up");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("never shows the cold-start message for a fast response", () => {
+    vi.useFakeTimers();
+    try {
+      const { fixture, nativeElement } = setup("raw-reset-token");
+
+      fillValidFormAndSubmit(nativeElement);
+      httpMock
+        .expectOne((r) => r.url.endsWith("/api/v1/auth/reset-password"))
+        .flush(null, { status: 204, statusText: "No Content" });
+      fixture.detectChanges();
+
+      vi.advanceTimersByTime(10000);
+      fixture.detectChanges();
+      expect(nativeElement.textContent).not.toContain("waking up");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("blocks submission and shows an inline error for a password shorter than 8 characters", () => {
     const { fixture, nativeElement } = setup();
     const newPasswordInput = requireElement<HTMLInputElement>(

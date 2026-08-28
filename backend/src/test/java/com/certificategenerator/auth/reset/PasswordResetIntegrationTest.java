@@ -30,16 +30,30 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Exercises POST /api/v1/auth/forgot-password and POST /api/v1/auth/reset-password end to end.
  * Replaces the default {@link com.certificategenerator.mail.LoggingMailSender} with a {@link
  * RecordingMailSender} so tests can assert on what would have been sent, without a real SMTP
  * account or parsing log output.
+ *
+ * <p>The rate-limit thresholds are raised well past what this class's ~9 real requests could ever
+ * hit: the actual threshold behavior is exercised in isolation by {@link
+ * PasswordResetRateLimitIntegrationTest}, which uses its own tiny thresholds. Without this, a
+ * single additional test here would risk pushing the shared-context {@code RateLimiter} singleton
+ * past the default {@code app.rate-limit.password-reset-request-ip.max-attempts: 10} and causing
+ * spurious 429s.
  */
 @Import({TestcontainersConfiguration.class, PasswordResetIntegrationTest.Config.class})
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @AutoConfigureTestRestTemplate
+@TestPropertySource(
+        properties = {
+            "app.rate-limit.password-reset-request-ip.max-attempts=1000",
+            "app.rate-limit.password-reset-request-email.max-attempts=1000",
+            "app.rate-limit.password-reset-complete.max-attempts=1000"
+        })
 class PasswordResetIntegrationTest {
 
     private static final AtomicInteger COUNTER = new AtomicInteger();
@@ -63,6 +77,7 @@ class PasswordResetIntegrationTest {
         ResponseEntity<Void> response = requestReset(email);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.ACCEPTED);
+        awaitMailCount(1);
         assertThat(mailSender.sent()).hasSize(1);
         RecordingMailSender.Email sent = mailSender.sent().get(0);
         assertThat(sent.to()).isEqualTo(email);
@@ -92,6 +107,7 @@ class PasswordResetIntegrationTest {
                 new org.springframework.http.HttpEntity<>(new ForgotPasswordRequest(email), headers),
                 Void.class);
 
+        awaitMailCount(1);
         assertThat(mailSender.sent()).hasSize(1);
         assertThat(mailSender.sent().get(0).htmlBody()).doesNotContain("attacker.example");
     }
@@ -102,8 +118,10 @@ class PasswordResetIntegrationTest {
         User user = newUser(email);
 
         requestReset(email);
+        awaitMailCount(1);
         String firstToken = extractToken(mailSender.sent().get(0).htmlBody());
         requestReset(email);
+        awaitMailCount(2);
         String secondToken = extractToken(mailSender.sent().get(1).htmlBody());
 
         ResponseEntity<Map> firstAttempt = resetWith(firstToken, "another-horse2");
@@ -120,6 +138,7 @@ class PasswordResetIntegrationTest {
         String email = nextEmail();
         newUser(email);
         requestReset(email);
+        awaitMailCount(1);
         String token = extractToken(mailSender.sent().get(0).htmlBody());
 
         ResponseEntity<Map> first = resetWith(token, "another-horse2");
@@ -156,6 +175,7 @@ class PasswordResetIntegrationTest {
         String email = nextEmail();
         newUser(email);
         requestReset(email);
+        awaitMailCount(1);
         String rawToken = extractToken(mailSender.sent().get(0).htmlBody());
 
         List<PasswordResetToken> all = tokenRepository.findAll();
@@ -170,6 +190,7 @@ class PasswordResetIntegrationTest {
         TokenPairResponse tokens = login(email, "correct-horse1");
 
         requestReset(email);
+        awaitMailCount(1);
         String resetToken = extractToken(mailSender.sent().get(0).htmlBody());
         resetWith(resetToken, "another-horse2");
 
@@ -186,6 +207,7 @@ class PasswordResetIntegrationTest {
         String email = nextEmail();
         newUser(email);
         requestReset(email);
+        awaitMailCount(1);
         String token = extractToken(mailSender.sent().get(0).htmlBody());
 
         ResponseEntity<Map> response = resetWith(token, "short1");
@@ -224,6 +246,24 @@ class PasswordResetIntegrationTest {
     private ResponseEntity<Void> requestReset(String email) {
         return restTemplate.postForEntity(
                 "/api/v1/auth/forgot-password", new ForgotPasswordRequest(email), Void.class);
+    }
+
+    /**
+     * The reset email is now dispatched off the request thread (see
+     * PasswordResetMailDispatcher and design.md "Always answering 202"), so a 202 response no
+     * longer guarantees the {@link RecordingMailSender} has recorded the send yet. Polls briefly
+     * instead of asserting immediately.
+     */
+    private void awaitMailCount(int expectedCount) {
+        Instant deadline = Instant.now().plusSeconds(5);
+        while (mailSender.sent().size() < expectedCount && Instant.now().isBefore(deadline)) {
+            try {
+                Thread.sleep(20);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+        }
     }
 
     private ResponseEntity<Map> resetWith(String token, String newPassword) {

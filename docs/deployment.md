@@ -41,18 +41,18 @@ Save the output somewhere safe (a password manager, not this repo) — this is `
 | `APP_FRONTEND_BASE_URL` | same origin as above | leave empty until 3.3 — the PDF's embedded QR code points here |
 | `ADMIN_BOOTSTRAP_EMAIL` | the first admin's email | optional; the bootstrap runner no-ops once any user exists, so it's safe to leave set permanently |
 | `ADMIN_BOOTSTRAP_PASSWORD` | the first admin's password | optional, same as above |
-| `APP_MAIL_PROVIDER` | `smtp` | optional; unset (or `logging`) means password-reset links are written to the Render logs instead of emailed — fine for testing the flow, not for real users |
-| `APP_MAIL_FROM` | the address resets appear to come from, e.g. `no-reply@yourdomain.com` | required once `APP_MAIL_PROVIDER=smtp`; your SMTP provider's dashboard |
-| `APP_MAIL_HOST` | e.g. `smtp.sendgrid.net` | required once `APP_MAIL_PROVIDER=smtp`; your SMTP provider |
-| `APP_MAIL_PORT` | e.g. `587` | required once `APP_MAIL_PROVIDER=smtp`; your SMTP provider |
-| `APP_MAIL_USERNAME` | your SMTP provider's username (often `apikey` for API-key-based providers) | required once `APP_MAIL_PROVIDER=smtp`; your SMTP provider |
-| `APP_MAIL_PASSWORD` | your SMTP provider's password or API key | required once `APP_MAIL_PROVIDER=smtp`; your SMTP provider |
+| `APP_MAIL_PROVIDER` | `smtp` | required in production — no default; the backend refuses to start in the `prod` profile until this is set to `smtp` (see "Password reset email" below) |
+| `APP_MAIL_FROM` | the address resets appear to come from, e.g. `no-reply@yourdomain.com` | required in production; your SMTP provider's dashboard |
+| `APP_MAIL_HOST` | e.g. `smtp.sendgrid.net` | required in production; your SMTP provider |
+| `APP_MAIL_PORT` | e.g. `587` | required in production; your SMTP provider |
+| `APP_MAIL_USERNAME` | your SMTP provider's username (often `apikey` for API-key-based providers) | required in production; your SMTP provider |
+| `APP_MAIL_PASSWORD` | your SMTP provider's password or API key | required in production; your SMTP provider |
 
 `SPRING_PROFILES_ACTIVE=prod` and `JAVA_TOOL_OPTIONS` are already set by `render.yaml` — nothing to fill in for those.
 
 ### Password reset email
 
-Password reset (`POST /auth/forgot-password`) sends its link through whichever `MailSender` is active. Leaving `APP_MAIL_PROVIDER` unset costs nothing and the feature still works end to end in Render's own logs — useful for confirming the flow before committing to a provider. When you pick one (SendGrid, Mailgun, Postmark, or your own SMTP server all work — anything that speaks SMTP), set the five `APP_MAIL_*` variables above and redeploy; startup fails immediately with a clear error if any of the four SMTP-specific ones is missing while `APP_MAIL_PROVIDER=smtp`, rather than silently falling back to logging.
+Password reset (`POST /auth/forgot-password`) sends its link through whichever `MailSender` is active. Unlike `dev` and tests, the `prod` profile has no default for `APP_MAIL_PROVIDER` — the backend will not start until it is set to `smtp` and all four SMTP-specific `APP_MAIL_*` variables above are also set. This is deliberate: an app that silently fell back to logging live, unexpired password-reset tokens instead of emailing them would be worse than one that refuses to start. Pick a provider (SendGrid, Mailgun, Postmark, or your own SMTP server all work — anything that speaks SMTP) before this deploys to production; startup fails immediately with a clear error naming exactly which property is missing.
 
 ## 4. Verify
 

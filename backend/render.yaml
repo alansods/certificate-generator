@@ -33,9 +33,10 @@ services:
         sync: false
       - key: ADMIN_BOOTSTRAP_PASSWORD
         sync: false
-      # All optional: unset, password resets log the link instead of emailing it (see
+      # Required in production: the prod profile has no default for APP_MAIL_PROVIDER and the
+      # backend refuses to start without it set to "smtp" plus the four SMTP variables below (see
       # docs/deployment.md "Password reset email" and openspec design.md "The mail abstraction").
-      # Set APP_MAIL_PROVIDER=smtp plus the four below once an SMTP provider is chosen.
+      # Set these before this deploys, once an SMTP provider is chosen.
       - key: APP_MAIL_PROVIDER
         sync: false
       - key: APP_MAIL_FROM

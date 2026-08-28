@@ -1,10 +1,12 @@
 package com.certificategenerator.auth.reset;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -16,7 +18,6 @@ import com.certificategenerator.auth.RefreshTokenService;
 import com.certificategenerator.auth.Role;
 import com.certificategenerator.auth.User;
 import com.certificategenerator.auth.UserRepository;
-import com.certificategenerator.mail.MailSender;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -24,8 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
 
 class PasswordResetServiceTest {
 
@@ -36,20 +35,18 @@ class PasswordResetServiceTest {
     private PasswordResetTokenRepository tokenRepository;
     private PasswordEncoder passwordEncoder;
     private RefreshTokenService refreshTokenService;
-    private MailSender mailSender;
-    private TemplateEngine templateEngine;
+    private PasswordResetMailDispatcher passwordResetMailDispatcher;
     private User user;
 
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
         tokenRepository = mock(PasswordResetTokenRepository.class);
+        when(tokenRepository.markUsedIfUnused(any(), any())).thenReturn(1);
         passwordEncoder = mock(PasswordEncoder.class);
         when(passwordEncoder.encode(anyString())).thenReturn("new-hash");
         refreshTokenService = mock(RefreshTokenService.class);
-        mailSender = mock(MailSender.class);
-        templateEngine = mock(TemplateEngine.class);
-        when(templateEngine.process(eq("mail/password-reset"), any())).thenReturn("<html>reset link</html>");
+        passwordResetMailDispatcher = mock(PasswordResetMailDispatcher.class);
 
         user = new User("jane@example.com", "old-hash", "Jane Doe", Role.USER);
     }
@@ -70,8 +67,7 @@ class PasswordResetServiceTest {
                 tokenRepository,
                 passwordEncoder,
                 refreshTokenService,
-                mailSender,
-                templateEngine,
+                passwordResetMailDispatcher,
                 new RateLimiter(),
                 FRONTEND_BASE_URL,
                 requestMaxIp,
@@ -83,19 +79,44 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void requestResetForAKnownEnabledUserCreatesATokenAndSendsMail() {
+    void requestResetForAKnownEnabledUserCreatesATokenAndDispatchesMail() {
         when(userRepository.findByEmail("jane@example.com")).thenReturn(Optional.of(user));
 
         newService().requestReset("jane@example.com", CLIENT_IP);
 
         verify(tokenRepository).deleteUnusedForUser(user);
         verify(tokenRepository).save(any(PasswordResetToken.class));
-        verify(mailSender).send(eq("jane@example.com"), anyString(), anyString());
 
-        ArgumentCaptor<Context> contextCaptor = ArgumentCaptor.forClass(Context.class);
-        verify(templateEngine).process(eq("mail/password-reset"), contextCaptor.capture());
-        assertThat((String) contextCaptor.getValue().getVariable("resetLink"))
-                .startsWith(FRONTEND_BASE_URL + "/reset-password?token=");
+        ArgumentCaptor<String> resetLinkCaptor = ArgumentCaptor.forClass(String.class);
+        verify(passwordResetMailDispatcher).dispatch(eq("jane@example.com"), resetLinkCaptor.capture());
+        assertThat(resetLinkCaptor.getValue()).startsWith(FRONTEND_BASE_URL + "/reset-password?token=");
+    }
+
+    @Test
+    void requestResetStillCompletesEvenIfTheMailDispatcherThrows() {
+        // @Async isn't active without a real Spring context in a plain unit test, so a mock that
+        // throws synchronously stands in for a dispatcher failure — proving the always-202
+        // contract holds even in that case, per design.md "Always answering 202".
+        when(userRepository.findByEmail("jane@example.com")).thenReturn(Optional.of(user));
+        doThrow(new RuntimeException("mail provider outage"))
+                .when(passwordResetMailDispatcher)
+                .dispatch(anyString(), anyString());
+
+        assertThatCode(() -> newService().requestReset("jane@example.com", CLIENT_IP)).doesNotThrowAnyException();
+
+        verify(passwordResetMailDispatcher).dispatch(eq("jane@example.com"), anyString());
+    }
+
+    @Test
+    void requestResetForADisabledUserCreatesNoTokenAndDispatchesNoMail() {
+        User disabledUser = mock(User.class);
+        when(disabledUser.isEnabled()).thenReturn(false);
+        when(userRepository.findByEmail("disabled@example.com")).thenReturn(Optional.of(disabledUser));
+
+        newService().requestReset("disabled@example.com", CLIENT_IP);
+
+        verify(tokenRepository, never()).save(any());
+        verify(passwordResetMailDispatcher, never()).dispatch(any(), any());
     }
 
     @Test
@@ -114,7 +135,7 @@ class PasswordResetServiceTest {
         newService().requestReset("nobody@example.com", CLIENT_IP);
 
         verify(tokenRepository, never()).save(any());
-        verify(mailSender, never()).send(any(), any(), any());
+        verify(passwordResetMailDispatcher, never()).dispatch(any(), any());
     }
 
     @Test
@@ -144,16 +165,48 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void completeResetWithAValidTokenChangesThePasswordMarksTheTokenUsedAndRevokesEverySession() {
+    void completeResetWithAValidTokenChangesThePasswordClaimsTheTokenAndRevokesEverySession() {
         PasswordResetToken token = new PasswordResetToken(user, PasswordResetService.hash("raw-token"), Instant.now().plusSeconds(60));
         when(tokenRepository.findByTokenHash(PasswordResetService.hash("raw-token"))).thenReturn(Optional.of(token));
 
         newService().completeReset("raw-token", "brand-new1", CLIENT_IP);
 
         assertThat(user.getPasswordHash()).isEqualTo("new-hash");
-        assertThat(token.isUsed()).isTrue();
-        verify(tokenRepository).save(token);
+        verify(tokenRepository).markUsedIfUnused(eq(token.getId()), any(Instant.class));
+        verify(userRepository).save(user);
         verify(refreshTokenService).revokeAll(user);
+    }
+
+    @Test
+    void completeResetLosingTheRaceToClaimTheTokenThrowsAndChangesNothing() {
+        PasswordResetToken token = new PasswordResetToken(user, PasswordResetService.hash("raw-token"), Instant.now().plusSeconds(60));
+        when(tokenRepository.findByTokenHash(PasswordResetService.hash("raw-token"))).thenReturn(Optional.of(token));
+        // Simulates a concurrent request having already claimed this token between the lookup
+        // above and this atomic claim.
+        when(tokenRepository.markUsedIfUnused(any(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> newService().completeReset("raw-token", "brand-new1", CLIENT_IP))
+                .isInstanceOf(InvalidPasswordResetTokenException.class);
+
+        assertThat(user.getPasswordHash()).isEqualTo("old-hash");
+        verify(userRepository, never()).save(any());
+        verify(refreshTokenService, never()).revokeAll(any());
+    }
+
+    @Test
+    void completeResetForATokenWhoseUserIsDisabledThrowsAndChangesNothing() {
+        User disabledUser = mock(User.class);
+        when(disabledUser.isEnabled()).thenReturn(false);
+        PasswordResetToken token =
+                new PasswordResetToken(disabledUser, PasswordResetService.hash("raw-token"), Instant.now().plusSeconds(60));
+        when(tokenRepository.findByTokenHash(PasswordResetService.hash("raw-token"))).thenReturn(Optional.of(token));
+
+        assertThatThrownBy(() -> newService().completeReset("raw-token", "brand-new1", CLIENT_IP))
+                .isInstanceOf(InvalidPasswordResetTokenException.class);
+
+        verify(tokenRepository, never()).markUsedIfUnused(any(), any());
+        verify(userRepository, never()).save(any());
+        verify(refreshTokenService, never()).revokeAll(any());
     }
 
     @Test

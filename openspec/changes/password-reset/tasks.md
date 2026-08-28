@@ -24,7 +24,7 @@
 - [x] 4.2 A new request invalidates the outstanding token.
 - [x] 4.3 Reset succeeds once; the same token then fails with 400; an expired token fails; an unknown token fails.
 - [x] 4.4 A completed reset revokes every refresh token for the user, and a refresh with one of them returns 401.
-- [x] 4.5 Only the hash is persisted — a test asserting the raw token appears in no column.
+- [x] 4.5 Only the hash is persisted — a test asserting the raw token does not equal the persisted `token_hash` value.
 - [x] 4.6 The link is built from the configured base URL even when the request carries a hostile `Host`/`X-Forwarded-Host` header.
 - [x] 4.7 429 past each rate limit.
 - [x] 4.8 A test that a mail-sending profile with missing properties fails to start — a Spring `ApplicationContextRunner` slice test (`MailSenderStartupTest`) plus a direct constructor unit test (`SmtpMailSenderTest`).
@@ -34,7 +34,7 @@
 - [x] 5.1 `AuthApi.forgotPassword()` and `AuthApi.resetPassword()`.
 - [x] 5.2 `features/auth/pages/forgot-password-page/`: the form, then the confirmation card naming the address with the "use another email" action; the 429 state; the back-to-sign-in link.
 - [x] 5.3 `features/auth/pages/reset-password-page/`: read the token from the query string, strip it from the URL with `history.replaceState` on load, then the new password and confirmation form, the success card linking to sign-in, the invalid/expired state offering a new request, and the no-token state.
-- [x] 5.4 `app.routes.ts`: public `forgot-password` and `reset-password` routes.
+- [x] 5.4 `app.routes.ts`: public `forgot-password` and `reset-password` routes. `frontend/angular.json`'s initial-bundle budget rose from 580kB to 595kB (`maximumWarning`) to accommodate the two new public pages, matching how the sibling `user-signup`/`user-profile` changes documented their own budget bumps.
 - [x] 5.5 Login screen: the "Forgot your password?" link.
 
 ## 6. Frontend tests

@@ -46,6 +46,12 @@ public class SmtpMailSender implements MailSender {
         sender.setPassword(password);
         sender.getJavaMailProperties().put("mail.smtp.auth", "true");
         sender.getJavaMailProperties().put("mail.smtp.starttls.enable", "true");
+        // starttls.enable alone is opportunistic: an on-path attacker can strip STARTTLS from the
+        // server's EHLO response and the connection silently continues in cleartext, leaking the
+        // SMTP credentials and every reset link. required=true aborts instead of downgrading, and
+        // ssl.checkserveridentity verifies the certificate hostname matches the server we asked for.
+        sender.getJavaMailProperties().put("mail.smtp.starttls.required", "true");
+        sender.getJavaMailProperties().put("mail.smtp.ssl.checkserveridentity", "true");
         this.javaMailSender = sender;
     }
 

@@ -59,12 +59,15 @@ describe("ForgotPasswordPageComponent", () => {
   });
 
   it("makes no request for a malformed email", () => {
-    const { emailInput, form } = setup();
+    const { fixture, emailInput, form } = setup();
 
     type(emailInput, "not-an-email");
     form.dispatchEvent(new Event("submit"));
+    fixture.detectChanges();
 
     // httpMock.verify() in afterEach asserts no request went out.
+    expect(emailInput.getAttribute("aria-invalid")).toBe("true");
+    expect(fixture.nativeElement.textContent).toContain("A valid email is required.");
   });
 
   it("returns the empty form when 'use another email' is selected", () => {
@@ -96,6 +99,50 @@ describe("ForgotPasswordPageComponent", () => {
     fixture.detectChanges();
 
     expect(nativeElement.textContent).toContain("Too many attempts");
+  });
+
+  it("shows the cold-start message only once the request has run past the threshold", () => {
+    vi.useFakeTimers();
+    try {
+      const { fixture, nativeElement, emailInput, form } = setup();
+
+      type(emailInput, "jane@example.com");
+      form.dispatchEvent(new Event("submit"));
+      fixture.detectChanges();
+      expect(nativeElement.textContent).not.toContain("waking up");
+
+      vi.advanceTimersByTime(5000);
+      fixture.detectChanges();
+      expect(nativeElement.textContent).toContain("waking up");
+
+      httpMock
+        .expectOne((r) => r.url.endsWith("/api/v1/auth/forgot-password"))
+        .flush(null, { status: 202, statusText: "Accepted" });
+      fixture.detectChanges();
+      expect(nativeElement.textContent).not.toContain("waking up");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("never shows the cold-start message for a fast response", () => {
+    vi.useFakeTimers();
+    try {
+      const { fixture, nativeElement, emailInput, form } = setup();
+
+      type(emailInput, "jane@example.com");
+      form.dispatchEvent(new Event("submit"));
+      httpMock
+        .expectOne((r) => r.url.endsWith("/api/v1/auth/forgot-password"))
+        .flush(null, { status: 202, statusText: "Accepted" });
+      fixture.detectChanges();
+
+      vi.advanceTimersByTime(10000);
+      fixture.detectChanges();
+      expect(nativeElement.textContent).not.toContain("waking up");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("offers a link back to sign in", () => {

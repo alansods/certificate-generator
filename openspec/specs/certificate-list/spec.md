@@ -1,7 +1,7 @@
 # certificate-list Specification
 
 ## Purpose
-TBD - created by archiving change certificate-list. Update Purpose after archive.
+Gives an authenticated user a searchable, paginated view of every certificate record, with row actions and the loading, empty and error states that view needs to stay legible while data is fetched.
 
 ## Requirements
 

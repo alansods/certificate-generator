@@ -1,7 +1,7 @@
 # certificate-form Specification
 
 ## Purpose
-TBD - created by archiving change certificate-form. Update Purpose after archive.
+Lets an authenticated user create and edit a single certificate record through a form that validates client-side against the same constraints the backend enforces, and reach the template preview and PDF preview from it.
 
 ## Requirements
 
